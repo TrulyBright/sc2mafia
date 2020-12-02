@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>SC2 Mafia</title>
+  </head>
+  <body>
+    방 번호:
+    <input class="roomID" type="text" name="" value="">
+    <button type="button" name="button" onclick="enter_room()">입장</button>
+  </body>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+  <script type="text/javascript">
+    'use strict';
+    let WS = io.connect('http://localhost:8080');
+    console.log(WS);
+    WS.on('message', (data)=> {
+      console.log(data);
+    });
+    function enter_room () {
+      let roomID_input = document.querySelector('.roomID');
+      let roomID = roomID_input.value;
+      location.href="./room/"+roomID;
+    }
+  </script>
+</html>
