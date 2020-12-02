@@ -22,8 +22,8 @@ async def connect(sid, environ):
     HTTPsession = await redis.get('session:' + HTTP_SID)
     redis.close()
     await redis.wait_closed()
-  except KeyError:
-    HTTPsession = None# request has no cookie named 'session'
+  except KeyError: # occurs when request has no cookie named 'session'
+    HTTPsession = None
 
   if HTTPsession is None:
     raise ConnectionRefusedError('not logged in')

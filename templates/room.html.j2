@@ -7,16 +7,16 @@
   <body>
     <ul id="messages"></ul>
     <form onsubmit="send_message(event);">
-      <input id="chat" autocomplete="off" /><button class="send_message_button">Send</button>
+      <input id="chat" autocomplete="off" /><button class="send_message_button">전송</button>
     </form>
   </body>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+  <script src="/static/socket.io.js" charset="utf-8"></script>
   <script type="text/javascript">
     'use strict';
-    let WS = io.connect('http://localhost:8080');
-    WS.emit('room_request', '{{roomID}}')
-    console.log(WS);
-    WS.on('message', (data)=> {
+    const Socket = io.connect('http://localhost:8080');
+    Socket.emit('room_request', '{{roomID}}')
+    console.log(Socket);
+    Socket.on('message', (data)=> {
       console.log(data);
       let chatLog = document.getElementById('messages');
       let chat = document.createElement("li");
@@ -26,11 +26,10 @@
 
     function send_message(event) {
       event.preventDefault();
-      let message = document.querySelector('#chat').value;
-      let send_message_button = document.querySelector('.send_message_button');
-      send_message_button.value = '';
-      WS.emit('message', message);
-
+      let chatInput = document.querySelector('#chat')
+      let message = chatInput.value;
+      Socket.emit('message', message);
+      chatInput.value = '';
     };
 
   </script>

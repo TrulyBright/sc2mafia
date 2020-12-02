@@ -6,17 +6,22 @@
   </head>
   <body>
     <h1>Mafia</h1>
+    {% if logged_in %}
+      <form action="/lobby" method="get">
+        <input type="submit" value="로비로 가기">
+      </form>
+    {% else %}
     <p>Please Login</p>
-    {{greetings}}
-    <form action="/login" method="post">
-      <input type="text" name="username" placeholder="username">
-      <br>
-      <input type="password" name="password" placeholder="password">
-      <input type="submit" value="LOGIN">
-    </form>
-    <form class="" action="/register">
-      <input type="submit" name="" value="register">
-    </form>
+      <form action="/login" method="post">
+        <input type="text" name="username" placeholder="username">
+        <br>
+        <input type="password" name="password" placeholder="password">
+        <input type="submit" value="접속">
+      </form>
+      <form class="" action="/register">
+        <input type="submit" name="" value="회원가입">
+      </form>
+    {% endif %}
   </body>
   <script type="text/javascript">
   </script>

@@ -6,5 +6,3 @@ class Room:
     self.title = title
     self.capacity = capacity
     self.private = private
-
-roomList = []

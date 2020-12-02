@@ -8,8 +8,10 @@ from auth import check_credentials, create_user
 
 @template('index.html.j2')
 async def index(request):
-  return {'greetings': 'welcome guest!'}
-
+  if request.ctx.session.get('logged_in'):
+    return {'logged_in': True}
+  else:
+    return {'logged_in': False}
 
 
 @template('login_page.html.j2')
