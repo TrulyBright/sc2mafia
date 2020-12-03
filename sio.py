@@ -6,7 +6,7 @@ import json
 from aioredis import create_redis_pool
 from ast import literal_eval
 
-from game import GameRoom
+from game.game import GameRoom
 
 
 
@@ -14,6 +14,9 @@ sio = socketio.AsyncServer(async_mode='sanic')
 
 room_list = {}
 next_roomID = 1
+
+online_users = set()
+
 
 def setup_socketio(app):
   sio.attach(app)
@@ -32,66 +35,90 @@ async def connect(sid, environ):
     HTTPsession = None
 
   if HTTPsession is None:
-    raise ConnectionRefusedError('not logged in')
+    raise ConnectionRefusedError('인증필요')
   HTTPsession = HTTPsession.decode('ascii')
   HTTPsession = HTTPsession.replace('true', 'True')
   HTTPsession = literal_eval(HTTPsession)
   if not HTTPsession.get('logged_in'):
-    raise ConnectionRefusedError('not logged in')
-
+    raise ConnectionRefusedError('인증필요')
   await sio.save_session(sid, HTTPsession)
-  user = await sio.get_session(sid)
-  print('user connected:', user['username'])
+  async with sio.session(sid) as user:
+    if user['username'] in online_users:
+      raise ConnectionRefusedError('다중접속')
+    online_users.add(user['username'])
+    print('user connected:', user['username'])
 
 
 
 @sio.event
 async def disconnect(sid):
-  user = await sio.get_session(sid)
-  print('user disconnected: ', user.get('username'))
-  if 'room' in user:
-    await leave_GameRoom(sid, None)
+  async with sio.session(sid) as user:
+    username = user.get('username')
+    if username is not None:
+      print('user disconnected: ', user.get('username'))
+      online_users.remove(username)
+      if 'room' in user:
+        await leave_GameRoom(sid, None)
+
 
 
 @sio.event
 async def enter_GameRoom(sid, data):
   assert 'roomID' in data
-  user = await sio.get_session(sid)
-  roomID = data['roomID']
-  if roomID in room_list:
-    if room_list[roomID].isFull():
-      await sio.emit('failed_to_enter_GameRoom', {
-        'reason': 'full',
-      })
+  print(sid)
+  async with sio.session(sid) as user:
+    print('==============================')
+    if 'room' in user:
+      print('NO MUTUAL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+      leave_GameRoom(sid, None)
+    roomID = data['roomID']
+    if roomID in room_list:
+      if room_list[roomID].isFull():
+        await sio.emit('failed_to_enter_GameRoom', {
+          'reason': 'full',
+        })
+      else:
+        sio.enter_room(sid, roomID)
+        user['room']=roomID
+        room = room_list[roomID]
+        room.members.append(sid)
+        await sio.save_session(sid, user)
+        await sio.emit('enter_GameRoom_success', roomID)
+        await sio.emit('notification',
+                       {'type': 'enter',
+                        'who': user['username']},
+                       room=roomID)
+        print(user['username'], 'enters room #', roomID)
     else:
-      sio.enter_room(sid, roomID)
-      user['room']=roomID
-      room = room_list[roomID]
-      room.members.append(sid)
-      await sio.save_session(sid, user)
-      await sio.emit('enter_GameRoom_success', roomID)
-      await sio.emit('notification', {'type': 'enter',
-                                      'who': user['username']},
-                                      room=roomID)
-      print(user['username'], 'enters room #', roomID)
-  else:
-    print(user['username'], 'fails to enter room #', roomID)
-    await sio.emit('failed_to_enter_GameRoom', {
-      'reason': 'No such room',
-    })
+      print(user['username'], 'fails to enter room #', roomID)
+      await sio.emit('failed_to_enter_GameRoom', {
+        'reason': 'No such room',
+      })
+
+
 
 @sio.event
 async def leave_GameRoom(sid, data):
-  user = await sio.get_session(sid)
-  assert 'room' in user
-  roomID = user['room']
-  room = room_list[roomID]
-  room.members.remove(sid)
-  print(user['username'], 'left room #', roomID)
-  del user['room']
-  await sio.save_session(sid, user)
-  if not room.members:
-    del room_list[roomID]
+  async with sio.session(sid) as user:
+    assert 'room' in user
+    roomID = user['room']
+    room = room_list[roomID]
+    room.members.remove(sid)
+    print(user['username'], 'leaves room #', roomID)
+    sio.leave_room(sid, roomID)
+    del user['room']
+    await sio.save_session(sid, user)
+    if sid == room.host and room.members:
+      room.host = room.members[0]
+    if not room.members:
+      sio.close_room(roomID)
+      del room_list[roomID]
+    await sio.emit('notification',
+                   {'type': 'leave',
+                    'who': user['username'],},
+                    room=room)
+
+
 
 @sio.event
 async def create_GameRoom(sid, data):
@@ -100,25 +127,20 @@ async def create_GameRoom(sid, data):
   assert type(data) is dict
   assert 'title' in data
   assert 'capacity' in data
-  user = await sio.get_session(sid)
-  print(user['username'], 'creates room #', next_roomID)
-  room_list[next_roomID]=GameRoom(title=data['title'],
-                                  capacity=data['capacity'],
-                                  host=sid)
-  print(room_list)
-  await sio.emit('create_GameRoom_success', next_roomID)
-  next_roomID+=1
+  async with sio.session(sid) as user:
+    print(user['username'], 'creates room #', next_roomID)
+    room_list[next_roomID]=GameRoom(roomID=next_roomID,
+                                    title=data['title'],
+                                    capacity=data['capacity'],
+                                    host=sid)
+    await sio.emit('create_GameRoom_success', next_roomID)
+    next_roomID+=1
 
 
 
 @sio.event
-async def message(sid, data):
-  assert type(data)==str
+async def message(sid, msg):
+  assert type(msg)==str
   async with sio.session(sid) as user:
-    to_send = {
-      'who': user['username'],
-      'message': data,
-    }
-    await sio.emit('message',
-                   to_send,
-                   room=user['room'])
+    print(user['room'])
+    await room_list[user['room']].handle_message(sio, sid, msg)

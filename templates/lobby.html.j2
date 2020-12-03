@@ -63,5 +63,16 @@
     Socket.on('enter_GameRoom_success', (roomID)=> {
       location.href='./room/'+roomID;
     })
+    Socket.on('failed_to_enter_GameRoom', (data)=>{
+      switch (data['reason']) {
+        case 'full':
+          console.log('방이 꽉 찼습니다.')
+          break;
+        case 'No such room':
+          console.log('그 ID로 된 방이 없습니다.')
+          break;
+        default:
+      }
+    })
   </script>
 </html>
