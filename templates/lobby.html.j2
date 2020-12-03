@@ -8,19 +8,60 @@
     방 번호:
     <input class="roomID" type="text" name="" value="">
     <button type="button" name="button" onclick="enter_room()">입장</button>
+    <br>
+    <p>방 만들기</p>
+    <p>방제: <input type="text" name="" value="" placeholder="" class="title"></p>
+    <p>
+    정원:
+    <select class="capacity" name="">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="12">12</option>
+      <option value="13">13</option>
+      <option value="14">14</option>
+      <option value="15">15</option>
+    </select>
+    </p>
+    <button type="button" name="button" class="create_GameRoom_button" onclick="create_GameRoom(event);">방 만들기</button>
   </body>
   <script src="/static/socket.io.js" charset="utf-8"></script>
   <script type="text/javascript">
     'use strict';
     const Socket = io('http://localhost:8080');
-    console.log(Socket);
-    Socket.on('message', (data)=> {
-      console.log(data);
-    });
+    let create_room_button = document.querySelector('.create_room_button');
+
     function enter_room () {
       let roomID_input = document.querySelector('.roomID');
       let roomID = roomID_input.value;
       location.href="./room/"+roomID;
-    }
+    };
+
+    function create_GameRoom (event) {
+      let title = document.querySelector('.title').value;
+      let capacity = document.querySelector('.capacity').value;
+      Socket.emit('create_GameRoom', {
+        'title': title,
+        'capacity': Number(capacity),
+      });
+    };
+
+    Socket.on('message', (data)=> {
+      console.log(data);
+    });
+    Socket.on('create_GameRoom_success', (roomID)=> {
+      location.href='./room/'+roomID;
+    });
+    Socket.on('enter_GameRoom_success', (roomID)=> {
+      location.href='./room/'+roomID;
+    })
   </script>
 </html>

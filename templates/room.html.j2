@@ -14,13 +14,26 @@
   <script type="text/javascript">
     'use strict';
     const Socket = io.connect('http://localhost:8080');
-    Socket.emit('room_request', '{{roomID}}')
-    console.log(Socket);
+    let chatLog = document.getElementById('messages');
+
+    Socket.emit('enter_GameRoom', {
+      'roomID': {{roomID}},
+    })
+
+    Socket.on('notification', (data)=> {
+      switch (data['type']) {
+        case 'enter':
+          let chat = document.createElement("li");
+          chat.innerHTML = data['who']+'님이 입장했습니다.';
+          chatLog.appendChild(chat)
+          break;
+      }
+    });
+
     Socket.on('message', (data)=> {
       console.log(data);
-      let chatLog = document.getElementById('messages');
       let chat = document.createElement("li");
-      chat.innerHTML = data;
+      chat.innerHTML = data['who']+': '+data['message'];
       chatLog.appendChild(chat);
     });
 
