@@ -10,9 +10,14 @@ Teams
 class Town(Role):
   team = '시민'
 
-
 class Mafia(Role):
   team = '마피아'
+
+class Triad(Role):
+  team = '삼합회'
+
+class Neutral(Role):
+  team = '중립'
 
 """
 ==========

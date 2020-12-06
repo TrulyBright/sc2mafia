@@ -145,12 +145,14 @@ async def create_GameRoom(sid, data):
     await sio.emit('create_GameRoom_success', next_roomID, room=sid)
     next_roomID+=1
     await broadcast_room_list()
-    # 방 목록 갱신해서 보내주기
+    
 
 
 async def broadcast_room_list():
   to_send = {roomID:room.title for roomID, room in room_list.items()}
   await sio.emit('room_list', to_send)
+
+
 
 @sio.event
 async def message(sid, msg):

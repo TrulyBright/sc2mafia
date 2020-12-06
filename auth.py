@@ -20,7 +20,7 @@ async def check_credentials(username, password) -> bool:
   return False
 
 
-async def create_user(username, password, nickname) -> bool:
+async def create_user(username, password, nickname) -> str:
   async with aiosqlite.connect('sql/users.db') as DB:
     # where = sa.and_(db.users.c.username==username,
     #                 sa.not_(db.users.c.disabled))
@@ -30,7 +30,7 @@ async def create_user(username, password, nickname) -> bool:
     user = await cursor.fetchone()
     if user is not None: # username already occupied
       return 'username_duplicate'
-      
+
     query = f"SELECT * FROM users WHERE nickname='{nickname}'"
     cursor = await DB.execute(query)
     user = await cursor.fetchone()

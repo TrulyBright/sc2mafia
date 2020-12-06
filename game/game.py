@@ -30,13 +30,17 @@ class GameRoom:
         msg = msg.split()
         if len(msg)==3:
           cmd, target1, target2 = msg
+          assert target1 in self.players
+          assert target2 in self.players
         elif len(msg)==2:
           cmd, target = msg
+          assert target in self.players
         else:
           cmd = msg[0]
         if cmd=='/시작' and sid==self.host and not self.inGame:
           await self.init_game(sio)
           await self.run_game(sio)
+          await self.finish_game(sio)
         elif cmd=='/투표' and self.STATE == 'VOTE':
           voter = self.players[user['nickname']]
           voted = self.players[target]
@@ -44,12 +48,17 @@ class GameRoom:
             'voter': voter.nickname,
             'voted': voted.nickname
           }
-          await self.vote(voter, voted)
-          await sio.emit('vote', to_send, room=self.roomID)
+          if await self.vote(voter, voted):
+            await sio.emit('vote', to_send, room=self.roomID)
         elif cmd=='/유죄' and self.STATE == 'VOTE_EXECUTION':
-          self.elected.voted_guilty += 1
+          voter = self.players[user['nickname']]
+          await self.vote_execution(voter, guilty=True)
         elif cmd=='/무죄' and self.STATE == 'VOTE_EXECUTION':
-          self.elected.voted_innocent += 1
+          voter = self.players[user['nickname']]
+          await self.vote_execution(voter, guilty=False)
+        elif cmd=='/취소':
+          voter = self.players[user['nickname']]
+          await self.cancel_vote(voter)
       else:
         to_send = {'who': user['nickname'],
                    'message': msg,}
@@ -58,10 +67,42 @@ class GameRoom:
   async def vote(self, voter, voted):
     alive = len([p for p in self.players.values() if p.alive])
     majority = alive//2+1
+    if voter.has_voted:
+      return False
+    voter.has_voted = True
     voted.votes_gotten += voter.votes
+    voter.voted_to_whom = voted
     if voted.votes_gotten>=majority:
       self.elected = voted
       self.election.set()
+    return True
+
+  async def vote_execution(self, voter, guilty):
+    if guilty:
+      if not voter.has_voted_in_execution_vote:
+        self.elected.voted_guilty += 1
+        voter.has_voted_in_execution_vote = True
+        self.voted_to_which = 'guilty'
+    else:
+      if not voter.has_voted_in_execution_vote:
+        self.elected.voted_innocent += 1
+        voter.has_voted_in_execution_vote = True
+        self.voted_to_which = 'innocent'
+
+  async def cancel_vote(self, voter):
+    if self.STATE == 'VOTE':
+      if voter.voted_to_whom is not None:
+        voter.voted_to_whom.votes_gotten -= voter.votes
+        voter.has_voted = False
+        voter.voted_to_whom = None
+    elif self.STATE == 'VOTE_EXECUTION':
+      if voter.has_voted_in_execution_vote:
+        voter.has_voted_in_execution_vote = False
+        if voter.voted_to_which == 'guilty':
+          self.elected.voted_innocent -= 1
+        else:
+          self.elected.voted_guilty -= 1
+        voter.voted_to_which = None
 
   async def game_over(self):
     alive = [p for p in self.players.values() if p.alive]
@@ -75,8 +116,8 @@ class GameRoom:
     self.inGame = True
     self.election = asyncio.Event()
     if self.setup.get('default'):
-      self.STATE = 'MORNING'
-      self.MORNING_TIME = 10
+      self.STATE = 'MORNING' # game's state when game starts
+      self.MORNING_TIME = 5
       self.DISCUSSION_TIME = 10
       self.VOTE_TIME = 10
       self.DEFENSE_TIME = 10
@@ -139,7 +180,7 @@ class GameRoom:
       self.STATE = 'NIGHT'
       await sio.emit('state', self.STATE, room=self.roomID)
 
-    # game end
+  async def finish_game(self, sio):
     self.inGame = False
     to_send = {
     'winner': [p.nickname for p in self.players.values() if p.alive]
@@ -154,10 +195,14 @@ class Player:
     self.role = role
     self.alive = True
     self.votes = 1
-    self.voted = False
+    self.has_voted = False
+    self.voted_to_whom = None
+    self.has_voted_in_execution_vote = False
+    self.voted_to_which = None
     self.votes_gotten = 0
     self.voted_guilty = 0
     self.voted_innocent = 0
+    self.lw = '' # last will
 
   def die(self):
     self.alive = False
