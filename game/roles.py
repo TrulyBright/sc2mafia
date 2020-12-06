@@ -1,24 +1,60 @@
 class Role:
   pass
 
+"""
+==========
+Teams
+==========
+"""
+
+class Town(Role):
+  team = '시민'
 
 
 class Mafia(Role):
+  team = '마피아'
+
+"""
+==========
+Categories
+==========
+"""
+
+
+class TownGovernment(Town):
   pass
 
-class Town(Role):
+class TownProtective(Town):
+  pass
+
+class TownKilling(Town):
+  pass
+
+class TownInvestigative(Town):
+  pass
+
+class TownPower(Town):
+  pass
+
+class MafiaKilling(Mafia):
   pass
 
 
+"""
+==========
+Roles
+==========
+"""
 
-class Mafioso(Mafia):
+
+class Mafioso(MafiaKilling):
   name='마피아 일원'
 
-class Citizen(Town):
+class Citizen(TownGovernment):
   name='시민'
 
-class Doctor(Town):
+class Doctor(TownProtective):
   name='의사'
 
-class Sheriff(Town):
+class Sheriff(TownInvestigative):
   name='보안관'

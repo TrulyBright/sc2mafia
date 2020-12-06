@@ -1,8 +1,26 @@
-<form action="/register" method="post">
-  <input type="text" name="username" placeholder="사용자명(영문)">
-  <br>
-  <input type="password" name="password" placeholder="비밀번호">
-  <br>
-  <input type="text" name="nickname" placeholder="닉네임(한글, 영문)">
-  <input type="submit" value="회원가입">
-</form>
+<!DOCTYPE html>
+<html lang="ko" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    {% if register_failed %}
+      <p>회원가입에 실패했습니다.</p>
+      {% if reason=="username_duplicate" %}
+        <p>이미 사용 중인 사용자명입니다.</p>
+      {% endif %}
+      {% if reason=="nickname_duplicate" %}
+        <p>이미 사용 중인 닉네임입니다.</p>
+      {% endif %}
+    {% endif %}
+    <form action="/register" method="post">
+      <input type="text" name="username" placeholder="사용자명(영문)">
+      <br>
+      <input type="password" name="password" placeholder="비밀번호">
+      <br>
+      <input type="text" name="nickname" placeholder="닉네임(한글, 영문)">
+      <input type="submit" value="회원가입">
+    </form>
+  </body>
+</html>

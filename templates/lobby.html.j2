@@ -53,16 +53,19 @@
         'capacity': Number(capacity),
       });
     };
+    setInterval(()=>{Socket.emit('room_list_request', {})}, 1000);
 
     Socket.on('message', (data)=> {
       console.log(data);
     });
     Socket.on('create_GameRoom_success', (roomID)=> {
+      console.log('create_GameRoom_success')
       location.href='./room/'+roomID;
     });
     Socket.on('enter_GameRoom_success', (roomID)=> {
+      console.log('enter_GameRoom_success')
       location.href='./room/'+roomID;
-    })
+    });
     Socket.on('failed_to_enter_GameRoom', (data)=>{
       switch (data['reason']) {
         case 'full':
@@ -73,6 +76,10 @@
           break;
         default:
       }
-    })
+    });
+
+    Socket.on('room_list', (data)=> {
+      console.log(data);
+    });
   </script>
 </html>

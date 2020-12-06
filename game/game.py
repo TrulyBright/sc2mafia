@@ -1,4 +1,5 @@
 import random
+import asyncio
 
 from . import roles
 
@@ -23,41 +24,49 @@ class GameRoom:
 
   async def handle_message(self, sio, sid, msg):
     async with sio.session(sid) as user:
-      print(sid)
       if msg.startswith('/'):
         if msg=='/시작' and sid==self.host and not self.inGame:
           await self.init_game(sio)
-          # await self.run_game(sio)
+          await self.run_game(sio)
       else:
-        to_send = {'who': user['username'],
+        to_send = {'who': user['nickname'],
                    'message': msg,}
         await sio.emit('message', to_send, room=self.roomID)
-        return
 
 
-  async def check_game_end():
-    alive = {p for p in self.players if p.alive}
+  async def is_game_over(self):
+    alive = [p for p in self.players if p.alive]
     for p in alive:
-      pass
+      if p.role.team != alive[0].role.team:
+        return False
+    return True
 
   async def init_game(self, sio):
     # init game
     self.inGame = True
     roles_to_distribute = [roles.Mafioso(), roles.Citizen(), roles.Sheriff()]
     random.shuffle(roles_to_distribute)
-    self.players = [Player(nickname=sid,
+    self.players = [Player(sid=sid,
+                           nickname=(await sio.get_session(sid))['nickname'],
                            role=roles_to_distribute[index])
                            for index, sid in enumerate(self.members)]
     for p in self.players:
-      await sio.emit('role', p.role.name, room=p.nickname)
+      await sio.emit('role', p.role.name, room=p.sid)
 
   async def run_game(self, sio):
-    pass
+    while True:
+      if await self.is_game_over():
+        to_send = {
+          'winner': [p.nickname for p in self.players if p.alive]
+        }
+        await sio.emit('game_over', to_send,  room=self.roomID)
+        return
 
 
 
 class Player:
-  def __init__(self, nickname, role):
+  def __init__(self, sid, nickname, role):
+    self.sid = sid
     self.nickname = nickname
     self.role = role
     self.alive = True

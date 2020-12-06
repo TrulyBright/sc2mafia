@@ -74,7 +74,7 @@ async def enter_GameRoom(sid, data):
         print(user['username'], 'fails to enter room #', roomID)
         await sio.emit('failed_to_enter_GameRoom', {
           'reason': 'full',
-        })
+        }, room=sid)
       else:
         sio.enter_room(sid, roomID)
         user['room']=roomID
@@ -87,15 +87,14 @@ async def enter_GameRoom(sid, data):
         await sio.emit('enter_GameRoom_success', roomID)
         await sio.emit('notification',
                        {'type': 'enter',
-                        'who': user['username']},
+                        'who': user['nickname']},
                        room=roomID)
         print(user['username'], 'enters room #', roomID)
-        print(room.members)
     else:
       print(user['username'], 'fails to enter room #', roomID)
       await sio.emit('failed_to_enter_GameRoom', {
-        'reason': 'N)))o such room',
-      })
+        'reason': 'No such room',
+      }, room=sid)
 
 
 
@@ -110,20 +109,19 @@ async def leave_GameRoom(sid, data):
     sio.leave_room(sid, roomID)
     del user['room']
     await sio.save_session(sid, user)
-    print(room.host)
     if sid == room.host and room.members:
       room.host = room.members[0]
       print('room #', roomID, 'new host to', room.host)
       await sio.emit('notification',
                      {'type': 'newhost',
-                      'who': (await sio.get_session(room.host))['username']},
+                      'who': (await sio.get_session(room.host))['nickname']},
                      room=roomID)
     if not room.members:
       sio.close_room(roomID)
       del room_list[roomID]
     await sio.emit('notification',
                    {'type': 'leave',
-                    'who': user['username'],},
+                    'who': user['nickname'],},
                     room=room)
 
 
@@ -141,10 +139,15 @@ async def create_GameRoom(sid, data):
                                     title=data['title'],
                                     capacity=data['capacity'],
                                     host=user)
-    await sio.emit('create_GameRoom_success', next_roomID)
+    await sio.emit('create_GameRoom_success', next_roomID, room=sid)
     next_roomID+=1
 
 
+
+@sio.event
+async def room_list_request(sid, data):
+  to_send = {roomID:room.title for roomID, room in room_list.items()}
+  await sio.emit('room_list', to_send, room=sid)
 
 @sio.event
 async def message(sid, msg):
