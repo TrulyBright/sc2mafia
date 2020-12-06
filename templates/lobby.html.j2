@@ -53,7 +53,6 @@
         'capacity': Number(capacity),
       });
     };
-    setInterval(()=>{Socket.emit('room_list_request', {})}, 1000);
 
     Socket.on('message', (data)=> {
       console.log(data);

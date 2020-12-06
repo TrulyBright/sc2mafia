@@ -84,12 +84,13 @@ async def enter_GameRoom(sid, data):
           room.host = sid
           room.justCreated = False
         await sio.save_session(sid, user)
-        await sio.emit('enter_GameRoom_success', roomID)
+        await sio.emit('enter_GameRoom_success', roomID, room=sid)
         await sio.emit('notification',
                        {'type': 'enter',
                         'who': user['nickname']},
                        room=roomID)
         print(user['username'], 'enters room #', roomID)
+        await broadcast_room_list()
     else:
       print(user['username'], 'fails to enter room #', roomID)
       await sio.emit('failed_to_enter_GameRoom', {
@@ -108,6 +109,7 @@ async def leave_GameRoom(sid, data):
     print(user['username'], 'leaves room #', roomID)
     sio.leave_room(sid, roomID)
     del user['room']
+    await broadcast_room_list()
     await sio.save_session(sid, user)
     if sid == room.host and room.members:
       room.host = room.members[0]
@@ -142,13 +144,13 @@ async def create_GameRoom(sid, data):
                                     setup={'default': True})
     await sio.emit('create_GameRoom_success', next_roomID, room=sid)
     next_roomID+=1
+    await broadcast_room_list()
+    # 방 목록 갱신해서 보내주기
 
 
-
-@sio.event
-async def room_list_request(sid, data):
+async def broadcast_room_list():
   to_send = {roomID:room.title for roomID, room in room_list.items()}
-  await sio.emit('room_list', to_send, room=sid)
+  await sio.emit('room_list', to_send)
 
 @sio.event
 async def message(sid, msg):
