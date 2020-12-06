@@ -48,6 +48,18 @@
       let chat = document.createElement("li");
       chat.innerHTML = '당신의 직업은 '+role+'입니다.';
       chatLog.appendChild(chat);
+    });
+
+    Socket.on('state', (state)=>{
+      console.log(state);
+    });
+
+    Socket.on('vote', (data)=>{
+      console.log(data);
+    })
+
+    Socket.on('game_over', (data)=>{
+      console.log(data);
     })
 
     function send_message(event) {

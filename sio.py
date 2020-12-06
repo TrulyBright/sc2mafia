@@ -138,7 +138,8 @@ async def create_GameRoom(sid, data):
     room_list[next_roomID]=GameRoom(roomID=next_roomID,
                                     title=data['title'],
                                     capacity=data['capacity'],
-                                    host=user)
+                                    host=user,
+                                    setup={'default': True})
     await sio.emit('create_GameRoom_success', next_roomID, room=sid)
     next_roomID+=1
 

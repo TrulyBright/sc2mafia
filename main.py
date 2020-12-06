@@ -24,4 +24,5 @@ setup_jinja2(app, loader=FileSystemLoader('templates/'))
 
 #run
 if __name__ == '__main__':
+  # TODO: 게임서버와 웹서버 분리
   app.run(host='localhost', port=8080)
