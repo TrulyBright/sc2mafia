@@ -12,13 +12,13 @@ class Town(Role):
 
 
 class Mafioso(Mafia):
-  pass
+  name='마피아 일원'
 
 class Citizen(Town):
-  pass
+  name='시민'
 
 class Doctor(Town):
-  pass
+  name='의사'
 
-class Police(Town):
-  pass
+class Sheriff(Town):
+  name='보안관'

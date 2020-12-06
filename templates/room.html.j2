@@ -21,12 +21,18 @@
     })
 
     Socket.on('notification', (data)=> {
+      let chat = document.createElement("li");
       switch (data['type']) {
         case 'enter':
-          let chat = document.createElement("li");
           chat.innerHTML = data['who']+'님이 입장했습니다.';
           chatLog.appendChild(chat)
           break;
+        case 'newhost':
+          chat.innerHTML = data['who']+'님이 방장이 되었습니다.';
+          chatLog.appendChild(chat)
+          break;
+        default:
+          console.log(data);
       }
     });
 
@@ -37,6 +43,13 @@
       chatLog.appendChild(chat);
     });
 
+    Socket.on('role', (role)=> {
+      console.log(role);
+      let chat = document.createElement("li");
+      chat.innerHTML = '당신의 직업은 '+role+'입니다.';
+      chatLog.appendChild(chat);
+    })
+
     function send_message(event) {
       event.preventDefault();
       let chatInput = document.querySelector('#chat')
@@ -44,6 +57,5 @@
       Socket.emit('message', message);
       chatInput.value = '';
     };
-
   </script>
 </html>
