@@ -4,7 +4,7 @@
 ## 실행 방법(리눅스 기준)
 1. 이 레포지토리를 복사합니다.
 ```
-$ git clone https://github.com/TrulyBright/sc2mafia
+$ git clone https://github.com/TrulyBright/sc2mafia.git
 ```
 2. SQLite3을 설치합니다.
 ```
@@ -26,11 +26,15 @@ $ pip install -r requirements.txt
 ```
 $ sqlite3 sql/users.db < sql/schema.sql
 ```
-7. 서버를 실행합니다.
+7. 웹서버를 실행합니다.
 ```
-$ python main.py
+$ python webServer.py
 ```
-8. `localhost:8080`으로 접속하면 사이트가 나옵니다.
+8. 터미널을 하나 더 켜서 게임서버를 실행합니다.
+```
+$ python gameServer.py
+```
+9. `localhost:8080`으로 접속하면 사이트가 나옵니다.
 
 ## 구현된 기능
 

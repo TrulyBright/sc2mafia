@@ -119,7 +119,7 @@ async def leave_GameRoom(sid, data):
                       'who': (await sio.get_session(room.host))['nickname']},
                      room=roomID)
     if not room.members:
-      sio.close_room(roomID)
+      await sio.close_room(roomID)
       del room_list[roomID]
     await sio.emit('notification',
                    {'type': 'leave',
