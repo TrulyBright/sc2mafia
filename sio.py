@@ -152,6 +152,10 @@ async def broadcast_room_list():
   to_send = {roomID:room.title for roomID, room in room_list.items()}
   await sio.emit('room_list', to_send)
 
+@sio.event
+async def request_room_list(sid, data):
+  to_send = {roomID:room.title for roomID, room in room_list.items()}
+  await sio.emit('room_list', to_send, room=sid)
 
 
 @sio.event

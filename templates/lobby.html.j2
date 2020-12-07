@@ -37,6 +37,7 @@
   <script type="text/javascript">
     'use strict';
     const Socket = io('http://localhost:8090');
+    Socket.emit('request_room_list', {});
     let create_room_button = document.querySelector('.create_room_button');
 
     function enter_room () {
