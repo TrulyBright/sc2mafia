@@ -10,7 +10,7 @@ from game.game import GameRoom
 
 
 
-sio = socketio.AsyncServer(async_mode='sanic')
+sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='http://localhost:8080')
 
 room_list = {}
 next_roomID = 1
@@ -145,7 +145,7 @@ async def create_GameRoom(sid, data):
     await sio.emit('create_GameRoom_success', next_roomID, room=sid)
     next_roomID+=1
     await broadcast_room_list()
-    
+
 
 
 async def broadcast_room_list():

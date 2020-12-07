@@ -13,7 +13,7 @@
   <script src="/static/socket.io.js" charset="utf-8"></script>
   <script type="text/javascript">
     'use strict';
-    const Socket = io.connect('http://localhost:8080');
+    const Socket = io.connect('http://localhost:8090');
     let chatLog = document.getElementById('messages');
 
     Socket.emit('enter_GameRoom', {
