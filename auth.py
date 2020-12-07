@@ -1,5 +1,4 @@
 import aiosqlite
-import sqlalchemy as sa
 from passlib.hash import sha256_crypt
 
 import re
