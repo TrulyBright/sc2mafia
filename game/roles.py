@@ -91,9 +91,10 @@ class NeutralEvil(Neutral):
 class NeutralKilling(NeutralEvil):
     pass
 
+
 # Cult
 class Cult(NeutralEvil):
-    category = '이교도'
+    pass
 
 
 """
@@ -269,3 +270,56 @@ class Silencer(TriadSupport):
 
 class Vanguard(TriadSupport):
     name = "선봉"
+
+
+# Neutral
+class Amnesiac(NeutralBenign):
+    name = "기억상실자"
+
+
+class Arsonist(NeutralKilling):
+    name = "방화범"
+
+
+class Auditor(NeutralEvil):
+    name = "회계사"
+
+
+class Cultist(Cult):
+    name = "이교도"
+
+
+class Executioner(NeutralBenign):
+    name = "처형자"
+
+
+class Jester(NeutralBenign):
+    name = "어릿광대"
+
+
+class Judge(NeutralEvil):
+    name = "판사"
+
+
+class MassMurderer(NeutralKilling):
+    name = "대량 학살자"
+
+
+class Scumbag(NeutralEvil):
+    name = "인간쓰레기"
+
+
+class SerialKiller(NeutralKilling):
+    name = "연쇄살인마"
+
+
+class Survivor(NeutralBenign):
+    name = "생존자"
+
+
+class Witch(NeutralEvil):
+    name = "마녀"
+
+
+class WitchDoctor(Cult):
+    name = "요술사"
