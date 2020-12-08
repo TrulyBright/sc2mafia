@@ -1,20 +1,45 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>SC2 Mafia</title>
+    <link rel="icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="/static/css/general.css">
+    <link rel="stylesheet" href="/static/css/room.css">
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form onsubmit="send_message(event);">
-      <input id="chat" autocomplete="off" /><button class="send_message_button">전송</button>
+    <header>
+      <nav>
+        <a href="/lobby" rel="home">
+          <img src="/static/images/logo.png" alt="logo" id="logo">
+          <h1>SC2 Mafia</h1>
+        </a>
+        <ul>
+          <li><a href="/about" rel="about">소개</a></li>
+          <li><a href="/lobby" rel="lobby">로비</a></li>
+          <li><a href="/archive" rel="archive">기록실</a></li>
+        </ul>
+      </nav>
+    </header>
+    <form class="" action="/lobby" method="get">
+      <button type="submit" name="button">나가기</button>
     </form>
+    <section class="main">
+      <ul id="messages"></ul>
+      <form onsubmit="send_message(event);" class="message_input_form">
+        <input id="chat" autocomplete="off" placeholder="여기에 할말 입력"/><button class="send_message_button">전송</button>
+      </form>
+    </section>
   </body>
-  <script src="/static/socket.io.js" charset="utf-8"></script>
+  <script src="/static/js/socket.io.js" charset="utf-8"></script>
   <script type="text/javascript">
     'use strict';
     const Socket = io.connect('http://localhost:8090');
     let chatLog = document.getElementById('messages');
+
+    function updateScroll () {
+      let chatBox = document.querySelector('#messages');
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
     Socket.emit('enter_GameRoom', {
       'roomID': {{roomID}},
@@ -34,6 +59,7 @@
         default:
           console.log(data);
       }
+      updateScroll();
     });
 
     Socket.on('message', (data)=> {
@@ -41,6 +67,7 @@
       let chat = document.createElement("li");
       chat.innerHTML = data['who']+': '+data['message'];
       chatLog.appendChild(chat);
+      updateScroll();
     });
 
     Socket.on('role', (role)=> {
@@ -56,11 +83,11 @@
 
     Socket.on('vote', (data)=>{
       console.log(data);
-    })
+    });
 
     Socket.on('game_over', (data)=>{
       console.log(data);
-    })
+    });
 
     function send_message(event) {
       event.preventDefault();

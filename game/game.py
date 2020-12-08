@@ -33,8 +33,8 @@ class GameRoom:
           assert target1 in self.players
           assert target2 in self.players
         elif len(msg)==2:
-          cmd, target = msg
-          assert target in self.players
+          cmd, target1 = msg
+          assert target1 in self.players
         else:
           cmd = msg[0]
         if cmd=='/시작' and sid==self.host and not self.inGame:
@@ -43,7 +43,7 @@ class GameRoom:
           await self.finish_game(sio)
         elif cmd=='/투표' and self.STATE == 'VOTE':
           voter = self.players[user['nickname']]
-          voted = self.players[target]
+          voted = self.players[target1]
           to_send = {
             'voter': voter.nickname,
             'voted': voted.nickname

@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+}
+body {
+}
+
+.message_input_form {
+  background: #2C2F33;
+  padding: 3px;
+  width: auto;
+}
+
+.message_input_form input {
+  border: 0;
+  padding: 10px;
+  width: 100%;
+  margin-right: 0.5%;
+  color: white;
+  background-color: black;
+}
+
+.message_input_form button {
+  width: 9%;
+  border: none;
+  margin: 0;
+  padding: 10px;
+  display: none;
+}
+
+#messages {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid white;
+  height: 400px;
+  overflow-y: scroll;
+}
+
+#messages li {
+  padding: 5px 10px;
+}
+
+#messages li:nth-child(odd) {
+  background: #23272A;
+}

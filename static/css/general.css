@@ -1,0 +1,51 @@
+body {
+  padding-top: 51px;
+  color: white;
+  background-color: black;
+}
+
+a:link, a:visited {
+  color: white;
+  text-decoration: none;
+}
+header {
+  height: 50px;
+  background-color: #2C2F33;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  margin-top: 0;
+  margin-bottom: 50px;
+  border-bottom: 1px solid white;
+}
+
+header nav {
+  margin: 0 auto;
+}
+
+header nav h1 {
+  float: left;
+  margin: 0 auto;
+  line-height: 50px;
+}
+
+header nav ul {
+  float: right;
+  list-style-type: none;
+}
+header nav ul li {
+  float: left;
+  margin: 0 15px;
+}
+
+header nav ul li a {
+  display: block;
+}
+
+#logo {
+  height: 50px;
+  width: auto;
+  float: left;
+  margin-left: 50px;
+}

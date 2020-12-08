@@ -2,26 +2,27 @@
 <html lang="ko" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>Mafia</title>
+    <title>SC2 Mafia</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="icon" href="/static/images/favicon.ico">
   </head>
   <body>
-    <h1>Mafia</h1>
     {% if logged_in %}
-      <form action="/lobby" method="get">
-        <input type="submit" value="로비로 가기">
+      <form class="login-form" action="/lobby" method="get">
+        <p class="login-text">SC2 -Mafia-</p>
+        <input type="submit" value="로비로 가기" class="login-submit">
       </form>
     {% else %}
-    <p>Please Login</p>
-      <form action="/login" method="post">
-        <input type="text" name="username" placeholder="username">
-        <br>
-        <input type="password" name="password" placeholder="password">
-        <input type="submit" value="접속">
-      </form>
-      <form class="" action="/register">
-        <input type="submit" name="" value="회원가입">
-      </form>
+    <form class="login-form" action="/login" method="post">
+      <p class="login-text">SC2 -Mafia-</p>
+      <input type="text" name="username" class="login-username" autofocus="true" required="true" placeholder="ID" />
+      <input type="password" name="password" class="login-password" required="true" placeholder="비밀번호" />
+      <input type="submit" name="Login" value="접속" class="login-submit" />
+    </form>
     {% endif %}
+    <a href="#" class="login-forgot-pass">비밀번호를 잊어버렸다면</a>
+    <div class="underlay-photo"></div>
+    <div class="underlay-black"></div>
   </body>
   <script type="text/javascript">
   </script>

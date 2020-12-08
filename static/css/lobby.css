@@ -1,0 +1,14 @@
+.main {
+  margin-left: 300px;
+  margin-right: 100px;
+}
+
+.room_list_section {
+  height: 400px;
+  border: white solid 1px;
+  overflow: auto;
+}
+
+#create_GameRoom_section {
+  display: none;
+}
