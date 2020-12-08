@@ -1,6 +1,6 @@
 .main {
-  margin-left: 300px;
-  margin-right: 100px;
+  width: 70%;
+  margin: auto;
 }
 
 .room_list_section {

@@ -109,11 +109,10 @@ async def leave_GameRoom(sid, data):
     print(user['username'], 'leaves room #', roomID)
     sio.leave_room(sid, roomID)
     del user['room']
-    await broadcast_room_list()
     await sio.save_session(sid, user)
     if sid == room.host and room.members:
       room.host = room.members[0]
-      print('room #', roomID, 'new host to', room.host)
+      print('room #', roomID, 'new host to', (await sio.get_session(room.host)['nickname']))
       await sio.emit('notification',
                      {'type': 'newhost',
                       'who': (await sio.get_session(room.host))['nickname']},
@@ -121,10 +120,11 @@ async def leave_GameRoom(sid, data):
     if not room.members:
       await sio.close_room(roomID)
       del room_list[roomID]
+    await broadcast_room_list()
     await sio.emit('notification',
                    {'type': 'leave',
                     'who': user['nickname'],},
-                    room=room)
+                    room=roomID)
 
 
 
@@ -152,10 +152,13 @@ async def broadcast_room_list():
   to_send = {roomID:room.title for roomID, room in room_list.items()}
   await sio.emit('room_list', to_send)
 
+
+
 @sio.event
 async def request_room_list(sid, data):
   to_send = {roomID:room.title for roomID, room in room_list.items()}
   await sio.emit('room_list', to_send, room=sid)
+
 
 
 @sio.event

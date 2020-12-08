@@ -50,11 +50,15 @@
       switch (data['type']) {
         case 'enter':
           chat.innerHTML = data['who']+'님이 입장했습니다.';
-          chatLog.appendChild(chat)
+          chatLog.appendChild(chat);
+          break;
+        case 'leave':
+          chat.innerHTML = data['who']+'님이 퇴장했습니다.';
+          chatLog.appendChild(chat);
           break;
         case 'newhost':
           chat.innerHTML = data['who']+'님이 방장이 되었습니다.';
-          chatLog.appendChild(chat)
+          chatLog.appendChild(chat);
           break;
         default:
           console.log(data);
@@ -70,23 +74,17 @@
       updateScroll();
     });
 
-    Socket.on('role', (role)=> {
-      console.log(role);
+    Socket.on('event', (data)=> {
+      console.log(data);
       let chat = document.createElement("li");
-      chat.innerHTML = '당신의 직업은 '+role+'입니다.';
-      chatLog.appendChild(chat);
-    });
-
-    Socket.on('state', (state)=>{
-      console.log(state);
-    });
-
-    Socket.on('vote', (data)=>{
-      console.log(data);
-    });
-
-    Socket.on('game_over', (data)=>{
-      console.log(data);
+      switch (data['type']) {
+        case 'role':
+          let role = data['role'];
+          chat.innerHTML = '당신의 직업은 '+role+'입니다.';
+          chatLog.appendChild(chat);
+          break;
+        default:
+      }
     });
 
     function send_message(event) {

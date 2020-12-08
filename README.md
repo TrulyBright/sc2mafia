@@ -20,7 +20,7 @@ $ cd sc2mafia
 ```
 5. 파이썬 패키지들을 설치합니다.
 ```
-$ pip install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
 6. SQLite DB 스키마를 적용합니다.
 ```
@@ -28,11 +28,11 @@ $ sqlite3 sql/users.db < sql/schema.sql
 ```
 7. 웹서버를 실행합니다.
 ```
-$ python webServer.py
+$ python3 webServer.py
 ```
 8. 터미널을 하나 더 켜서 게임서버를 실행합니다.
 ```
-$ python gameServer.py
+$ python3 gameServer.py
 ```
 9. `localhost:8080`으로 접속하면 사이트가 나옵니다.
 
@@ -40,4 +40,4 @@ $ python gameServer.py
 
 ## 구현된 직업
 
-## 보안 문제
+## 구현할 기능
