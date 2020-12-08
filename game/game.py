@@ -81,7 +81,7 @@ class GameRoom:
                     else:
                         await self.vote_execution(voter, guilty=True)
                         data = {
-                            'type': 'vote_execution'
+                            'type': 'vote_execution',
                             'voter': voter.nickname,
                         }
                         await sio.emit('event', data, room=self.roomID)
@@ -92,7 +92,7 @@ class GameRoom:
                     if voter.has_voted:
                         self.cancel_vote(voter)
                         data = {
-                            'type': 'vote_cancel'
+                            'type': 'vote_cancel',
                             'voter': voter.nickname,
                         }
                         await sio.emit('event', data, room=self.roomID)
@@ -174,6 +174,10 @@ class GameRoom:
                     await sio.emit('event', data, room=p.sid)
                 else:
                     p.target1.target1 = p.target2
+                    data = {
+                        'type': 'result',
+                        'role': 'role'
+                    }
 
         for p in self.players:
             if type(p.role) == roles.Escort and p.target1 is not None:

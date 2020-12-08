@@ -5,7 +5,6 @@ import aioredis
 from sanic_session import Session, AIORedisSessionInterface
 
 from routes import setup_routes
-from sio import setup_socketio
 
 app = Sanic(__name__)
 
