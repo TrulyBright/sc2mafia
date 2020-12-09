@@ -165,6 +165,10 @@ class Mayor(TownGovernment):
     name = "시장"
 
 
+class Sheriff(TownInvestigative):
+    name = "보안관"
+
+
 class Spy(TownPower):
     name = "정보원"
 
