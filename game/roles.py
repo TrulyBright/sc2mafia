@@ -187,7 +187,7 @@ class Sheriff(TownInvestigative):
             if isinstance(role, killing):
                 return killing.name
         return False
-        
+
 
 class Spy(TownPower):
     name = "정보원"
@@ -221,6 +221,8 @@ class Blackmailer(MafiaSupport):
 
 class Consigliere(MafiaSupport):
     name = "조언자"
+    def check(self, target):
+        return target.role.name
 
 
 class Consort(MafiaSupport):
@@ -254,6 +256,8 @@ class Mafioso(MafiaKilling):
 #Triad
 class Administrator(TriadSupport):
     name = "백지선"
+    def check(self, target):
+        return target.role.name
 
 
 class Deceiver(TriadDeception):
