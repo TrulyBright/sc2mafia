@@ -94,8 +94,7 @@ class NeutralKilling(NeutralEvil):
 
 # Cult
 class Cult(NeutralEvil):
-    pass
-
+    team = "이교도"
 
 """
 ==========
@@ -128,6 +127,9 @@ class Crier(TownGovernment):
 class Detective(TownInvestigative):
     name = "형사"
 
+    def check(self, target):
+        return None if target.target1 is None else target.target1.nickname
+
 
 class Doctor(TownProtective):
     name = "의사"
@@ -139,6 +141,8 @@ class Escort(TownProtective):
 
 class Investigator(TownInvestigative):
     name = "탐정"
+    def check(self, target):
+        return target.crimes
 
 
 class Jailor(TownPower, TownKilling):
@@ -147,6 +151,8 @@ class Jailor(TownPower, TownKilling):
 
 class Lookout(TownInvestigative):
     name = "감시자"
+    def check(self, target):
+        return target.visited_by
 
 
 class Marshall(TownGovernment):
@@ -167,7 +173,21 @@ class Mayor(TownGovernment):
 
 class Sheriff(TownInvestigative):
     name = "보안관"
-
+    def check(self, target):
+        role = target.role
+        if isinstance(role, Mafia):
+            return Mafia.team
+        if isinstance(role, Triad):
+            return Triad.team
+        if isinstance(role, Cult):
+            return Cult.team
+        for killing in (SerialKiller,
+                        MassMurderer,
+                        Arsonist):
+            if isinstance(role, killing):
+                return killing.name
+        return False
+        
 
 class Spy(TownPower):
     name = "정보원"
