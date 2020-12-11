@@ -8,11 +8,14 @@
   <body>
     {% if register_failed %}
       <p>회원가입에 실패했습니다.</p>
-      {% if reason=="username_duplicate" %}
+      {% if reason=='UsernameDucpliateError' %}
         <p>이미 사용 중인 사용자명입니다.</p>
-      {% endif %}
-      {% if reason=="nickname_duplicate" %}
+      {% elif reason=='NicknameDuplicateError' %}
         <p>이미 사용 중인 닉네임입니다.</p>
+      {% elif reason=='ImproperUsernameError' %}
+        <p>사용자명이 올바르지 않습니다.</p>
+      {% elif reason=='ImproperNicknameError' %}
+        <p>닉네임이 올바르지 않습니다.</p>
       {% endif %}
     {% endif %}
     <form action="/register" method="post">

@@ -2,7 +2,10 @@ from sanic.response import redirect, text
 # from sanja import render
 from jinja2_sanic import template, render_template
 
-from auth import check_credentials, create_user, get_nickname
+from auth import (
+    authenticate, create_user, get_nickname,
+    ImproperNicknameError, ImproperUsernameError,
+    NicknameDuplicateError, UsernameDucpliateError)
 
 
 @template('index.html.j2')
@@ -23,22 +26,23 @@ async def login_get(request):
 async def login_post(request):
     username = request.form.get('username')
     password = request.form.get('password')
-    if await check_credentials(username, password):
-        request.ctx.session['logged_in'] = True
-        request.ctx.session['username'] = username
-        request.ctx.session['nickname'] = await get_nickname(username)
-        return redirect('/lobby')
-    return redirect('/login?login_failed=True')
+    try:
+        if await authenticate(username, password):
+            request.ctx.session['logged_in'] = True
+            request.ctx.session['username'] = username
+            request.ctx.session['nickname'] = await get_nickname(username)
+            return redirect('/lobby')
+    except:
+        return redirect('/login?login_failed=True')
 
 
 @template('register.html.j2')
 async def register_get(request):
     if request.args.get('register_failed'):
         reason = request.args.get('reason')
-        to_send = {'register_failed': True,
+        data = {'register_failed': True,
                    'reason': reason, }
-        print(to_send)
-        return to_send
+        return data
     return {}
 
 
@@ -46,11 +50,11 @@ async def register_post(request):
     username = request.form.get('username')
     password = request.form.get('password')
     nickname = request.form.get('nickname')
-    result = await create_user(username, password, nickname)
-    if result == 'success':
+    try:
+        await create_user(username, password, nickname)
         return redirect('/')
-    else:
-        return redirect(f'/register?register_failed=True&reason={result}')
+    except Exception as e:
+        return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}')
 
 
 @template('lobby.html.j2')
