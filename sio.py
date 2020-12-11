@@ -112,7 +112,7 @@ async def leave_GameRoom(sid, data):
     await sio.save_session(sid, user)
     if sid == room.host and room.members:
       room.host = room.members[0]
-      print('room #', roomID, 'new host to', (await sio.get_session(room.host)['nickname']))
+      print('room #', roomID, 'new host to', (await sio.get_session(room.host))['nickname'])
       await sio.emit('notification',
                      {'type': 'newhost',
                       'who': (await sio.get_session(room.host))['nickname']},

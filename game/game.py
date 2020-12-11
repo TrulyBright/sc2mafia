@@ -156,7 +156,8 @@ class GameRoom:
                 voter.voted_to_which = None
 
     def killable(self, attacker, attacked):
-        return attacker.role.offense_level > attacked.role.defense_level
+        # return attacker.role.offense_level > attacked.role.defense_level
+        return True
 
     async def trigger_night_events(self, sio):
         # 생존자 방탄 착용
@@ -250,6 +251,8 @@ class GameRoom:
         self.die_today = set()
         # 퇴역군인에게 간 애들부터 죽는다.
         for p in self.alive_list:
+            if p.target1 is None:
+                continue
             if isinstance(p.target1.role, roles.Veteran)\
             and p.target1.alert_today:
                 data = {
@@ -449,7 +452,7 @@ class GameRoom:
                     await victim.die(attacker=p)
 
         # 대량학살자 살인 적용
-        for p in self.ailve_list:
+        for p in self.alive_list:
             if isinstance(p.role, roles.MassMurderer) and p.murder_today is not None\
             and p.target1 is not None:
                 victims = [v for v in self.alive_list if v.target1 is p.target1\
@@ -470,17 +473,18 @@ class GameRoom:
         # 어릿광대 자살 적용
         candidates = [p for p in self.alive_list if p.voted_to_execution_of_jester]
         random.shuffle(candidates)
-        victim = candidates.pop()
-        if victim.healed_by:
-            H = victim.healed_by.pop()
-            class Dummy: # dummy class
-                pass
-            dummy = Dummy()
-            dummy.role = Dummy()
-            dummy.role.name = '어릿광대'
-            await victim.healed(attacker=dummy, healer=H)
-        else:
-            await victim.suicide(reason=roles.Jester.name)
+        if candidates:
+            victim = candidates.pop()
+            if victim.healed_by:
+                H = victim.healed_by.pop()
+                class Dummy: # dummy class
+                    pass
+                dummy = Dummy()
+                dummy.role = Dummy()
+                dummy.role.name = '어릿광대'
+                await victim.healed(attacker=dummy, healer=H)
+            else:
+                await victim.suicide(reason=roles.Jester.name)
 
         # TODO: 심장마비 자살
         # TODO: 변장자
@@ -502,8 +506,8 @@ class GameRoom:
 
         # 마녀 저주 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.Witch) and p.curse_today\
-            and p.curse_target is not None:
+            if isinstance(p.role, roles.Witch)\
+            and p.curse_target is not None and not p.has_cursed:
                 victim = p.curse_target
                 if victim.healed_by:
                     H = victim.healed_by.pop()
@@ -523,7 +527,7 @@ class GameRoom:
             for investigating_role in (roles.TownInvestigative,
                                        roles.Consigliere,
                                        roles.Administrator):
-                if isinstance(p.role, investigating_role):
+                if isinstance(p.role, investigating_role) and p.target1 is not None:
                     result = p.role.check(p.target1)
                     data = {
                         'type': 'check_result',
@@ -539,13 +543,36 @@ class GameRoom:
         # TODO: 마피아/삼합회 영입
 
 
-    async def clear_flags(self):
-        pass
+    async def clear_up(self):
+        for p in self.alive_list:
+            p.has_voted = False
+            p.voted_to_whom = None
+            p.voted_to_execution_of_jester = False
+            p.has_voted_in_execution_vote = False
+            p.voted_to_which = None
+            p.votes_gotten = 0
+            p.voted_guilty = 0
+            p.voted_innocent = 0
+            p.visited_by.append(set())
+            p.wear_vest_today = False
+            p.alert_today = False
+            p.burn_today = False
+            p.curse_today = False
+            p.suicide_today = False
+            p.protected_from_cult = False
+            p.protected_from_auditor = False
+            p.kill_the_jailed_today = False
+            p.jailed = False
+            p.bodyguarded_by = []
+            p.healed_by = []
+            p.target1 = None
+            p.target2 = None
+            p.curse_target = None
+            p.has_jailed_whom = None
 
     def game_over(self):
-        alive = [p for p in self.players.values() if p.alive]
-        for p in alive:
-            if p.role.team != alive[0].role.team:
+        for p in self.alive_list:
+            if p.role.team != self.alive_list[0].role.team:
                 return False
         return True
 
@@ -576,7 +603,7 @@ class GameRoom:
         for p in self.players.values():
             data = {
                 'type': 'role',
-                'role': p,
+                'role': p.role.name,
             }
             await sio.emit('event', data, room=p.sid)
 
@@ -665,13 +692,15 @@ class GameRoom:
             }
             await sio.emit('event', data, room=self.roomID)
             await self.trigger_night_events(sio)
+            await self.clear_up()
 
     async def finish_game(self, sio):
         self.inGame = False
         to_send = {
-            'winner': [p.nickname for p in self.players.values() if p.alive]
+            'type': 'game_over',
+            'winner': [p.nickname for p in self.alive_list]
         }
-        await sio.emit('game_over', to_send,  room=self.roomID)
+        await sio.emit('event', to_send,  room=self.roomID)
 
 
 class Player:
@@ -703,7 +732,8 @@ class Player:
         self.kill_the_jailed_today = False
         self.oiled = False
         self.jailed = False
-        self.disguised = False
+        self.has_disguised = False
+        self.has_cursed = False
         self.bodyguarded_by = [] # list of Player objects
         self.healed_by = [] # list of Player objects
         self.target1 = None
@@ -712,8 +742,9 @@ class Player:
         self.has_jailed_whom = None
         self.crimes = set()
 
-    async def die(self, attacker, dead_while_guarding):
+    async def die(self, attacker, dead_while_guarding=False):
         self.room.die_today.add(self)
+        self.alive = False
         data = {
             'type': 'dead',
             'attacker': attacker.role.name,

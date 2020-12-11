@@ -1,6 +1,8 @@
 class Role:
     def __init__(self):
         self.detection_immune = False
+        self.offense_level = 0
+        self.defense_level = 0
 
 
 """

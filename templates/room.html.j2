@@ -76,15 +76,6 @@
 
     Socket.on('event', (data)=> {
       console.log(data);
-      let chat = document.createElement("li");
-      switch (data['type']) {
-        case 'role':
-          let role = data['role'];
-          chat.innerHTML = '당신의 직업은 '+role+'입니다.';
-          chatLog.appendChild(chat);
-          break;
-        default:
-      }
     });
 
     function send_message(event) {
