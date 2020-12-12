@@ -53,7 +53,7 @@ async def register_post(request):
     try:
         await create_user(username, password, nickname)
         return redirect('/')
-    except Exception as e:
+    except (ImproperNicknameError, ImproperUsernameError, NicknameDuplicateError, UsernameDucpliateError) as e:
         return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}')
 
 
