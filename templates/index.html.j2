@@ -18,6 +18,7 @@
       <input type="text" name="username" class="login-username" autofocus="true" required="true" placeholder="ID" />
       <input type="password" name="password" class="login-password" required="true" placeholder="비밀번호" />
       <input type="submit" name="Login" value="접속" class="login-submit" />
+      <button type="button" name="register_button" class="login-submit">회원가입</button>
     </form>
     {% endif %}
     <a href="#" class="login-forgot-pass">비밀번호를 잊어버렸다면</a>
@@ -25,5 +26,11 @@
     <div class="underlay-black"></div>
   </body>
   <script type="text/javascript">
+    'use strict';
+    let register_button = document.getElementsByName('register_button')[0];
+    console.log(register_button);
+    register_button.onclick = (event) => {
+      location.href = '/register';
+    };
   </script>
 </html>
