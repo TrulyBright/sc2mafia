@@ -30,7 +30,7 @@ def proper_username(username):
 
 def proper_nickname(nickname):
     # 한글과 영어와 숫자로만 되었는지 판별하는 함수
-    return len(re.findall('[가-힣]|[a-z]|[A-Z]|[0-9]', username)) == len(username)
+    return len(re.findall('[가-힣]|[a-z]|[A-Z]|[0-9]', nickname)) == len(nickname)
 
 
 async def authenticate(username, password) -> bool:
