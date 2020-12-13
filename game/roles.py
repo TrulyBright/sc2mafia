@@ -108,6 +108,9 @@ Roles
 # Town
 class Bodyguard(TownProtective, TownKilling):
     name = "경호원"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 2
 
 
 class BusDriver(TownProtective, TownPower):
@@ -205,6 +208,9 @@ class Veteran(TownKilling, TownPower):
 
 class Vigilante(TownKilling):
     name = "자경대원"
+    def __init__(self):
+        super().__init__()
+        offense_level = 1
 
 
 # Mafia
@@ -233,6 +239,7 @@ class Consort(MafiaSupport):
 
 class Disguiser(MafiaDeception, MafiaSupport):
     name = "변장자"
+    offense_level = 1
 
 
 class Framer(MafiaDeception):
@@ -241,6 +248,9 @@ class Framer(MafiaDeception):
 
 class Godfather(MafiaKilling):
     name = "대부"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 class Janitor(MafiaDeception):
@@ -253,6 +263,9 @@ class Kidnapper(MafiaKilling, MafiaSupport):
 
 class Mafioso(MafiaKilling):
     name = "마피아 일원"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 #Triad
@@ -268,10 +281,17 @@ class Deceiver(TriadDeception):
 
 class DragonHead(TriadKilling):
     name = "용두"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.defense_level = 1
 
 
 class Enforcer(TriadKilling):
     name = "홍곤"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 class Forger(TriadDeception):
@@ -284,6 +304,9 @@ class IncenseMaster(TriadDeception):
 
 class Informant(TriadDeception, TriadKilling):
     name = "밀고자"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 class Interrogator(TriadKilling, TriadSupport):
@@ -309,6 +332,10 @@ class Amnesiac(NeutralBenign):
 
 class Arsonist(NeutralKilling):
     name = "방화범"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.defense_level = 1
 
 
 class Auditor(NeutralEvil):
@@ -333,6 +360,10 @@ class Judge(NeutralEvil):
 
 class MassMurderer(NeutralKilling):
     name = "대량 학살자"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.defense_level = 1
 
 
 class Scumbag(NeutralEvil):
@@ -341,6 +372,10 @@ class Scumbag(NeutralEvil):
 
 class SerialKiller(NeutralKilling):
     name = "연쇄살인마"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.defense_level = 1
 
 
 class Survivor(NeutralBenign):
