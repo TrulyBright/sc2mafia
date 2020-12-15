@@ -32,6 +32,8 @@ async def login_post(request):
             request.ctx.session['username'] = username
             request.ctx.session['nickname'] = await get_nickname(username)
             return redirect('/lobby')
+        else:
+            return redirect('/login?login_failed=True')
     except:
         return redirect('/login?login_failed=True')
 

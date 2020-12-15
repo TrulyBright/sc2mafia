@@ -36,7 +36,7 @@ def proper_nickname(nickname):
 async def authenticate(username, password) -> bool:
     async with aiosqlite.connect('sql/users.db') as DB:
         if not proper_username(username):
-            return False
+            raise ImproperUsernameError
         query = f"SELECT * FROM users WHERE username='{username}'"
         cursor = await DB.execute(query)
         user = await cursor.fetchone()
