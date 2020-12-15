@@ -130,9 +130,10 @@ class GameRoom:
                     }
                     await sio.emit('event', data, room=V.sid)
             else:
-                to_send = {'who': user['nickname'],
-                           'message': msg, }
-                await sio.emit('message', to_send, room=self.roomID)
+                data = {'type': 'message',
+                        'who': user['nickname'],
+                        'message': msg, }
+                await sio.emit('event', data, room=self.roomID)
 
     def vote(self, voter, voted):
         assert self.STATE == 'VOTE'
@@ -216,6 +217,8 @@ class GameRoom:
                     p.target1.target1 = p.target2
                     data = {
                         'type': 'Witch_control_success',
+                        'target1': p.target1.nickname,
+                        'target2': p.target2.nickname,
                     }
                     await sio.emit('event', data, room=p.sid)
                     data = {
@@ -287,6 +290,7 @@ class GameRoom:
                 p.target1.oiled = True
                 data = {
                     'type': 'oiling_success',
+                    'target1': p.target1.nickname,
                 }
                 await sio.emit('event', data, room=p.sid)
 
@@ -370,6 +374,7 @@ class GameRoom:
                 await self.emit_sound(sio, 'Jailor')
                 await p.has_jailed_whom.die(attacker=p)
 
+        # TODO: 조종자살 구현
         # 자경대원의 대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Vigilante) and p.target1 is not None:
@@ -704,7 +709,7 @@ class GameRoom:
         self.inGame = True
         self.election = asyncio.Event()
         self.day = 0
-        if self.setup.get('default'):
+        if self.setup['basic']:
             self.STATE = 'MORNING'  # game's first state when game starts
             self.MORNING_TIME = 5
             self.DISCUSSION_TIME = 10
@@ -712,20 +717,25 @@ class GameRoom:
             self.DEFENSE_TIME = 10
             self.VOTE_EXECUTION_TIME = 10
             self.EVENING_TIME = 30
-        roles_to_distribute = [roles.Bodyguard(),
-                               roles.Veteran(),
-                               roles.Mafioso(),
-                               roles.Escort(),
-                               roles.Beguiler(),
-                               roles.SerialKiller(),]
+        if self.setup['type'] == '8331':
+            pass
+        elif self.setup['type'] == 'power_conflict':
+            pass
+        elif self.setup['type'] == 'test':
+            roles_to_distribute = [roles.Bodyguard(),
+                                   roles.Veteran(),
+                                   roles.Mafioso(),
+                                   roles.Escort(),
+                                   roles.Beguiler(),
+                                   roles.SerialKiller(),]
         # random.shuffle(roles_to_distribute)
         self.players = {(await sio.get_session(sid))['nickname']:
                         Player(sid=sid,
                                room=self,
                                nickname=(await sio.get_session(sid))['nickname'],
-                               role=roles_to_distribute[index],
+                               role=roles_to_distribute.pop(),
                                sio=sio)
-                        for index, sid in enumerate(self.members)}
+                               for sid in self.members}
         self.alive_list = list(self.players.values())
         for p in self.players.values():
             data = {

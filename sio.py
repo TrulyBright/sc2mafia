@@ -83,7 +83,7 @@ async def enter_GameRoom(sid, data):
                     room.justCreated = False
                 await sio.save_session(sid, user)
                 await sio.emit('enter_GameRoom_success', roomID, room=sid)
-                await sio.emit('notification',
+                await sio.emit('event',
                                {'type': 'enter',
                                 'who': user['nickname']},
                                room=roomID)
@@ -110,7 +110,7 @@ async def leave_GameRoom(sid, data):
         if sid == room.host and room.members:
             room.host = room.members[0]
             print('room #', roomID, 'new host to', (await sio.get_session(room.host))['nickname'])
-            await sio.emit('notification',
+            await sio.emit('event',
                            {'type': 'newhost',
                             'who': (await sio.get_session(room.host))['nickname']},
                            room=roomID)
@@ -118,7 +118,7 @@ async def leave_GameRoom(sid, data):
             await sio.close_room(roomID)
             del room_list[roomID]
         await broadcast_room_list()
-        await sio.emit('notification',
+        await sio.emit('event',
                        {'type': 'leave',
                         'who': user['nickname'], },
                        room=roomID)
@@ -137,7 +137,7 @@ async def create_GameRoom(sid, data):
                                           title=data['title'],
                                           capacity=data['capacity'],
                                           host=user,
-                                          setup={'default': True})
+                                          setup=data['setup'])
         await sio.emit('create_GameRoom_success', next_roomID, room=sid)
         next_roomID += 1
         await broadcast_room_list()

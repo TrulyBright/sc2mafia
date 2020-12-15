@@ -56,6 +56,15 @@
             <option value="15">15</option>
           </select>
         </p>
+        <p>설정:
+          <select class="setup" name="setup">
+            <optgroup label="기본 제공 설정">
+              <option value="test">시험용</option>
+              <option value="8331">8331</option>
+              <option value="power_conflict">공권력 충돌</option>
+            </optgroup>
+          </select>
+        </p>
       </section>
     </section>
   </body>
@@ -84,9 +93,14 @@
     function create_GameRoom (event) {
       let title = document.querySelector('.title').value;
       let capacity = document.querySelector('.capacity').value;
+      let setup = document.querySelector('.setup').value;
       Socket.emit('create_GameRoom', {
         'title': title,
         'capacity': Number(capacity),
+        'setup': {
+          'basic': 'true',
+          'type': setup,
+        }
       });
     };
 
