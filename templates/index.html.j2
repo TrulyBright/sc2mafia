@@ -13,24 +13,26 @@
         <input type="submit" value="로비로 가기" class="login-submit">
       </form>
     {% else %}
-    <form class="login-form" action="/login" method="post">
+    <form class="login-form" action="/login" method="get">
       <p class="login-text">SC2 -Mafia-</p>
-      <input type="text" name="username" class="login-username" autofocus="true" required="true" placeholder="ID" />
-      <input type="password" name="password" class="login-password" required="true" placeholder="비밀번호" />
-      <input type="submit" name="Login" value="접속" class="login-submit" />
-      <button type="button" name="register_button" class="login-submit">회원가입</button>
+      <div id="naverIdLogin"></div>
     </form>
     {% endif %}
     <a href="#" class="login-forgot-pass">비밀번호를 잊어버렸다면</a>
     <div class="underlay-photo"></div>
     <div class="underlay-black"></div>
   </body>
+  <script type="text/javascript" src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.0.js" charset="utf-8"></script>
   <script type="text/javascript">
     'use strict';
-    let register_button = document.getElementsByName('register_button')[0];
-    console.log(register_button);
-    register_button.onclick = (event) => {
-      location.href = '/register';
-    };
+    let naverLogin = new naver.LoginWithNaverId(
+		{
+			clientId: "bY2qhrwJZdj2joElsfWV",
+			callbackUrl: "http://localhost:8080/oauth",
+			isPopup: false, /* 팝업을 통한 연동처리 여부 */
+			loginButton: {color: "green", type: 3, height: 40} /* 로그인 버튼의 타입을 지정 */
+		});
+	/* 설정정보를 초기화하고 연동을 준비 */
+	 naverLogin.init();
   </script>
 </html>

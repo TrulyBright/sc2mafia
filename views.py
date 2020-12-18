@@ -2,10 +2,11 @@ from sanic.response import redirect, text
 # from sanja import render
 from jinja2_sanic import template, render_template
 
-from auth import (
-    authenticate, create_user, get_nickname,
-    ImproperNicknameError, ImproperUsernameError,
-    NicknameDuplicateError, UsernameDucpliateError)
+from auth import (create_user,
+                  ImproperNicknameError,
+                  NicknameDuplicateError,
+                  NicknameTooLongError,
+                  getUserByNaverId)
 
 
 @template('index.html.j2')
@@ -15,28 +16,31 @@ async def index(request):
     else:
         return {'logged_in': False}
 
-
-@template('login_page.html.j2')
-async def login_get(request):
-    if request.args.get('login_failed'):
-        return {'login_failed': True}
+@template('callback.html.j2')
+async def callback(request):
     return {}
 
-
-async def login_post(request):
-    username = request.form.get('username')
-    password = request.form.get('password')
-    try:
-        if await authenticate(username, password):
-            request.ctx.session['logged_in'] = True
-            request.ctx.session['username'] = username
-            request.ctx.session['nickname'] = await get_nickname(username)
-            return redirect('/lobby')
-        else:
-            return redirect('/login?login_failed=True')
-    except:
-        return redirect('/login?login_failed=True')
-
+async def login(request):
+    client = request.app.oauth_client
+    access_token = request.args.get('access_token').split('.')[1]
+    print(access_token)
+    url = 'https://openapi.naver.com/v1/nid/me'
+    headers = {
+        'Authorization': 'Bearer ' + access_token
+    }
+    async with client.get(url, headers=headers) as r:
+        result = await r.json()
+        if result['resultcode']!='00':
+            return text('로그인에 실패했습니다.')
+    naverId = result['response']['id']
+    user = await getUserByNaverId(naverId)
+    if user is None:
+        return redirect(f'/register?access_token={access_token}')
+    request.ctx.session['nickname'] = user[2]
+    request.ctx.session['is_superuser'] = user[3]
+    request.ctx.session['disabled'] = user[4]
+    request.ctx.session['logged_in'] = True
+    return redirect('/lobby')
 
 @template('register.html.j2')
 async def register_get(request):
@@ -49,19 +53,28 @@ async def register_get(request):
 
 
 async def register_post(request):
-    username = request.form.get('username')
-    password = request.form.get('password')
+    client = request.app.oauth_client
     nickname = request.form.get('nickname')
+    access_token = request.form.get('access_token')
+    url = 'https://openapi.naver.com/v1/nid/me'
+    headers = {
+        'Authorization': 'Bearer ' + access_token,
+    }
+    async with client.get(url, headers=headers) as r:
+        result = await r.json()
+        if result['resultcode']!='00':
+            return redirect('/register?register_failed=True&reason=access_token_not_valid')
+    naverId = result['response']['id']
     try:
-        await create_user(username, password, nickname)
+        await create_user(naverId, nickname)
         return redirect('/')
-    except (ImproperNicknameError, ImproperUsernameError, NicknameDuplicateError, UsernameDucpliateError) as e:
-        return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}')
+    except (ImproperNicknameError, NicknameDuplicateError, NicknameTooLongError) as e:
+        return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}&access_token={access_token}')
 
 
 @template('lobby.html.j2')
 async def lobby(request):
-    return {'': 23235}
+    return {}
 
 
 # @render('room.html.j2', 'html')

@@ -7,24 +7,25 @@
   </head>
   <body>
     {% if register_failed %}
-      <p>회원가입에 실패했습니다.</p>
-      {% if reason=='UsernameDucpliateError' %}
-        <p>이미 사용 중인 사용자명입니다.</p>
+      {% if reason=='NicknameTooLongError' %}
+        <p>닉네임이 너무 깁니다. 8자 이하로 해주세요.</p>
       {% elif reason=='NicknameDuplicateError' %}
         <p>이미 사용 중인 닉네임입니다.</p>
-      {% elif reason=='ImproperUsernameError' %}
-        <p>사용자명이 올바르지 않습니다.</p>
       {% elif reason=='ImproperNicknameError' %}
         <p>닉네임이 올바르지 않습니다.</p>
       {% endif %}
     {% endif %}
     <form action="/register" method="post">
-      <input type="text" name="username" placeholder="사용자명(영문)">
-      <br>
-      <input type="password" name="password" placeholder="비밀번호">
-      <br>
       <input type="text" name="nickname" placeholder="닉네임(한글, 영문)">
+      <input hidden type="text" name="access_token" value="" id="access_token_input">
       <input type="submit" value="회원가입">
     </form>
   </body>
+  <script type="text/javascript">
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const access_token = urlParams.get('access_token');
+    const access_token_input = document.querySelector('#access_token_input');
+    access_token_input.value = access_token;
+  </script>
 </html>

@@ -1,13 +1,7 @@
 import aiosqlite
-from passlib.hash import sha256_crypt
-
 import re
 
 
-class ImproperUsernameError(Exception):
-    """
-    Raised when username is improper
-    """
 
 class ImproperNicknameError(Exception):
     """
@@ -19,63 +13,36 @@ class NicknameDuplicateError(Exception):
     Raised when nickname is already occupied
     """
 
-class UsernameDucpliateError(Exception):
+class NicknameTooLongError(Exception):
     """
-    Raised when username is already occupied
+    Raised when nickname has more than 8 characters
     """
-
-def proper_username(username):
-    return username.isalnum()
 
 
 def proper_nickname(nickname):
     # 한글과 영어와 숫자로만 되었는지 판별하는 함수
-    return len(re.findall('[가-힣]|[a-z]|[A-Z]|[0-9]', nickname)) == len(nickname)
+    return nickname!='' and len(re.findall('[가-힣]|[a-z]|[A-Z]|[0-9]', nickname)) == len(nickname)
 
 
-async def authenticate(username, password) -> bool:
+async def create_user(naverId, nickname):
     async with aiosqlite.connect('sql/users.db') as DB:
-        if not proper_username(username):
-            raise ImproperUsernameError
-        query = f"SELECT * FROM users WHERE username='{username}'"
-        cursor = await DB.execute(query)
-        user = await cursor.fetchone()
-        if user is not None:
-            hashed = user[2]
-            return sha256_crypt.verify(password, hashed)
-    return False
-
-
-async def create_user(username, password, nickname) -> str:
-    async with aiosqlite.connect('sql/users.db') as DB:
-        if not proper_username(username):
-            raise ImproperUsernameError
-        query = f"SELECT * FROM users WHERE username='{username}'"
-        cursor = await DB.execute(query)
-        user = await cursor.fetchone()
-        if user is not None:  # username already occupied
-            raise UsernameDucpliateError
-
         if not proper_nickname(nickname):
             raise ImproperNicknameError
-
+        if len(nickname)>8:
+            raise NicknameTooLongError
         query = f"SELECT * FROM users WHERE nickname='{nickname}'"
         cursor = await DB.execute(query)
         user = await cursor.fetchone()
         if user is not None:  # nickname already occupied
             raise NicknameDuplicateError
-
-        query = f"INSERT INTO users(username, password, nickname) VALUES ('{username}', '{sha256_crypt.hash(password)}', '{nickname}')"
+        query = f"INSERT INTO users(naverId, nickname) VALUES ({naverId}, '{nickname}')"
         await DB.execute(query)
         await DB.commit()
-        return True
 
 
-async def get_nickname(username) -> str:
+async def getUserByNaverId(naverId):
     async with aiosqlite.connect('sql/users.db') as DB:
-        if not proper_username(username):
-            raise ImproperUsernameError
-        query = f"SELECT nickname FROM users WHERE username='{username}'"
+        query = f"SELECT * FROM users WHERE naverId={naverId}"
         cursor = await DB.execute(query)
-        nickname = (await cursor.fetchone())[0]
-        return nickname
+        user = await cursor.fetchone()
+        return user
