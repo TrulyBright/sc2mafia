@@ -109,6 +109,7 @@ class GameRoom:
                     visited = self.players[target1]
                     if isinstance(visitor.role, roles.MassMurderer) and visitor.cannot_murder_until >= self.day:
                         return
+                    # TODO: 이교도가 스스로 방문할 수 없게 할 것
                     visitor.target1 = visited
                     if target2 and (isinstance(visitor.role, roles.Witch) or isinstance(visitor.role, roles.BusDriver)):
                         visitor.target2 = self.players[target2]
@@ -203,8 +204,16 @@ class GameRoom:
         }
         await sio.emit('event', data, room=self.roomID)
 
-    async def change_role(self, sio, changed, changer, role):
-        changed_role =
+    async def convert_role(self, sio, convertor, converted, role):
+        converted.role = role
+        converted.role_record.append(role)
+        data = {
+            'type': 'role_change',
+            'role': role,
+            'convertor': convertor.role.name,
+        }
+        await sio.emit('event', data, room=converted.sid)
+
     async def trigger_night_events(self, sio):
         # 생존자 방탄 착용
         for p in self.alive_list:
@@ -251,6 +260,7 @@ class GameRoom:
             if isinstance(p.role, roles.Escort)\
             and p.target1:
                 p.target1.target1 = None
+                p.target1.recruit_target = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
                 data = {
@@ -263,6 +273,7 @@ class GameRoom:
             if isinstance(p.role, roles.Consort)\
             and p.target1:
                 p.target1.target1 = None
+                p.target1.recruit_target = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
                 data = {
@@ -275,6 +286,7 @@ class GameRoom:
             if isinstance(p.role, roles.Liaison)\
             and p.target1:
                 p.target1.target1 = None
+                p.target1.recruit_target = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
                 data = {
@@ -691,11 +703,133 @@ class GameRoom:
 
         # TODO: 변장자 이동
         # TODO: 어릿광대 괴롭히기
-        # TODO: 회계사 회계
-        # TODO: 비밀조합 영입
-        # TODO: 이교도 개종
-        # TODO: 마피아/삼합회 영입
 
+        # 회계
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Auditor) and p.target1:
+                if p.target1.defense_level > 0:
+                    data = {
+                        'type': 'unable_to_audit',
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                else:
+                    if p.target1 is p:
+                        await self.convert_role(sio, convertor=p, converted=p, role=roles.Stump())
+                    elif isinstance(p.target1.role, roles.Mafia):
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Mafioso())
+                    elif isinstance(p.target1.role, roles.Triad):
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Triad())
+                    elif isinstance(p.target1.role, roles.Town):
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Citizen())
+                    else: # audit neutral
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Scumbag())
+                    data = {
+                        'type': 'convert_success',
+                        'role': p.target1.role.name,
+                        'who': p.target1.nickname,
+                    }
+                    await sio.emit('event', data, room=p.sid)
+
+        # 비밀조합 영입
+        for p in self.alive_list:
+            if isinstance(p.role, roles.MasonLeader) and p.target1 and isinstance(p.target1.role, roles.Citizen):
+                await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Mason())
+                data = {
+                    'type': 'recruit_success',
+                    'role': p.target1.role.name,
+                    'who': p.target1.nickname,
+                }
+                await sio.emit('event', data, room=p.sid)
+            else:
+                data = {
+                    'type': 'recruit_failed'
+                }
+                await sio.emit('event', data, room=p.sid)
+
+        # 이교도 개종
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Cultist) and p.target1:
+                if isinstance(p.target1.role, roles.MasonLeader) or isinstance(p.target1.role, roles.Mason):
+                    data = {
+                        'type': 'recruited_by_cult',
+                        'who': p.nickname,
+                    }
+                    await sio.emit('event', data, room=p.target1.sid)
+                    data = {
+                        'type': 'tried_to_recruit_Mason',
+                        'who': p.target1.nickname
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                elif p.target1.role.defense_level > 0:
+                    data = {
+                        'type': 'recruit_failed',
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                elif isinstance(p.target1.role, roles.Mafia) or isinstance(p.target1.role, roles.Triad):
+                    data = {
+                        'type': 'recruited_by_cult',
+                        'who': p.nickname,
+                    }
+                    await sio.emit('event', data, room=p.target1.sid)
+                    data = {
+                        'type': 'recruit_failed',
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                else:
+                    if isinstance(p.target1.role, roles.Witch) or isinstance(p.target1.role, roles.Doctor) and roles.WitchDoctor.name not in {p.role.name for p in self.players}:
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.WitchDoctor())
+                    else:
+                        await self.convert_role(sio, convertor=p, converted=p.target1, role=roles.Cultist())
+
+        # 마피아 영입
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Godfather) and p.recruit_target:
+                if isinstance(p.recruit_target.role, roles.Citizen):
+                    await self.convert_role(sio, convertor=p, converted=p.recruit_target, role=roles.Mafioso())
+                    data = {
+                     'type': 'recruit_success',
+                     'role': p.recruit_target.role.name,
+                     'who': p.recruit_target.nickname,
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                elif isinstance(p.recruit_target.role, roles.Escort):
+                    await self.convert_role(sio, convertor=p, converted=p.recruit_target, role=roles.Consort())
+                    data = {
+                     'type': 'recruit_success',
+                     'role': p.recruit_target.role.name,
+                     'who': p.recruit_target.nickname,
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                else:
+                    data = {
+                     'type': 'recruit_failed'
+                    }
+                    await sio.emit('event', data, room=p.sid)
+
+        # 삼합회 영입
+        for p in self.alive_list:
+            if isinstance(p.role, roles.DragonHead) and p.recruit_target:
+                if isinstance(p.recruit_target.role, roles.Citizen):
+                    await self.convert_role(sio, convertor=p, converted=p.recruit_target, role=roles.Enforcer())
+                    data = {
+                     'type': 'recruit_success',
+                     'role': p.recruit_target.role.name,
+                     'who': p.recruit_target.nickname,
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                elif isinstance(p.recruit_target.role, roles.Escort):
+                    await self.convert_role(sio, convertor=p, converted=p.recruit_target, role=roles.Liaison())
+                    data = {
+                     'type': 'recruit_success',
+                     'role': p.recruit_target.role.name,
+                     'who': p.recruit_target.nickname,
+                    }
+                    await sio.emit('event', data, room=p.sid)
+                else:
+                    data = {
+                     'type': 'recruit_failed'
+                    }
+                    await sio.emit('event', data, room=p.sid)
 
     async def clear_up(self):
         for p in self.alive_list:
@@ -722,6 +856,7 @@ class GameRoom:
             p.target1 = None
             p.target2 = None
             p.curse_target = None
+            p.recruit_target = None
             p.has_jailed_whom = None
 
     def game_over(self):
@@ -877,6 +1012,7 @@ class Player:
         self.room = room
         self.nickname = nickname
         self.role = role
+        self.role_record = [self.role]
         self.sio = sio
         self.alive = True
         self.votes = 1
@@ -908,6 +1044,7 @@ class Player:
         self.target1 = None
         self.target2 = None
         self.curse_target = None
+        self.recruit_target = None
         self.has_jailed_whom = None
         self.crimes = set()
 
