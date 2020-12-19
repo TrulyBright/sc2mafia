@@ -170,6 +170,9 @@ class Mason(TownGovernment):
 
 class MasonLeader(TownGovernment):
     name = "비밀조합장"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 class Mayor(TownGovernment):

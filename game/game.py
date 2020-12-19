@@ -107,14 +107,16 @@ class GameRoom:
                 elif cmd == '/방문' and self.STATE == 'EVENING' and target1:
                     visitor = self.players[user['nickname']]
                     visited = self.players[target1]
+                    if isinstance(visitor.role, roles.MassMurderer) and visitor.cannot_murder_until >= self.day:
+                        return
                     visitor.target1 = visited
-                    if target2 is not None:
-                        visitor.target2 = self.players[user[target2]]
+                    if target2 and (isinstance(visitor.role, roles.Witch) or isinstance(visitor.role, roles.BusDriver)):
+                        visitor.target2 = self.players[target2]
                     data = {
                         'type': 'visit',
                         'role': visitor.role.name,
                         'target1': visitor.target1.nickname,
-                        'target2': visitor.target2.nickname if visitor.target2 is not None else None
+                        'target2': visitor.target2.nickname if visitor.target2 else None
                     }
                     await sio.emit('event', data, room=visitor.sid)
                 elif cmd == '/경계' and self.STATE =='EVENING':
@@ -129,6 +131,20 @@ class GameRoom:
                         'alert': V.alert_today,
                     }
                     await sio.emit('event', data, room=V.sid)
+                elif cmd == '/착용' and self.STATE == 'EVENING'\
+                and (isinstance(self.players[user['nickname']].role, roles.Citizen)\
+                or isinstance(self.players[user['nickname']].role, roles.Survivor)):
+                    wearer = self.players[user['nickname']]
+                    wearer.wear_vest_today = not wearer.wear_vest_today
+                    if wearer.wear_vest_today:
+                        wearer.role.defense_level = 1
+                    else:
+                        wearer.role.defense_level = 0
+                    data = {
+                        'type': 'wear_vest',
+                        'wear_vest': wearer.wear_vest_today
+                    }
+                    await sio.emit('event', data, room=wearer.sid)
             else:
                 data = {'type': 'message',
                         'who': user['nickname'],
@@ -162,7 +178,7 @@ class GameRoom:
     def cancel_vote(self, voter):
         assert self.STATE in ('VOTE', 'VOTE_EXECUTION')
         if self.STATE == 'VOTE':
-            if voter.voted_to_whom is not None:
+            if voter.voted_to_whom:
                 voter.voted_to_whom.votes_gotten -= voter.votes
                 voter.has_voted = False
                 voter.voted_to_whom = None
@@ -178,25 +194,29 @@ class GameRoom:
     def killable(self, attacker, attacked):
         return attacker.role.offense_level > attacked.role.defense_level
 
-    async def emit_sound(self, sio, sound, dead=True):
+    async def emit_sound(self, sio, sound, dead=True, number_of_murdered=1):
         data = {
             'type': 'sound',
             'sound': sound,
             'dead': dead,
+            'number_of_murdered': number_of_murdered,
         }
         await sio.emit('event', data, room=self.roomID)
 
+    async def change_role(self, sio, changed, changer, role):
+        changed_role =
     async def trigger_night_events(self, sio):
         # 생존자 방탄 착용
         for p in self.alive_list:
             if isinstance(p.role, roles.Survivor) and p.wear_vest_today:
                 p.defense_level = 1
                 data = {
-                    'type': 'wear_vest',
+                    'type': 'wear_vest_confirmed',
+                    'wear_vest': p.wear_vest_today,
                 }
                 await sio.emit('event', data, room=p.sid)
 
-        # 시민 방탄 착용
+        # 시민 방탄 착용ㄱ
         for p in self.alive_list:
             if isinstance(p.role, roles.Citizen) and p.wear_vest_today:
                 p.defense_level = 1
@@ -208,8 +228,8 @@ class GameRoom:
         # 마녀 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Witch)\
-            and p.target1 is not None\
-            and p.target2 is not None:
+            and p.target1\
+            and p.target2:
                 if (isinstance(p.target1, roles.Veteran) and p.target1.alert_today)\
                 or (isinstance(p.target1, roles.MassMurderer) and p.target1.murder_today):
                     continue
@@ -229,7 +249,7 @@ class GameRoom:
         # 기생 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Escort)\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.target1 = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
@@ -241,7 +261,7 @@ class GameRoom:
         # 매춘부 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Consort)\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.target1 = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
@@ -253,7 +273,7 @@ class GameRoom:
         # 간통범 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Liaison)\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.target1 = None
                 p.target1.burn_today = False
                 p.target1.curse_today = False
@@ -265,7 +285,7 @@ class GameRoom:
         # 잠입자 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Beguiler)\
-            and p.target1 is not None:
+            and p.target1:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
@@ -273,20 +293,20 @@ class GameRoom:
         # 사기꾼 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Deceiver)\
-            and p.target1 is not None:
+            and p.target1:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
 
         # 방문자 모두 확정되면 방문자 목록에 추가
         for p in self.alive_list:
-            if p.target1 is not None:
+            if p.target1:
                 p.target1.visited_by[self.day].add(p)
 
         # 방화범 기름칠 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Arsonist) and not p.burn_today\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.oiled = True
                 data = {
                     'type': 'oiling_success',
@@ -297,13 +317,13 @@ class GameRoom:
         # 의사 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Doctor)\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.healed_by.append(p)
 
         # 경호원 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Bodyguard)\
-            and p.target1 is not None:
+            and p.target1:
                 p.target1.bodyguarded_by.append(p)
 
         self.die_today = set()
@@ -336,7 +356,7 @@ class GameRoom:
                             'type': 'fighted_with_Bodyguard'
                         }
                         await sio.emit('event', data, room=V.sid)
-                        await self.emit_sound(sio, 'Bodyguard')
+                        await self.emit_sound(sio, BG.role.name)
                         if BG.healed_by:
                             H = BG.healed_by.pop()
                             await BG.healed(attacker=V, healer=H)
@@ -344,40 +364,40 @@ class GameRoom:
                             await BG.die(attacker=V, dead_while_guarding=True)
                     elif p.healed_by:
                         H = p.healed_by.pop()
-                        await self.emit_sound(sio, 'Veteran')
+                        await self.emit_sound(sio, p.role.name)
                         await p.healed(attacker=V, healer=H)
                     else:
-                        await self.emit_sound(sio, 'Veteran')
+                        await self.emit_sound(sio, p.role.name)
                         await p.die(attacker=V)
                 else:
-                    await self.emit_sound(sio, 'Veteran', dead=False)
+                    await self.emit_sound(sio, p.role.name, dead=False)
                     await p.attacked(attacker=V)
 
         # 간수의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Jailor)\
             and p.kill_the_jailed_today:
-                await self.emit_sound(sio, 'Jailor')
+                await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
 
         # 납치범의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Kidnapper)\
             and p.kill_the_jailed_today:
-                await self.emit_sound(sio, 'Jailor')
+                await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
 
         # 심문자의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Interrogator)\
             and p.kill_the_jailed_today:
-                await self.emit_sound(sio, 'Jailor')
+                await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
 
         # TODO: 조종자살 구현
         # 자경대원의 대상이 죽는다.
         for p in self.alive_list:
-            if isinstance(p.role, roles.Vigilante) and p.target1 is not None:
+            if isinstance(p.role, roles.Vigilante) and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -391,7 +411,7 @@ class GameRoom:
                 if victim.bodyguarded_by:
                     BG = victim.bodyguarded_by.pop() # BG stands for Bodyguard
                     await victim.bodyguarded(attacker=p)
-                    await self.emit_sound(sio, 'Bodyguard')
+                    await self.emit_sound(sio, BG.role.name)
                     if p.healed_by:
                         H = p.healed_by.pop() # H stands for Healer
                         await p.healed(attacker=p, healer=H)
@@ -403,21 +423,21 @@ class GameRoom:
                     else:
                         await BG.die(attacker=p, dead_while_guarding=True)
                 elif self.killable(p, victim):
-                    await self.emit_sound(sio, 'Vigilante')
+                    await self.emit_sound(sio, '자경대원')
                     if victim.healed_by:
                         H = victim.healed_by.pop()
-                        await P.healed(attacker=p, healer = H)
+                        await victim.healed(attacker=p, healer = H)
                     else:
                         await victim.die(attacker=p)
                 else:
-                    await self.emit_sound(sio, 'Vigilante', dead=False)
+                    await self.emit_sound(sio, p.role.name, dead=False)
                     await victim.attacked(attacker=p)
 
         # 마피아의 대상이 죽는다.
         for p in self.alive_list:
             if (isinstance(p.role, roles.Godfather)\
             or isinstance(p.role, roles.Mafioso))\
-            and p.target1 is not None:
+            and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -432,7 +452,7 @@ class GameRoom:
                 elif victim.bodyguarded_by:
                     BG = victim.bodyguarded_by.pop() # BG stands for Bodyguard
                     await victim.bodyguarded(attacker=p)
-                    await self.emit_sound(sio, 'Bodyguard')
+                    await self.emit_sound(sio, BG.role.name)
                     if p.healed_by:
                         H = p.healed_by.pop() # H stands for Healer
                         await p.healed(attacker=p, healer=H)
@@ -444,21 +464,21 @@ class GameRoom:
                     else:
                         await BG.die(attacker=p, dead_while_guarding=True)
                 elif self.killable(p, victim):
-                    await self.emit_sound(sio, 'Mafioso')
+                    await self.emit_sound(sio, roles.Mafioso.name)
                     if victim.healed_by:
                         H = victim.healed_by.pop()
-                        await P.healed(attacker=p, healer = H)
+                        await victim.healed(attacker=p, healer = H)
                     else:
                         await victim.die(attacker=p)
                 else:
-                    await self.emit_sound(sio, 'Mafioso', dead=False)
+                    await self.emit_sound(sio, roles.Mafioso.name, dead=False)
                     await victim.attacked(attacker=p)
 
         # 삼합회의 대상이 죽는다.
         for p in self.alive_list:
             if (isinstance(p.role, roles.DragonHead)\
             or isinstance(p.role, roles.Enforcer))\
-            and p.target1 is not None:
+            and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -473,7 +493,7 @@ class GameRoom:
                 elif victim.bodyguarded_by:
                     BG = victim.bodyguarded_by.pop() # BG stands for Bodyguard
                     await victim.bodyguarded(attacker=p)
-                    await self.emit_sound(sio, 'Bodyguard')
+                    await self.emit_sound(sio, BG.role.name)
                     if p.healed_by:
                         H = p.healed_by.pop() # H stands for Healer
                         await p.healed(attacker=p, healer=H)
@@ -485,19 +505,19 @@ class GameRoom:
                     else:
                         await BG.die(attacker=p, dead_while_guarding=True)
                 elif self.killable(p, victim):
-                    await self.emit_sound(sio, 'Mafioso')
+                    await self.emit_sound(sio, roles.Mafioso.name)
                     if victim.healed_by:
                         H = victim.healed_by.pop()
-                        await P.healed(attacker=p, healer = H)
+                        await victim.healed(attacker=p, healer = H)
                     else:
                         await victim.die(attacker=p)
                 else:
-                    await self.emit_sound(sio, 'Mafioso', dead=False)
+                    await self.emit_sound(sio, roles.Mafioso.name, dead=False)
                     await victim.attacked(attacker=p)
 
         # 연쇄살인마의 대상이 죽는다.
         for p in self.alive_list:
-            if isinstance(p.role, roles.SerialKiller) and p.target1 is not None:
+            if isinstance(p.role, roles.SerialKiller) and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -512,7 +532,7 @@ class GameRoom:
                 elif victim.bodyguarded_by:
                     BG = victim.bodyguarded_by.pop() # BG stands for Bodyguard
                     await victim.bodyguarded(attacker=p)
-                    await self.emit_sound(sio, 'Bodyguard')
+                    await self.emit_sound(sio, BG.role.name)
                     if p.healed_by:
                         H = p.healed_by.pop() # H stands for Healer
                         await p.healed(attacker=p, healer=H)
@@ -524,42 +544,46 @@ class GameRoom:
                     else:
                         await BG.die(attacker=p, dead_while_guarding=True)
                 elif self.killable(p, victim):
-                    await self.emit_sound(sio, 'SerialKiller')
+                    await self.emit_sound(sio, p.role.name)
                     if victim.healed_by:
                         H = victim.healed_by.pop()
                         await P.healed(attacker=p, healer = H)
                     else:
                         await victim.die(attacker=p)
                 else:
-                    await self.emit_sound(sio, 'SerialKiller', dead=False)
+                    await self.emit_sound(sio, p.role.name, dead=False)
                     await victim.attacked(attacker=p)
 
         # 방화범이 불을 피운다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Arsonist) and p.burn_today:
-                for victim in self.alive_list:
-                    if victim.oiled:
-                        if self.killable(p, victim):
-                            if victim.healed_by:
-                                H = victim.healed_by.pop()
-                                victim.healed(attacker=p, healer=H)
-                            else:
-                                victim.die(attacked=p)
-                        if victim.target1 is not None and self.killable(p, victim.target1):
-                            victim2 = victim.target1
-                            if victim2.healed_by:
-                                H = victim2.healed_by.pop()
-                                victim2.healed(attacker=p, healer=H)
-                            else:
-                                victim2.die(attacked=p)
+                victims = {v for v in self.alive_list if v.oiled}
+                for v in victims:
+                    if v.target1:
+                        victims.add(v.target1)
+                await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
+                for victim in self.victims:
+                    if self.killable(p, victim):
+                        if victim.healed_by:
+                            H = victim.healed_by.pop()
+                            victim.healed(attacker=p, healer=H)
+                        else:
+                            victim.die(attacker=p)
+                    else:
+                        victim.attacked(attacker=p)
 
         # 비밀조합장의 살인 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.MasonLeader) and victim is not None\
-            and isinstance(victim, roles.Cult):
-                victim = victim
+            if isinstance(p.role, roles.MasonLeader) and p.target1\
+            and isinstance(p.target1.role, roles.Cult):
+                victim = p.target1
+                data = {
+                    'type': 'visited_cult',
+                }
+                await sio.emit('event', data, room=p.sid)
                 if victim.bodyguarded_by:
                     BG = victim.bodyguarded_by.pop()
+                    await self.emit_sound(sio, BG.role.name)
                     await victim.bodyguarded(attacker=p)
                     if p.healed_by:
                         H = p.healed_by.pop()
@@ -571,18 +595,26 @@ class GameRoom:
                         await BG.healed(attacker=p)
                     else:
                         BG.die(attacker=p, dead_while_guarding=True)
+                elif not self.killable(p, victim):
+                    await self.emit_sound(sio, p.role.name)
+                    await victim.attacked(attacker=p)
                 elif victim.healed_by:
                     H = victim.healed_by.pop()
+                    await self.emit_sound(sio, p.role.name)
                     await victim.healed(attacker=p, healer=H)
                 else:
+                    await self.emit_sound(sio, p.role.name)
                     await victim.die(attacker=p)
 
         # 대량학살자 살인 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.MassMurderer) and p.murder_today is not None\
-            and p.target1 is not None:
-                victims = [v for v in self.alive_list if v.target1 is p.target1\
-                           or (isinstance(v.role, roles.Bodyguard) and v.target1 is p)]
+            if isinstance(p.role, roles.MassMurderer) and p.target1:
+                victims = {v for v in self.alive_list if (v.target1 is p.target1\
+                           or (isinstance(v.role, roles.Bodyguard) and v.target1 is p)) and v is not p} # 경호원이 대학 경호 시 사망하는 것 구현
+                if p.target1.target1 is None:
+                    victims.add(p.target1)
+                print({v.nickname for v in victims})
+                await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
                 for v in victims:
                     if v.bodyguarded_by:
                         BG = v.bodyguarded_by.pop()
@@ -603,12 +635,7 @@ class GameRoom:
             victim = candidates.pop()
             if victim.healed_by:
                 H = victim.healed_by.pop()
-                class Dummy: # dummy class
-                    pass
-                dummy = Dummy()
-                dummy.role = Dummy()
-                dummy.role.name = '어릿광대'
-                await victim.healed(attacker=dummy, healer=H)
+                await victim.healed(attacker=roles.Jester(), healer=H)
             else:
                 await victim.suicide(reason=roles.Jester.name)
 
@@ -633,7 +660,7 @@ class GameRoom:
         # 마녀 저주 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Witch)\
-            and p.curse_target is not None and not p.has_cursed:
+            and p.curse_target and not p.has_cursed:
                 victim = p.curse_target
                 if victim.healed_by:
                     H = victim.healed_by.pop()
@@ -653,7 +680,7 @@ class GameRoom:
             for investigating_role in (roles.TownInvestigative,
                                        roles.Consigliere,
                                        roles.Administrator):
-                if isinstance(p.role, investigating_role) and p.target1 is not None:
+                if isinstance(p.role, investigating_role) and p.target1:
                     result = p.role.check(p.target1)
                     data = {
                         'type': 'check_result',
@@ -722,12 +749,14 @@ class GameRoom:
         elif self.setup['type'] == 'power_conflict':
             pass
         elif self.setup['type'] == 'test':
-            roles_to_distribute = [roles.Bodyguard(),
-                                   roles.Veteran(),
+            roles_to_distribute = [roles.Veteran(),
+                                   roles.Cultist(),
                                    roles.Mafioso(),
                                    roles.Escort(),
-                                   roles.Beguiler(),
-                                   roles.SerialKiller(),]
+                                   roles.MasonLeader(),
+                                   roles.MassMurderer(),
+                                   roles.Witch(),
+                                   roles.Citizen(),]
         # random.shuffle(roles_to_distribute)
         self.players = {(await sio.get_session(sid))['nickname']:
                         Player(sid=sid,
@@ -866,6 +895,7 @@ class Player:
         self.burn_today = False
         self.curse_today = False
         self.suicide_today = False
+        self.cannot_murder_until = 0
         self.protected_from_cult = False
         self.protected_from_auditor = False
         self.kill_the_jailed_today = False
@@ -897,6 +927,10 @@ class Player:
             'attacker': attacker.role.name,
         }
         await self.sio.emit('event', data, room=self.sid)
+        data = {
+            'type': 'attack_failed',
+        }
+        await self.sio.emit('event', data, room=attacker.sid)
 
     async def healed(self, attacker, healer):
         data = {

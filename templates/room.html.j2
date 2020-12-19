@@ -54,6 +54,7 @@
     }
 
     Socket.on('event', (data)=> {
+      console.log(data);
       switch (data['type']) {
         case 'message':
           addchat(data['who']+': '+data['message']);
@@ -107,7 +108,11 @@
           }
           break;
         case 'wear_vest':
-          addchat('방탄조끼를 입었습니다.');
+          if (data['wear_vest']) {
+            addchat('방탄조끼를 입었습니다.');
+          } else {
+            addchat('방탄조끼를 벗었습니다.');
+          }
           break;
         case 'Witch_control_success':
           addchat('당신은'+data['target1']+'님을 '+data['target2']+'님에게 가도록 조종했습니다.');
