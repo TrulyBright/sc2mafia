@@ -518,6 +518,7 @@ class GameRoom:
                 # TODO: 자살유도 범죄 추가
 
         # 방문자 모두 확정되면 방문자 목록에 추가
+        # TODO: 방문자 로직 수정
         for p in self.alive_list:
             if p.target1:
                 p.target1.visited_by[self.day].add(p)
@@ -553,6 +554,8 @@ class GameRoom:
             if isinstance(p.role, roles.Veteran) and p.alert_today:
                 p.crimes['재물 손괴'] = True
                 for visitor in p.visited_by[self.day]:
+                    if isinstance(visitor.role, roles.Lookout):
+                        continue
                     if isinstance(visitor.role, roles.Doctor) or isinstance(visitor.role, roles.WitchDoctor):
                         p.healed_by.remove(visitor)
                     elif isinstance(vsitor.role, roles.Bodyguard):
