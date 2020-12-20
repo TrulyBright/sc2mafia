@@ -884,11 +884,10 @@ class GameRoom:
                         'who': p.target1.nickname,
                     }
                     await sio.emit('event', data, room=p.sid)
-                else:
+                elif not isinstance(p.target1.role, roles.Cult):
                     data = {
                         'type': 'recruit_failed'
                     }
-                    print(1111)
                     await sio.emit('event', data, room=p.sid)
 
         # 이교도 개종
