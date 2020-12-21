@@ -29,7 +29,7 @@ class GameRoom:
         async with sio.session(sid) as user:
             try:
                 commander = self.players[user['nickname']]
-            except KeyError:
+            except KeyError: # 플레이어가 아닌 경우(게임이 시작한 이후에 들어왔다든지)
                 pass
             except AttributeError: # 게임이 시작하지 않았을 경우
                 commander = user['nickname']
@@ -1224,6 +1224,9 @@ class GameRoom:
                                role=roles_to_distribute.pop(),
                                sio=sio)
                                for sid in self.members}
+        for p in self.players.values():
+            if isinstance(p.role, roles.Spy):
+                p.crimes['무단침입'] = True
 
         self.hellID = str(self.roomID)+'_hell'
         self.mafiaChatID = str(self.roomID)+'_Mafia'
