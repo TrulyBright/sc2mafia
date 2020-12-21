@@ -132,7 +132,7 @@ class Crier(TownGovernment):
 class Detective(TownInvestigative):
     name = "형사"
 
-    def check(self, target):
+    def check(self, target, day):
         return None if target.target1 is None else target.target1.nickname
 
 
@@ -146,7 +146,7 @@ class Escort(TownProtective):
 
 class Investigator(TownInvestigative):
     name = "탐정"
-    def check(self, target):
+    def check(self, target, day):
         return target.crimes
 
 
@@ -156,8 +156,8 @@ class Jailor(TownPower, TownKilling):
 
 class Lookout(TownInvestigative):
     name = "감시자"
-    def check(self, target):
-        return target.visited_by
+    def check(self, target, day):
+        return target.visited_by[day]
 
 
 class Marshall(TownGovernment):
@@ -181,7 +181,7 @@ class Mayor(TownGovernment):
 
 class Sheriff(TownInvestigative):
     name = "보안관"
-    def check(self, target):
+    def check(self, target, day):
         role = target.role
         if isinstance(role, Mafia):
             return Mafia.team
@@ -213,7 +213,7 @@ class Vigilante(TownKilling):
     name = "자경대원"
     def __init__(self):
         super().__init__()
-        offense_level = 1
+        self.offense_level = 1
 
 
 # Mafia
@@ -232,7 +232,7 @@ class Blackmailer(MafiaSupport):
 
 class Consigliere(MafiaSupport):
     name = "조언자"
-    def check(self, target):
+    def check(self, target, day):
         return target.role.name
 
 
@@ -274,7 +274,7 @@ class Mafioso(MafiaKilling):
 #Triad
 class Administrator(TriadSupport):
     name = "백지선"
-    def check(self, target):
+    def check(self, target, day):
         return target.role.name
 
 

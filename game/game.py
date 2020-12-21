@@ -574,6 +574,10 @@ class GameRoom:
                             BG = visitor.bodyguarded_by.pop() # BG stands for Bodyguard
                             await visitor.bodyguarded(attacker=p)
                             await self.emit_sound(sio, BG.role.name)
+                            data = {
+                                'type': 'fighted_with_bodyguard',
+                            }
+                            await sio.emit('event', data, room=p.sid)
                             if BG.healed_by:
                                 H = BG.healed_by.pop()
                                 await BG.healed(attacker=p, healer=H)
@@ -932,9 +936,11 @@ class GameRoom:
         for p in self.alive_list:
             for investigating_role in (roles.TownInvestigative,
                                        roles.Consigliere,
-                                       roles.Administrator):
+                                       roles.Administrator,
+                                       roles.Agent,
+                                       roles.Vanguard,):
                 if isinstance(p.role, investigating_role) and p.target1:
-                    result = p.role.check(p.target1)
+                    result = p.role.check(p.target1, self.day)
                     data = {
                         'type': 'check_result',
                         'role': p.role.name,
@@ -1113,10 +1119,44 @@ class GameRoom:
             p.recruit_target = None
 
     def game_over(self):
-        for p in self.alive_list:
-            if p.role.team != self.alive_list[0].role.team:
-                return False
-        return True
+        remaining = self.alive_list
+        if len(remaining)==0 or len(remaining)==1 or len(remaining)==2:
+            return True
+        townRemains = False
+        mafiaRemains = False
+        triadRemains = False
+        neutralKillingRemains = False
+        neutralEvilThatIsNotNeutralKillingRemains = False
+        for p in remaining:
+            if isinstance(p.role, roles.Town):
+                townRemains = True
+            elif isinstance(p.role, roles.Mafia):
+                mafiaRemains = True
+            elif isinstance(p.role, roles.Triad):
+                triadRemains = True
+            elif isinstance(p.role, roles.NeutralKilling):
+                neutralKillingRemains = True
+            elif isinstance(p.role, roles.NeutralEvil) and not isinstance(p.role, roles.NeutralKilling):
+                neutralEvilThatIsNotNeutralKillingRemains = True
+        if townRemains:
+            return not mafiaRemains and not triadRemains and not neutralKillingRemains and not neutralEvilThatIsNotNeutralKillingRemains
+        if mafiaRemains:
+            return not triadRemains and not neutralKillingRemains
+        if triadRemains:
+            return not neutralKillingRemains
+        if neutralKillingRemains: # 중살들밖에 안남은 경우
+            arsonistRemains = False
+            massMurdererRemains = False
+            serialKillerRemains = False
+            for p in remaining:
+                if isinstance(p.role, roles.Arsonist):
+                    arsonistRemains = True
+                elif isinstance(p.role, roles.MassMurderer):
+                    massMurdererRemains = True
+                elif isinstance(p.role, roles.SerialKiller):
+                    serialKillerRemains = True
+            return not (arsonistRemains and massMurdererRemains and serialKillerRemains)
+        return True # 중선들만 남은 경우
 
     async def init_game(self, sio):
         # init game
