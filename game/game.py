@@ -974,6 +974,19 @@ class GameRoom:
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
 
+        # 범죄 추가
+        for p in self.alive_list:
+            for trespassing_role in (roles.Investigator,
+                                     roles.Detective,
+                                     roles.Lookout,
+                                     roles.Consigliere,
+                                     roles.Agent,
+                                     roles.Framer,
+                                     roles.Administrator,
+                                     roles.Vanguard,
+                                     roles.Forger):
+                if isinstance(p.role, roles.trespassing_role) and p.target1:
+                    p.crimes['무단침입'] = True
         # 조사직들 능력 발동
         for p in self.alive_list:
             for investigating_role in (roles.TownInvestigative,
@@ -1232,6 +1245,7 @@ class GameRoom:
                                role=roles_to_distribute.pop(),
                                sio=sio)
                                for sid in self.members}
+
         for p in self.players.values():
             if isinstance(p.role, roles.Spy):
                 p.crimes['무단침입'] = True
