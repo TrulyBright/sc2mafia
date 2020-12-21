@@ -31,9 +31,11 @@ class GameRoom:
                 commander = self.players[user['nickname']]
             except KeyError:
                 pass
-            except AttributeError:
+            except AttributeError: # 게임이 시작하지 않았을 경우
                 commander = user['nickname']
             if msg.startswith('/'):
+                if hasattr(commander, 'jailed') and commander.jailed:
+                    return
                 msg = msg.split()
                 if len(msg) == 3:
                     cmd, target1, target2 = msg
@@ -185,6 +187,33 @@ class GameRoom:
                         await sio.emit('event', data, room=self.mafiaChatID)
                     else:
                         await sio.emit('event', data, room=self.triadChatID)
+                elif cmd == '/처형' and commander.alive and self.STATE == 'EVENING':
+                    if isinstance(commander.role, roles.Jailor) and commander.has_jailed_whom and commander.role.ability_opportunity>0:
+                        commander.kill_the_jailed_today = not commander.kill_the_jailed_today
+                        if commander.kill_the_jailed_today:
+                            data = {
+                                'type': 'will_execute',
+                                'executed': commander.has_jailed_whom.nickname,
+                            }
+                            await sio.emit('event', data, room=commander.has_jailed_whom.jailID)
+                        else:
+                            data = {
+                                'type': 'will_not_execute',
+                            }
+                            await sio.emit('event', data, room=commander.has_jailed_whom.jailID)
+                    elif (isinstance(commander.role, roles.Kidnapper) or isinstance(commander.role, roles.Interrogator)) and commander.has_jailed_whom:
+                        commander.kill_the_jailed_today = not commander.kill_the_jailed_today
+                        if commander.kill_the_jailed_today:
+                            data = {
+                                'type': 'will_execute',
+                                'executed': commander.has_jailed_whom.nickname,
+                            }
+                            await sio.emit('event', data, room=commander.has_jailed_whom.jailID)
+                        else:
+                            data = {
+                                'type': 'will_not_execute',
+                            }
+                            await sio.emit('event', data, room=commander.has_jailed_whom.jailID)
             else:
                 if not self.inGame:
                     data = {
@@ -500,21 +529,23 @@ class GameRoom:
         # 잠입자 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Beguiler)\
-            and p.target1:
+            and p.target1 and p.role.ability_opportunity>0:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
                 p.crimes['무단침입'] = True
+                p.role.ability_opportunity -= 1
                 # TODO: 자살유도 범죄 추가
 
         # 사기꾼 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Deceiver)\
-            and p.target1:
+            and p.target1 and p.role.ability_opportunity>0:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
                 p.crimes['무단침입'] = True
+                p.role.ability_opportunity -= 1
                 # TODO: 자살유도 범죄 추가
 
         # 방문자 모두 확정되면 방문자 목록에 추가
@@ -558,7 +589,7 @@ class GameRoom:
                         continue
                     if isinstance(visitor.role, roles.Doctor) or isinstance(visitor.role, roles.WitchDoctor):
                         p.healed_by.remove(visitor)
-                    elif isinstance(vsitor.role, roles.Bodyguard):
+                    elif isinstance(visitor.role, roles.Bodyguard):
                         p.bodyguarded_by.remove(visitor)
                     data = {
                         'type': 'someone_visited_to_Veteran'
@@ -599,27 +630,30 @@ class GameRoom:
         # 간수의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Jailor)\
-            and p.kill_the_jailed_today:
+            and p.kill_the_jailed_today and p.role.ability_opportunity>0:
                 await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
                 p.crimes['살인'] = True
+                p.role.ability_opportunity -= 1
 
         # 납치범의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Kidnapper)\
-            and p.kill_the_jailed_today:
+            and p.kill_the_jailed_today and p.role.ability_opportunity>0:
                 await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
                 p.crimes['살인'] = True
+                p.role.ability_opportunity -= 1
 
 
         # 심문자의 처형대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Interrogator)\
-            and p.kill_the_jailed_today:
+            and p.kill_the_jailed_today and p.role.ability_opportunity>0:
                 await self.emit_sound(sio, roles.Jailor.name)
                 await p.has_jailed_whom.die(attacker=p)
                 p.crimes['살인'] = True
+                p.role.ability_opportunity -= 1
 
         # 자경대원의 대상이 죽는다.
         for p in self.alive_list:
@@ -1177,14 +1211,11 @@ class GameRoom:
         elif self.setup['type'] == 'power_conflict':
             pass
         elif self.setup['type'] == 'test':
-            roles_to_distribute = [roles.Interrogator(),
-                                   roles.Jailor(),
+            roles_to_distribute = [roles.Jailor(),
                                    roles.Kidnapper(),
-                                   roles.Jailor(),
-                                   roles.MasonLeader(),
-                                   roles.Auditor(),
                                    roles.Mafioso(),
-                                   roles.Sheriff(),]
+                                   roles.Crier(),
+                                   roles.Judge(),]
         # random.shuffle(roles_to_distribute)
         self.players = {(await sio.get_session(sid))['nickname']:
                         Player(sid=sid,
@@ -1354,12 +1385,12 @@ class Player:
         self.cannot_murder_until = 0
         self.protected_from_cult = False
         self.protected_from_auditor = False
-        self.kill_the_jailed_today = False
         self.oiled = False
         self.jailed = False
         self.jailed_by = []
         self.jailID = str(room.roomID)+'_Jail_'+self.nickname
         self.has_jailed_whom = None
+        self.kill_the_jailed_today = False
         self.has_disguised = False
         self.has_cursed = False
         self.bodyguarded_by = [] # list of Player objects

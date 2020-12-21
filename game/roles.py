@@ -152,6 +152,9 @@ class Investigator(TownInvestigative):
 
 class Jailor(TownPower, TownKilling):
     name = "간수"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 2
 
 
 class Lookout(TownInvestigative):
@@ -224,7 +227,9 @@ class Agent(MafiaSupport):
 
 class Beguiler(MafiaDeception):
     name = "잠입자"
-
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 4
 
 class Blackmailer(MafiaSupport):
     name = "협박자"
@@ -242,7 +247,9 @@ class Consort(MafiaSupport):
 
 class Disguiser(MafiaDeception, MafiaSupport):
     name = "변장자"
-    offense_level = 1
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
 
 
 class Framer(MafiaDeception):
@@ -262,6 +269,10 @@ class Janitor(MafiaDeception):
 
 class Kidnapper(MafiaKilling, MafiaSupport):
     name = "납치범"
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.ability_opportunity = 1
 
 
 class Mafioso(MafiaKilling):
@@ -280,6 +291,9 @@ class Administrator(TriadSupport):
 
 class Deceiver(TriadDeception):
     name = "사기꾼"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 4
 
 
 class DragonHead(TriadKilling):
@@ -314,7 +328,10 @@ class Informant(TriadDeception, TriadKilling):
 
 class Interrogator(TriadKilling, TriadSupport):
     name = "심문자"
-
+    def __init__(self):
+        super().__init__()
+        self.offense_level = 1
+        self.ability_opportunity = 1
 
 class Liaison(TriadSupport):
     name = "간통범"
