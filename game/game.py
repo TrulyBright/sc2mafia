@@ -552,7 +552,7 @@ class GameRoom:
         # TODO: 방문자 로직 수정
         for p in self.alive_list:
             if p.target1:
-                p.target1.visited_by[self.day].add(p)
+                p.target1.visited_by[self.day].append(p)
 
         # 방화범 기름칠 적용
         for p in self.alive_list:
@@ -659,6 +659,8 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Vigilante) and p.target1:
                 victim = p.target1
+                if isinstance(victim.role, roles.Veteran) and victim.alert_today:
+                    continue
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, 'Suicide_by_control')
@@ -701,6 +703,8 @@ class GameRoom:
         for p in self.alive_list:
             if (isinstance(p.role, roles.Mafioso) or isinstance(p.role, roles.Godfather)) and p.target1:
                 victim = p.target1
+                if isinstance(victim.role, roles.Veteran) and victim.alert_today:
+                    continue
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, 'Suicide_by_control')
@@ -743,6 +747,8 @@ class GameRoom:
         for p in self.alive_list:
             if (isinstance(p.role, roles.Enforcer) or isinstance(p.role, roles.DragonHead)) and p.target1:
                 victim = p.target1
+                if isinstance(victim.role, roles.Veteran) and victim.alert_today:
+                    continue
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, 'Suicide_by_control')
@@ -785,6 +791,8 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.SerialKiller) and p.target1:
                 victim = p.target1
+                if isinstance(victim.role, roles.Veteran) and victim.alert_today:
+                    continue
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, 'Suicide_by_control')
@@ -1211,11 +1219,11 @@ class GameRoom:
         elif self.setup['type'] == 'power_conflict':
             pass
         elif self.setup['type'] == 'test':
-            roles_to_distribute = [roles.Jailor(),
-                                   roles.Kidnapper(),
+            roles_to_distribute = [roles.Investigator(),
+                                   roles.Detective(),
                                    roles.Mafioso(),
-                                   roles.Crier(),
-                                   roles.Judge(),]
+                                   roles.Veteran(),
+                                   roles.Lookout(),]
         # random.shuffle(roles_to_distribute)
         self.players = {(await sio.get_session(sid))['nickname']:
                         Player(sid=sid,
@@ -1379,7 +1387,7 @@ class Player:
         self.voted_guilty = 0
         self.voted_innocent = 0
         self.lw = ''  # last will
-        self.visited_by = [None, set()]
+        self.visited_by = [None, []]
         self.wear_vest_today = False
         self.alert_today = False
         self.burn_today = False

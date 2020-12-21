@@ -160,7 +160,7 @@ class Jailor(TownPower, TownKilling):
 class Lookout(TownInvestigative):
     name = "감시자"
     def check(self, target, day):
-        return target.visited_by[day]
+        return [p.nickname for p in target.visited_by[day]]
 
 
 class Marshall(TownGovernment):
