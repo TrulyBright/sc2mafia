@@ -932,11 +932,12 @@ class GameRoom:
         random.shuffle(candidates)
         if candidates:
             victim = candidates.pop()
+            await self.emit_sound(sio, '자살')
             if victim.healed_by:
                 H = victim.healed_by.pop()
                 await victim.healed(attacker=roles.Jester(), healer=H)
             else:
-                await victim.suicide(reason=roles.Jester.name)
+                await victim.die(attacker=roles.Jester())
 
         # TODO: 심장마비 자살
         # TODO: 변장자
@@ -945,6 +946,7 @@ class GameRoom:
         # 고의 자살 적용
         for p in self.alive_list:
             if p.suicide_today:
+                await self.emit_sound(sio, '자살')
                 if p.healed_by:
                     H = p.healed_by.pop()
                     class Dummy: # dummy class
@@ -954,7 +956,12 @@ class GameRoom:
                     dummy.role.name = '자살'
                     await victim.healed(attacker=dummy, healer=H)
                 else:
-                    await victim.suicide(reason='고의')
+                    class Dummy:
+                        pass
+                    dummy = Dummy()
+                    dummy.role = Dummy()
+                    dummy.role.name = '자살'
+                    await victim.die(attacker = Dummy)
 
         # 마녀 저주 적용
         for p in self.alive_list:
@@ -971,6 +978,7 @@ class GameRoom:
         for dead in self.die_today:
             self.alive_list.remove(dead)
 
+        # TODO: 변장자, 밀고자 (사망자들 제거된 이후에 능력 발동됨)
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
 
@@ -1331,6 +1339,7 @@ class GameRoom:
                     data = {
                         'type': 'state',
                         'state': self.STATE,
+                        'who': self.elected.nickname,
                     }
                     await sio.emit('event', data, room=self.roomID)
                     await asyncio.sleep(self.VOTE_EXECUTION_TIME)

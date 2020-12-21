@@ -379,7 +379,7 @@ class Judge(NeutralEvil):
 
 
 class MassMurderer(NeutralKilling):
-    name = "대량 학살자"
+    name = "대량학살자"
     def __init__(self):
         super().__init__()
         self.offense_level = 1
