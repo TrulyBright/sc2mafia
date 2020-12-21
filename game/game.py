@@ -665,7 +665,7 @@ class GameRoom:
 
         # 마피아의 대상이 죽는다.
         for p in self.alive_list:
-            if isinstance(p.role, roles.Mafioso) or isinstance(p.role, roles.Godfather) and p.target1:
+            if (isinstance(p.role, roles.Mafioso) or isinstance(p.role, roles.Godfather)) and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -707,7 +707,7 @@ class GameRoom:
 
         # 삼합회의 대상이 죽는다.
         for p in self.alive_list:
-            if isinstance(p.role, roles.Enforcer) or isinstance(p.role, roles.DragonHead) and p.target1:
+            if (isinstance(p.role, roles.Enforcer) or isinstance(p.role, roles.DragonHead)) and p.target1:
                 victim = p.target1
                 if victim == p:
                     if self.killable(p, p):
@@ -1319,11 +1319,11 @@ class GameRoom:
     async def finish_game(self, sio):
         print('Game fininshed in room #', self.roomID)
         self.inGame = False
-        to_send = {
+        data = {
             'type': 'game_over',
             'winner': [p.nickname for p in self.alive_list]
         }
-        await sio.emit('event', to_send,  room=self.roomID)
+        await sio.emit('event', data,  room=self.roomID)
 
 
 class Player:
