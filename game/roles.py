@@ -13,19 +13,19 @@ Teams
 
 
 class Town(Role):
-    team = '시민'
+    team = "시민"
 
 
 class Mafia(Role):
-    team = '마피아'
+    team = "마피아"
 
 
 class Triad(Role):
-    team = '삼합회'
+    team = "삼합회"
 
 
 class Neutral(Role):
-    team = '중립'
+    team = "중립"
 
 
 """
@@ -98,6 +98,7 @@ class NeutralKilling(NeutralEvil):
 class Cult(NeutralEvil):
     team = "이교도"
 
+
 """
 ==========
 Roles
@@ -108,6 +109,7 @@ Roles
 # Town
 class Bodyguard(TownProtective, TownKilling):
     name = "경호원"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 2
@@ -146,12 +148,14 @@ class Escort(TownProtective):
 
 class Investigator(TownInvestigative):
     name = "탐정"
+
     def check(self, target, day):
         return target.crimes
 
 
 class Jailor(TownPower, TownKilling):
     name = "간수"
+
     def __init__(self):
         super().__init__()
         self.ability_opportunity = 2
@@ -159,6 +163,7 @@ class Jailor(TownPower, TownKilling):
 
 class Lookout(TownInvestigative):
     name = "감시자"
+
     def check(self, target, day):
         return [p.nickname for p in target.visited_by[day]]
 
@@ -173,6 +178,7 @@ class Mason(TownGovernment):
 
 class MasonLeader(TownGovernment):
     name = "비밀조합장"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -184,6 +190,7 @@ class Mayor(TownGovernment):
 
 class Sheriff(TownInvestigative):
     name = "보안관"
+
     def check(self, target, day):
         role = target.role
         if isinstance(role, Mafia):
@@ -192,9 +199,7 @@ class Sheriff(TownInvestigative):
             return Triad.team
         if isinstance(role, Cult):
             return Cult.team
-        for killing in (SerialKiller,
-                        MassMurderer,
-                        Arsonist):
+        for killing in (SerialKiller, MassMurderer, Arsonist):
             if isinstance(role, killing):
                 return killing.name
         return False
@@ -214,6 +219,7 @@ class Veteran(TownKilling, TownPower):
 
 class Vigilante(TownKilling):
     name = "자경대원"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -221,15 +227,18 @@ class Vigilante(TownKilling):
 
 # Mafia
 
+
 class Agent(MafiaSupport):
     name = "요원"
 
 
 class Beguiler(MafiaDeception):
     name = "잠입자"
+
     def __init__(self):
         super().__init__()
         self.ability_opportunity = 4
+
 
 class Blackmailer(MafiaSupport):
     name = "협박자"
@@ -237,6 +246,7 @@ class Blackmailer(MafiaSupport):
 
 class Consigliere(MafiaSupport):
     name = "조언자"
+
     def check(self, target, day):
         return target.role.name
 
@@ -247,6 +257,7 @@ class Consort(MafiaSupport):
 
 class Disguiser(MafiaDeception, MafiaSupport):
     name = "변장자"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -258,6 +269,7 @@ class Framer(MafiaDeception):
 
 class Godfather(MafiaKilling):
     name = "대부"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -269,6 +281,7 @@ class Janitor(MafiaDeception):
 
 class Kidnapper(MafiaKilling, MafiaSupport):
     name = "납치범"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -277,20 +290,23 @@ class Kidnapper(MafiaKilling, MafiaSupport):
 
 class Mafioso(MafiaKilling):
     name = "마피아 일원"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
 
 
-#Triad
+# Triad
 class Administrator(TriadSupport):
     name = "백지선"
+
     def check(self, target, day):
         return target.role.name
 
 
 class Deceiver(TriadDeception):
     name = "사기꾼"
+
     def __init__(self):
         super().__init__()
         self.ability_opportunity = 4
@@ -298,6 +314,7 @@ class Deceiver(TriadDeception):
 
 class DragonHead(TriadKilling):
     name = "용두"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -306,6 +323,7 @@ class DragonHead(TriadKilling):
 
 class Enforcer(TriadKilling):
     name = "홍곤"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -321,6 +339,7 @@ class IncenseMaster(TriadDeception):
 
 class Informant(TriadDeception, TriadKilling):
     name = "밀고자"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -328,10 +347,12 @@ class Informant(TriadDeception, TriadKilling):
 
 class Interrogator(TriadKilling, TriadSupport):
     name = "심문자"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
         self.ability_opportunity = 1
+
 
 class Liaison(TriadSupport):
     name = "간통범"
@@ -352,6 +373,7 @@ class Amnesiac(NeutralBenign):
 
 class Arsonist(NeutralKilling):
     name = "방화범"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -380,6 +402,7 @@ class Judge(NeutralEvil):
 
 class MassMurderer(NeutralKilling):
     name = "대량학살자"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1
@@ -392,6 +415,7 @@ class Scumbag(NeutralEvil):
 
 class SerialKiller(NeutralKilling):
     name = "연쇄살인마"
+
     def __init__(self):
         super().__init__()
         self.offense_level = 1

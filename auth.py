@@ -9,20 +9,24 @@ class ImproperUsernameError(Exception):
     Raised when username is improper
     """
 
+
 class ImproperNicknameError(Exception):
     """
     Raised when nickname is improper
     """
+
 
 class NicknameDuplicateError(Exception):
     """
     Raised when nickname is already occupied
     """
 
+
 class UsernameDucpliateError(Exception):
     """
     Raised when username is already occupied
     """
+
 
 def proper_username(username):
     return username.isalnum()
@@ -30,11 +34,11 @@ def proper_username(username):
 
 def proper_nickname(nickname):
     # 한글과 영어와 숫자로만 되었는지 판별하는 함수
-    return len(re.findall('[가-힣]|[a-z]|[A-Z]|[0-9]', nickname)) == len(nickname)
+    return len(re.findall("[가-힣]|[a-z]|[A-Z]|[0-9]", nickname)) == len(nickname)
 
 
 async def authenticate(username, password) -> bool:
-    async with aiosqlite.connect('sql/users.db') as DB:
+    async with aiosqlite.connect("sql/users.db") as DB:
         if not proper_username(username):
             raise ImproperUsernameError
         query = f"SELECT * FROM users WHERE username='{username}'"
@@ -47,7 +51,7 @@ async def authenticate(username, password) -> bool:
 
 
 async def create_user(username, password, nickname) -> str:
-    async with aiosqlite.connect('sql/users.db') as DB:
+    async with aiosqlite.connect("sql/users.db") as DB:
         if not proper_username(username):
             raise ImproperUsernameError
         query = f"SELECT * FROM users WHERE username='{username}'"
@@ -72,7 +76,7 @@ async def create_user(username, password, nickname) -> str:
 
 
 async def get_nickname(username) -> str:
-    async with aiosqlite.connect('sql/users.db') as DB:
+    async with aiosqlite.connect("sql/users.db") as DB:
         if not proper_username(username):
             raise ImproperUsernameError
         query = f"SELECT nickname FROM users WHERE username='{username}'"
