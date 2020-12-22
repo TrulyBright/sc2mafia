@@ -66,7 +66,7 @@ async def enter_GameRoom(sid, data):
     assert "roomID" in data
     async with sio.session(sid) as user:
         if "room" in user:
-            leave_GameRoom(sid, None)
+            await leave_GameRoom(sid, None)
         roomID = data["roomID"]
         if roomID in room_list:
             if room_list[roomID].isFull():
@@ -143,6 +143,7 @@ async def leave_GameRoom(sid, data):
             },
             room=roomID,
         )
+        await sio.emit("leave_GameRoom_success", {}, room=sid)
 
 
 @sio.event
@@ -161,9 +162,8 @@ async def create_GameRoom(sid, data):
             host=user,
             setup=data["setup"],
         )
-        await sio.emit("create_GameRoom_success", next_roomID, room=sid)
+        await enter_GameRoom(sid, {"roomID": next_roomID})
         next_roomID += 1
-        await broadcast_room_list()
 
 
 async def broadcast_room_list():

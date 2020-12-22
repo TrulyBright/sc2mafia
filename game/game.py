@@ -1389,7 +1389,7 @@ class GameRoom:
         self.inGame = True
         self.election = asyncio.Event()
         self.day = 0
-        if self.setup["basic"]:
+        if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.MORNING_TIME = 5
             self.DISCUSSION_TIME = 10
@@ -1397,11 +1397,11 @@ class GameRoom:
             self.DEFENSE_TIME = 10
             self.VOTE_EXECUTION_TIME = 10
             self.EVENING_TIME = 30
-        if self.setup["type"] == "8331":
+        if self.setup == "8331":
             pass
-        elif self.setup["type"] == "power_conflict":
+        elif self.setup == "power_conflict":
             pass
-        elif self.setup["type"] == "test":
+        elif self.setup == "test":
             roles_to_distribute = [
                 roles.Investigator(),
                 roles.Detective(),

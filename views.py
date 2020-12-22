@@ -37,7 +37,7 @@ async def login_post(request):
             request.ctx.session["logged_in"] = True
             request.ctx.session["username"] = username
             request.ctx.session["nickname"] = await get_nickname(username)
-            return redirect("/lobby")
+            return redirect("/game")
         else:
             return redirect("/login?login_failed=True")
     except:
@@ -72,12 +72,6 @@ async def register_post(request):
         return redirect(f"/register?register_failed=True&reason={e.__class__.__name__}")
 
 
-@template("lobby.html.j2")
-async def lobby(request):
-    return {"": 23235}
-
-
-# @render('room.html.j2', 'html')
-@template("room.html.j2")
-async def room(request, roomID):
-    return {"roomID": roomID}
+@template("main.html.j2")
+async def main(request):
+    return {}
