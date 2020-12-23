@@ -89,7 +89,7 @@ class GameRoom:
                         }
                         await sio.emit("vote_cancel", data, room=self.roomID)
                     else:
-                        await self.vote_execution(voter, guilty=True)
+                        self.vote_execution(voter, guilty=True)
                         data = {
                             "type": "vote_execution",
                             "voter": voter.nickname,
@@ -1105,7 +1105,7 @@ class GameRoom:
                 roles.Vanguard,
                 roles.Forger,
             ):
-                if isinstance(p.role, roles.trespassing_role) and p.target1:
+                if isinstance(p.role, trespassing_role) and p.target1:
                     p.crimes["무단침입"] = True
         # 조사직들 능력 발동
         for p in self.alive_list:
@@ -1317,7 +1317,7 @@ class GameRoom:
             p.votes_gotten = 0
             p.voted_guilty = 0
             p.voted_innocent = 0
-            p.visited_by.append(set())
+            p.visited_by.append([])
             p.wear_vest_today = False
             p.alert_today = False
             p.burn_today = False
@@ -1503,6 +1503,7 @@ class GameRoom:
                     data = {
                         "type": "state",
                         "state": self.STATE,
+                        "who": self.elected.nickname,
                     }
                     await sio.emit("event", data, room=self.roomID)
                     await asyncio.sleep(self.DEFENSE_TIME)
@@ -1515,7 +1516,7 @@ class GameRoom:
                     await sio.emit("event", data, room=self.roomID)
                     await asyncio.sleep(self.VOTE_EXECUTION_TIME)
                     if self.elected.voted_guilty > self.elected.voted_innocent:
-                        self.elected.die(attacker="Vote")
+                        await self.elected.die(attacker="VOTE")
                         break
                     else:
                         self.VOTE_TIME_REMAINING = (
@@ -1617,11 +1618,12 @@ class Player:
         }
 
     async def die(self, attacker, dead_while_guarding=False):
-        self.room.die_today.add(self)
+        if attacker!="VOTE":
+            self.room.die_today.add(self)
         self.alive = False
         data = {
             "type": "dead",
-            "attacker": attacker.role.name,
+            "attacker": attacker.role.name if attacker!="VOTE" else "VOTE",
             "dead_while_guarding": dead_while_guarding,
         }
         await self.sio.emit("event", data, room=self.sid)
