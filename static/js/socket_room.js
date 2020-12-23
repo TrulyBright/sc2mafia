@@ -50,6 +50,9 @@ Socket.on('event', (data)=> {
         case 'DISCUSSION':
           addchat('토론 시간입니다.');
           break;
+        case 'DEFENSE':
+          addchat('변론 시간입니다. '+data['who']+'님, 당신의 무죄를 주장하세요.')
+          break;
         case 'VOTE':
           addchat('투표 시간입니다. "/투표 닉네임"을 입력하여 투표하세요. 명령어를 다시 입력하면 투표가 취소됩니다.');
           break;
@@ -96,46 +99,41 @@ Socket.on('event', (data)=> {
           addchat('이 조용한 마을에서 누군가 싸우는 소리를 들을 수 있었습니다.', 'red');
           break;
         case '경호원':
-          addchat('격렬한 총격전의 소리를 들었습니다.');
+          addchat('격렬한 총격전의 소리를 들었습니다.', 'red');
           break;
         case '자경대원':
-          addchat('마을을 완전히 뒤흔드는 총성을 들었습니다.');
+          addchat('마을을 완전히 뒤흔드는 총성을 들었습니다.', 'red');
           break;
         case '비밀조합장':
-          addchat('두개골이 부서지는 역겨운 소리를 들었습니다.');
+          addchat('두개골이 부서지는 역겨운 소리를 들었습니다.', 'red');
           break;
         case '버스기사':
-          addchat('누군가가 차에 치이는 소리를 들었습니다.');
+          addchat('누군가가 차에 치이는 소리를 들었습니다.', 'red');
           break;
         case '마피아 일원':
-          addchat('거리에 총성이 울리는 것을 들었습니다.');
+          addchat('거리에 총성이 울리는 것을 들었습니다.', 'red');
           break;
         case '연쇄살인마':
-          addchat('살인사건의 비명소리를 들었습니다.');
+          addchat('살인사건의 비명소리를 들었습니다.', 'red');
           break;
         case '대량학살자':
-          addchat('소름 끼치는 비명이 뒤섞인 소리를 들었습니다.');
+          addchat('소름 끼치는 비명이 뒤섞인 소리를 들었습니다.', 'red');
           break;
         case '방화범':
-          addchat('불이 타오르는 소리와 함께 운명을 저주하는 비명소리를 들을 수 있었습니다.');
+          addchat('불이 타오르는 소리와 함께 운명을 저주하는 비명소리를 들을 수 있었습니다.', 'red');
           break;
         case '잠입자':
-          addchat('둔탁한 소리에 의한 짧은 몸부림과 힘든 기침을 들었습니다.');
+          addchat('둔탁한 소리에 의한 짧은 몸부림과 힘든 기침을 들었습니다.', 'red');
           break;
         case '변장자':
-          addchat("둔탁한 '쿵' 소리와 함께 미세한 총소리를 간신히 들을 수 있었습니다.");
+          addchat("둔탁한 '쿵' 소리와 함께 미세한 총소리를 간신히 들을 수 있었습니다.", 'red');
           break;
         case '자살':
-          addchat('밤에 한 발의 총성을 들었습니다.');
+          addchat('밤에 한 발의 총성을 들었습니다.', 'red');
           break;
         case '마녀':
-          addchat('소름끼치는 웃음소리가 들립니다.');
+          addchat('소름끼치는 웃음소리가 들립니다.', 'red');
           break;
-      }
-      if (data['dead']) {
-        addchat(data['sound']+'의 소리가 들립니다.');
-      } else {
-        addchat(data['sound']+'의 소리가 들립니다...그러나 대상은 죽지 않았습니다.');
       }
       break;
     case 'wear_vest':
