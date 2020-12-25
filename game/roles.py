@@ -138,9 +138,6 @@ class Crier(TownGovernment):
 class Detective(TownInvestigative):
     name = "형사"
 
-    def check(self, target, day):
-        return None if target.target1 is None else target.target1.nickname
-
 
 class Doctor(TownProtective):
     name = "의사"
@@ -152,9 +149,6 @@ class Escort(TownProtective):
 
 class Investigator(TownInvestigative):
     name = "탐정"
-
-    def check(self, target, day):
-        return target.crimes
 
 
 class Jailor(TownPower, TownKilling):
@@ -170,9 +164,6 @@ class Lookout(TownInvestigative):
     def __init__(self):
         super().__init__()
         self.visitable_himself = True
-
-    def check(self, target, day):
-        return [p.nickname for p in target.visited_by[day]]
 
 
 class Marshall(TownGovernment):

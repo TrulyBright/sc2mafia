@@ -29,11 +29,9 @@ class GameRoom:
 
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
-            try:
+            if self.inGame:
                 commander = self.players[user["nickname"]]
-            except KeyError:  # 플레이어가 아닌 경우(게임이 시작한 이후에 들어왔다든지)
-                pass
-            except AttributeError:  # 게임이 시작하지 않았을 경우
+            else:
                 commander = user["nickname"]
             if msg.startswith("/"):
                 if hasattr(commander, "jailed") and commander.jailed:
@@ -280,7 +278,7 @@ class GameRoom:
                 if not self.inGame:
                     data = {
                         "type": "message",
-                        "who": commander,
+                        "who": commander.nickname if hasattr(commander, "nickname") else commander,
                         "message": msg,
                     }
                     await sio.emit("event", data, room=self.roomID)
@@ -562,6 +560,7 @@ class GameRoom:
         # 마녀 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Witch) and p.target1 and p.target2:
+                p.target1.visited_by[self.day].add(p)
                 if (isinstance(p.target1, roles.Veteran) and p.target1.alert_today) or (
                     isinstance(p.target1, roles.MassMurderer) and p.target1.murder_today
                 ):
@@ -582,6 +581,7 @@ class GameRoom:
         # 기생 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Escort) and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.target1 = None
                 p.target1.recruit_target = None
                 p.target1.burn_today = False
@@ -595,6 +595,7 @@ class GameRoom:
         # 매춘부 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Consort) and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.target1 = None
                 p.target1.recruit_target = None
                 p.target1.burn_today = False
@@ -608,6 +609,7 @@ class GameRoom:
         # 간통범 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Liaison) and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.target1 = None
                 p.target1.recruit_target = None
                 p.target1.burn_today = False
@@ -625,6 +627,7 @@ class GameRoom:
                 and p.target1
                 and p.role.ability_opportunity > 0
             ):
+                p.target1.visited_by[self.day].add(p)
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
@@ -639,6 +642,7 @@ class GameRoom:
                 and p.target1
                 and p.role.ability_opportunity > 0
             ):
+                p.target1.visited_by[self.day].add(p)
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
@@ -648,13 +652,11 @@ class GameRoom:
 
         # 방문자 모두 확정되면 방문자 목록에 추가
         # TODO: 방문자 로직 수정
-        for p in self.alive_list:
-            if p.target1:
-                p.target1.visited_by[self.day].add(p)
 
         # 방화범 기름칠 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Arsonist) and not p.burn_today and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.oiled = True
                 data = {
                     "type": "oiling_success",
@@ -666,11 +668,13 @@ class GameRoom:
         # 의사 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Doctor) and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.healed_by.append(p)
 
         # 경호원 능력 적용
         for p in self.alive_list:
             if isinstance(p.role, roles.Bodyguard) and p.target1:
+                p.target1.visited_by[self.day].add(p)
                 p.target1.bodyguarded_by.append(p)
 
         # 사망자 발생 시작
@@ -679,7 +683,8 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Veteran) and p.alert_today:
                 p.crimes["재물 손괴"] = True
-                for visitor in p.visited_by[self.day]:
+                for visitor in [visitor for visitor in self.alive_list if visitor.target1 is p]:
+                    p.visited_by[self.day].add(visitor)
                     if isinstance(visitor.role, roles.Lookout):
                         continue
                     if isinstance(visitor.role, roles.Doctor) or isinstance(
@@ -762,6 +767,7 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Vigilante) and p.target1:
                 victim = p.target1
+                victim.visited_by[self.day].add(p)
                 if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                     continue
                 if victim == p:
@@ -806,6 +812,7 @@ class GameRoom:
                 isinstance(p.role, roles.Mafioso) or isinstance(p.role, roles.Godfather)
             ) and p.target1:
                 victim = p.target1
+                victim.visited_by[self.day].add(p)
                 if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                     continue
                 if victim == p:
@@ -851,6 +858,7 @@ class GameRoom:
                 or isinstance(p.role, roles.DragonHead)
             ) and p.target1:
                 victim = p.target1
+                victim.visited_by[self.day].add(p)
                 if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                     continue
                 if victim == p:
@@ -893,6 +901,7 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.SerialKiller) and p.target1:
                 victim = p.target1
+                victim.visited_by[self.day].add(p)
                 if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                     continue
                 if victim == p:
@@ -962,6 +971,7 @@ class GameRoom:
                 p.crimes["호객행위"] = True
                 p.crimes["무단침입"] = True
                 victim = p.target1
+                victim.visited_by[self.day].add(p)
                 data = {
                     "type": "visited_cult",
                 }
@@ -998,6 +1008,7 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.MassMurderer) and p.target1:
                 p.crimes["무단침입"] = True
+                p.target1.visited_by[self.day].add(p)
                 victims = {
                     v
                     for v in self.alive_list
@@ -1091,42 +1102,110 @@ class GameRoom:
         for dead in self.die_today:
             self.alive_list.remove(dead)
 
+        # 살인직들의 살인이 반영된 방문자 목록 갱신
+        for p in self.alive_list:
+            if p.target1:
+                p.target1.visited_by[self.day].add(p)
+
         # TODO: 변장자, 밀고자 (사망자들 제거된 이후에 능력 발동됨)
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
 
-        # 범죄 추가
-        for p in self.alive_list:
-            for trespassing_role in (
-                roles.Investigator,
-                roles.Detective,
-                roles.Lookout,
-                roles.Consigliere,
-                roles.Agent,
-                roles.Framer,
-                roles.Administrator,
-                roles.Vanguard,
-                roles.Forger,
-            ):
-                if isinstance(p.role, trespassing_role) and p.target1:
-                    p.crimes["무단침입"] = True
         # 조사직들 능력 발동
+        # 검시관
         for p in self.alive_list:
-            for investigating_role in (
-                roles.TownInvestigative,
-                roles.Consigliere,
-                roles.Administrator,
-                roles.Agent,
-                roles.Vanguard,
-            ):
-                if isinstance(p.role, investigating_role) and p.target1:
-                    result = p.role.check(p.target1, self.day)
-                    data = {
-                        "type": "check_result",
-                        "role": p.role.name,
-                        "result": result,
-                    }
-                    await sio.emit("event", data, room=p.sid)
+            if isinstance(p.role, roles.Coroner) and p.target1 and not p.target1.alive:
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": [[(visitor.nickname, visitor.role) for visitor in visitors] for visitors in p.target1.visited_by[1:]]
+                }
+                await sio.emit("event", data, room=p.sid)
+
+        # 형사
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Detective) and p.target1:
+                p.crimes["무단침입"] = True
+                result = None
+                for visited in self.alive_list:
+                    if p.target1 in visited.visited_by[self.day]:
+                        # 그냥 p.taget1.target1을 주지 않고 이렇게 복잡하게 하는 것은
+                        # p.target1이 자신의 target1만 설정해놓고 실제로 능력을 쓰지는 못하고 이날 밤에 죽었을 경우에(퇴군에게 죽었을 경우를 제외)
+                        # None이 아닌 p.target1.target1을 주게 되면 형사 입장에서는 자기 목표가 능력을 쓰고 죽은 걸로 착각하게 되기 떄문이다.
+                        # 예시: 탐정이 시장을 방문. 대부가 탐정을 방문. 형사가 탐정을 방문.
+                        # 이때 그냥 p.target1.target1을 주게 되면 형사에게는 탐정이 시장을 방문한 것으로 보이게 됨. 실제로는 방문하지 못했음에도 불구.
+                        # 따라서 각 플레이어들의 visited_by에 p.target1이 들어가 있는지를 확인하여 실제로 방문했을 때만 결과를 전송해야 한다.
+                        result = visited.nickname
+                        break
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": result,
+                }
+                await sio.emit("event", data, room=p.sid)
+
+        # 탐정
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Investigator) and p.target1:
+                p.crimes["무단침입"] = True
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": p.target1.crimes,
+                }
+                await sio.emit("event", data, room=p.sid)
+
+        # 감시자
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Lookout) and p.target1:
+                p.crimes["무단침입"] = True
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": [p.nickname for p in p.target1.visited_by[self.day]]
+                }
+                await sio.emit("event", data, room=p.sid)
+
+        # 보안관
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Sheriff) and p.target1:
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": None,
+                }
+                for evil in (roles.Mafia, roles.Triad, roles.Cult):
+                    if isinstance(p.target1.role, evil):
+                        data["result"] = evil.team
+                        break
+                else:
+                    for killing in (roles.SerialKiller, roles.MassMurderer, roles.Arsonist):
+                        if isinstance(p.target1.role, killing):
+                            data["result"] = killing.name
+                            break
+                await sio.emit("event", data, room=p.sid)
+
+        # 조언자
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Consigliere) and p.target1:
+                p.crimes["무단침입"] = True
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": p.target1.role.name,
+                }
+                await sio.emit("event", data, room=p.sid)
+
+        # 백지선
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Administrator) and p.target1:
+                p.crimes["무단침입"] = True
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": p.target1.role.name,
+                }
+                await sio.emit("event", data, room=p.sid)
 
         # TODO: 변장자 이동
         # TODO: 어릿광대 괴롭히기
