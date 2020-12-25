@@ -3,6 +3,7 @@ class Role:
         self.detection_immune = False
         self.offense_level = 0
         self.defense_level = 0
+        self.visitable_himself = False
 
 
 """
@@ -117,6 +118,9 @@ class Bodyguard(TownProtective, TownKilling):
 
 class BusDriver(TownProtective, TownPower):
     name = "버스기사"
+    def __init__(self):
+        super().__init__()
+        self.visitable_himself = True
 
 
 class Citizen(TownGovernment):
@@ -163,6 +167,9 @@ class Jailor(TownPower, TownKilling):
 
 class Lookout(TownInvestigative):
     name = "감시자"
+    def __init__(self):
+        super().__init__()
+        self.visitable_himself = True
 
     def check(self, target, day):
         return [p.nickname for p in target.visited_by[day]]
@@ -428,6 +435,9 @@ class Survivor(NeutralBenign):
 
 class Witch(NeutralEvil):
     name = "마녀"
+    def __init__(self):
+        super().__init__()
+        self.visitable_himself = True
 
 
 class WitchDoctor(Cult):

@@ -53,6 +53,9 @@ class GameRoom:
                 else:
                     cmd = msg[0]
                     target1 = target2 = None
+                if hasattr(self, "players") and target1 and commander is self.players[target1]\
+                and not commander.role.visitable_himself:
+                    return
                 if cmd == "/시작" and sid == self.host and not self.inGame:
                     await self.init_game(sio)
                     await self.run_game(sio)
@@ -647,7 +650,7 @@ class GameRoom:
         # TODO: 방문자 로직 수정
         for p in self.alive_list:
             if p.target1:
-                p.target1.visited_by[self.day].append(p)
+                p.target1.visited_by[self.day].add(p)
 
         # 방화범 기름칠 적용
         for p in self.alive_list:
@@ -1317,7 +1320,7 @@ class GameRoom:
             p.votes_gotten = 0
             p.voted_guilty = 0
             p.voted_innocent = 0
-            p.visited_by.append([])
+            p.visited_by.append(set())
             p.wear_vest_today = False
             p.alert_today = False
             p.burn_today = False
@@ -1580,7 +1583,7 @@ class Player:
         self.voted_guilty = 0
         self.voted_innocent = 0
         self.lw = ""  # last will
-        self.visited_by = [None, []]
+        self.visited_by = [None, set()]
         self.wear_vest_today = False
         self.alert_today = False
         self.burn_today = False
