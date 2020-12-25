@@ -199,9 +199,6 @@ Socket.on('event', (data)=> {
             addchat('대상은 수상하지 않습니다.');
           }
           break;
-        case expression:
-
-          break;
       }
       break;
     case 'dead':
