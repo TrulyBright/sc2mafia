@@ -14,7 +14,7 @@ Teams
 
 
 class Town(Role):
-    team = "시민"
+    team = "시민" # 속성 "team"을 공유하는 클래스끼리는 같이 승리함.
 
 
 class Mafia(Role):
@@ -26,8 +26,7 @@ class Triad(Role):
 
 
 class Neutral(Role):
-    team = "중립"
-
+    pass
 
 """
 ==========
@@ -366,10 +365,12 @@ class Vanguard(TriadSupport):
 
 # Neutral
 class Amnesiac(NeutralBenign):
+    team = "기억상실자"
     name = "기억상실자"
 
 
 class Arsonist(NeutralKilling):
+    team = "방화범"
     name = "방화범"
 
     def __init__(self):
@@ -379,6 +380,7 @@ class Arsonist(NeutralKilling):
 
 
 class Auditor(NeutralEvil):
+    team = "회계사"
     name = "회계사"
 
 
@@ -395,23 +397,28 @@ class Jester(NeutralBenign):
 
 
 class Judge(NeutralEvil):
+    team = "판사"
     name = "판사"
 
 
 class MassMurderer(NeutralKilling):
+    team = "대량학살자"
     name = "대량학살자"
 
     def __init__(self):
         super().__init__()
         self.offense_level = 1
         self.defense_level = 1
+        self.visitable_himself = True
 
 
 class Scumbag(NeutralEvil):
+    team = "인간쓰레기"
     name = "인간쓰레기"
 
 
 class SerialKiller(NeutralKilling):
+    team = "연쇄살인마"
     name = "연쇄살인마"
 
     def __init__(self):
@@ -421,10 +428,12 @@ class SerialKiller(NeutralKilling):
 
 
 class Survivor(NeutralBenign):
+    team = "생존자"
     name = "생존자"
 
 
 class Witch(NeutralEvil):
+    team = "마녀"
     name = "마녀"
     def __init__(self):
         super().__init__()

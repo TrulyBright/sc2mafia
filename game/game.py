@@ -762,7 +762,7 @@ class GameRoom:
                 await p.has_jailed_whom.die(attacker=p)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
-
+        # TODO: 조종자살 시 소리만 나는 것 수정
         # 자경대원의 대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Vigilante) and p.target1:
@@ -1465,6 +1465,16 @@ class GameRoom:
             return not (arsonistRemains and massMurdererRemains and serialKillerRemains)
         return True  # 중선들만 남은 경우
 
+    def win(self, winning_role, include_dead):
+        if include_dead:
+            for p in self.players.values():
+                if isinstance(p.role, winning_role):
+                    p.win = True
+        else:
+            for p in self.alive_list:
+                if isinstance(p.role, winning_role):
+                    p.win = True
+
     async def init_game(self, sio):
         # init game
         print("Game initiated in room #", self.roomID)
@@ -1485,11 +1495,11 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Investigator(),
+                roles.MassMurderer(),
                 roles.Detective(),
                 roles.Mafioso(),
                 roles.Veteran(),
-                roles.Lookout(),
+                roles.Witch(),
             ]
         # random.shuffle(roles_to_distribute)
         self.players = {
@@ -1639,7 +1649,63 @@ class GameRoom:
     async def finish_game(self, sio):
         print("Game fininshed in room #", self.roomID)
         self.inGame = False
-        data = {"type": "game_over", "winner": [p.nickname for p in self.alive_list]}
+        remaining = self.alive_list
+        if len(remaining) == 0:
+            pass
+        else:
+            # 같이 이길 수 없는 세력들
+            for p in remaining:
+                if isinstance(p.role, roles.Arsonist):
+                    self.win(roles.Arsonist, False)
+                    break
+            else:
+                for p in remaining:
+                    if isinstance(p.role, roles.SerialKiller):
+                        self.win(roles.SerialKiller, False)
+                        break
+                else:
+                    for p in remaining:
+                        if isinstance(p.role, roles.MassMurderer):
+                            self.win(roles.MassMurderer, False)
+                            break
+                    else:
+                        for p in remaining:
+                            if isinstance(p.role, roles.Triad):
+                                self.win(roles.Triad, True)
+                                break
+                        else:
+                            for p in remaining:
+                                if isinstance(p.role, roles.Mafia):
+                                    self.win(roles.Mafia, True)
+                                    break
+                            else:
+                                for p in remaining:
+                                    if isinstance(p.role, roles.Cult):
+                                        self.win(roles.Cult, True)
+                                        break
+                                else:
+                                    for p in remaining:
+                                        if isinstance(p.role, roles.Town):
+                                            self.win(roles.Town, True)
+                                            break
+            for p in remaining:
+                if isinstance(p.role, roles.Scumbag):
+                    self.win(roles.Scumbag, False)
+                elif isinstance(p.role, roles.Witch):
+                    self.win(roles.Witch, False)
+                elif isinstance(p.role, roles.Judge):
+                    self.win(roles.Judge, False)
+                elif isinstance(p.role, roles.Auditor):
+                    self.win(roles.Auditor, False)
+                elif isinstance(p.role, roles.Survivor):
+                    self.win(roles.Survivor, False)
+                elif isinstance(p.role, roles.Amnesiac):
+                    self.win(roles.Amnesiac, False)
+
+        data = {
+            "type": "game_over",
+            "winner": [p.nickname for p in self.players.values() if p.win]
+        }
         await sio.emit("event", data, room=self.roomID)
 
 
@@ -1652,6 +1718,7 @@ class Player:
         self.role_record = [self.role]
         self.sio = sio
         self.alive = True
+        self.win = False
         self.votes = 1
         self.has_voted = False
         self.voted_to_whom = None
