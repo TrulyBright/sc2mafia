@@ -117,7 +117,11 @@ Socket.on('event', (data)=> {
           addchat('살인사건의 비명소리를 들었습니다.', 'red');
           break;
         case '대량학살자':
-          addchat('소름 끼치는 비명이 뒤섞인 소리를 들었습니다.', 'red');
+          if (data["number_of_murdered"] > 1) {
+            addchat("체인톱이 살을 갈아버리는 끔찍한 불협화음을 들었습니다.", "red")
+          } else {
+            addchat('소름 끼치는 비명이 뒤섞인 소리를 들었습니다.', 'red');
+          }
           break;
         case '방화범':
           addchat('불이 타오르는 소리와 함께 운명을 저주하는 비명소리를 들을 수 있었습니다.', 'red');
