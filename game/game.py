@@ -32,12 +32,23 @@ class GameRoom:
 
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
-            if self.inGame:
-                commander = self.players[user["nickname"]]
-            else:
-                commander = user["nickname"]
+            if not self.inGame:
+                if msg == "/시작" and sid == self.host:
+                    await self.init_game(sio)
+                    await self.run_game(sio)
+                    await self.finish_game(sio)
+                else:
+                    data = {
+                        "type": "message",
+                        "who": user["nickname"],
+                        "message": msg,
+                    }
+                    await sio.emit("event", data, room=self.roomID)
+                return
+
+            commander = self.players[user["nickname"]]
             if msg.startswith("/"):
-                if hasattr(commander, "jailed") and commander.jailed:
+                if commander.jailed:
                     return
                 msg = msg.split()
                 if len(msg) == 3:
@@ -54,13 +65,8 @@ class GameRoom:
                 else:
                     cmd = msg[0]
                     target1 = target2 = None
-                if hasattr(self, "players") and target1 and commander is self.players[target1]\
-                and not commander.role.visitable_himself:
+                if target1 and commander is self.players[target1] and not commander.role.visitable_himself:
                     return
-                if cmd == "/시작" and sid == self.host and not self.inGame:
-                    await self.init_game(sio)
-                    await self.run_game(sio)
-                    await self.finish_game(sio)
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
                     if not voter.alive:
@@ -278,14 +284,6 @@ class GameRoom:
                                 "event", data, room=commander.has_jailed_whom.jailID
                             )
             else:
-                if not self.inGame:
-                    data = {
-                        "type": "message",
-                        "who": commander.nickname if hasattr(commander, "nickname") else commander,
-                        "message": msg,
-                    }
-                    await sio.emit("event", data, room=self.roomID)
-                    return
                 if commander not in self.alive_list:
                     data = {
                         "type": "message",
