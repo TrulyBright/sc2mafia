@@ -1717,6 +1717,9 @@ class GameRoom:
                                self.spyRoomID,
                                self.masonChatID):
             await sio.close_room(in_game_chatID)
+        for p in self.players.values():
+            await sio.close_room(p.jailID)
+
         del self.alive_list
         del self.players
         del self
