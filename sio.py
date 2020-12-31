@@ -1,6 +1,5 @@
 import asyncio
 import game
-import json
 import socketio
 import json
 from aioredis import create_redis_pool
@@ -111,6 +110,8 @@ async def leave_GameRoom(sid, data):
         roomID = user["room"]
         room = room_list[roomID]
         room.members.remove(sid)
+        if room.inGame:
+            room.player_left(sid)
         print(user["username"], "leaves room #", roomID)
         sio.leave_room(sid, roomID)
         del user["room"]

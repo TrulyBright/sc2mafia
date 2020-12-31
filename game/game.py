@@ -1,4 +1,7 @@
 import random
+import sys
+import gc
+import _ctypes
 import asyncio
 from datetime import datetime, timedelta
 
@@ -678,7 +681,6 @@ class GameRoom:
                 p.target1.bodyguarded_by.append(p)
 
         # 사망자 발생 시작
-        self.die_today = set()
         # 경계 중인 퇴역군인에게 간 애들부터 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Veteran) and p.alert_today:
@@ -713,7 +715,7 @@ class GameRoom:
                                 H = BG.healed_by.pop()
                                 await BG.healed(attacker=p, healer=H)
                             else:
-                                await BG.die(attacker=p, dead_while_guarding=True)
+                                await BG.die(attacker=p, dead_while_guarding=True, room=self)
                                 p.crimes["살인"] = True
                         elif visitor.healed_by:
                             H = visitor.healed_by.pop()
@@ -721,7 +723,7 @@ class GameRoom:
                             await p.healed(attacker=p, healer=H)
                         else:
                             await self.emit_sound(sio, p.role.name)
-                            await visitor.die(attacker=p)
+                            await visitor.die(attacker=p, die_today=self.die_today, room=self)
                             p.crimes["살인"] = True
                     else:
                         await self.emit_sound(sio, p.role.name, dead=False)
@@ -735,7 +737,7 @@ class GameRoom:
                 and p.role.ability_opportunity > 0
             ):
                 await self.emit_sound(sio, roles.Jailor.name)
-                await p.has_jailed_whom.die(attacker=p)
+                await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
 
@@ -747,7 +749,7 @@ class GameRoom:
                 and p.role.ability_opportunity > 0
             ):
                 await self.emit_sound(sio, roles.Jailor.name)
-                await p.has_jailed_whom.die(attacker=p)
+                await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
 
@@ -759,7 +761,7 @@ class GameRoom:
                 and p.role.ability_opportunity > 0
             ):
                 await self.emit_sound(sio, roles.Jailor.name)
-                await p.has_jailed_whom.die(attacker=p)
+                await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
         # TODO: 조종자살 시 소리만 나는 것 수정
@@ -786,13 +788,13 @@ class GameRoom:
                         H = p.healed_by.pop()  # H stands for Healer
                         await p.healed(attacker=p, healer=H)
                     else:
-                        await p.die(attacker=BG)
+                        await p.die(attacker=BG, room=self)
                         BG.crimes["살인"] = True
                     if BG.healed_by:
                         H = BG.healed_by.pop()
                         await BG.healed(attacker=p, healer=H, dead_while_guarding=True)
                     else:
-                        await BG.die(attacker=p, dead_while_guarding=True)
+                        await BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif self.killable(p, victim):
                     await self.emit_sound(sio, p.role.name)
@@ -800,7 +802,7 @@ class GameRoom:
                         H = victim.healed_by.pop()
                         await victim.healed(attacker=p, healer=H)
                     else:
-                        await victim.die(attacker=p)
+                        await victim.die(attacker=p, room=self)
                         p.crimes["살인"] = True
                 else:
                     await self.emit_sound(sio, p.role.name, dead=False)
@@ -831,13 +833,13 @@ class GameRoom:
                         H = p.healed_by.pop()  # H stands for Healer
                         await p.healed(attacker=p, healer=H)
                     else:
-                        await p.die(attacker=BG)
+                        await p.die(attacker=BG, room=self)
                         BG.crimes["살인"] = True
                     if BG.healed_by:
                         H = BG.healed_by.pop()
                         await BG.healed(attacker=p, healer=H, dead_while_guarding=True)
                     else:
-                        await BG.die(attacker=p, dead_while_guarding=True)
+                        await BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif self.killable(p, victim):
                     await self.emit_sound(sio, roles.Mafioso.name)
@@ -845,7 +847,7 @@ class GameRoom:
                         H = victim.healed_by.pop()
                         await victim.healed(attacker=p, healer=H)
                     else:
-                        await victim.die(attacker=p)
+                        await victim.die(attacker=p, room=self)
                         p.crimes["살인"] = True
                 else:
                     await self.emit_sound(sio, roles.Mafioso.name, dead=False)
@@ -877,13 +879,13 @@ class GameRoom:
                         H = p.healed_by.pop()  # H stands for Healer
                         await p.healed(attacker=p, healer=H)
                     else:
-                        await p.die(attacker=BG)
+                        await p.die(attacker=BG, room=self)
                         BG.crimes["살인"] = True
                     if BG.healed_by:
                         H = BG.healed_by.pop()
                         await BG.healed(attacker=p, healer=H, dead_while_guarding=True)
                     else:
-                        await BG.die(attacker=p, dead_while_guarding=True)
+                        await BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif self.killable(p, victim):
                     await self.emit_sound(sio, roles.Mafioso.name)
@@ -891,7 +893,7 @@ class GameRoom:
                         H = victim.healed_by.pop()
                         await victim.healed(attacker=p, healer=H)
                     else:
-                        await victim.die(attacker=p)
+                        await victim.die(attacker=p, room=self)
                         p.crimes["살인"] = True
                 else:
                     await self.emit_sound(sio, roles.Mafioso.name, dead=False)
@@ -920,13 +922,13 @@ class GameRoom:
                         H = p.healed_by.pop()  # H stands for Healer
                         await p.healed(attacker=p, healer=H)
                     else:
-                        await p.die(attacker=BG)
+                        await p.die(attacker=BG, room=self)
                         BG.crimes["살인"] = True
                     if BG.healed_by:
                         H = BG.healed_by.pop()
                         await BG.healed(attacker=p, healer=H, dead_while_guarding=True)
                     else:
-                        await BG.die(attacker=p, dead_while_guarding=True)
+                        await BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif self.killable(p, victim):
                     await self.emit_sound(sio, p.role.name)
@@ -934,7 +936,7 @@ class GameRoom:
                         H = victim.healed_by.pop()
                         await victim.healed(attacker=p, healer=H)
                     else:
-                        await victim.die(attacker=p)
+                        await victim.die(attacker=p, room=self)
                         p.crimes["살인"] = True
                 else:
                     await self.emit_sound(sio, p.role.name, dead=False)
@@ -956,7 +958,7 @@ class GameRoom:
                             H = victim.healed_by.pop()
                             victim.healed(attacker=p, healer=H)
                         else:
-                            victim.die(attacker=p)
+                            victim.die(attacker=p, room=self)
                             p.crimes["살인"] = True
                     else:
                         victim.attacked(attacker=p)
@@ -984,13 +986,13 @@ class GameRoom:
                         H = p.healed_by.pop()
                         await p.healed(attacker=BG, healer=H)
                     else:
-                        await p.die(attacker=BG)
+                        await p.die(attacker=BG, room=self)
                         BG.crimes["살인"] = True
                     if BG.healed_by:
                         H = BG.healed_by.pop()
                         await BG.healed(attacker=p)
                     else:
-                        BG.die(attacker=p, dead_while_guarding=True)
+                        BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif not self.killable(p, victim):
                     await self.emit_sound(sio, p.role.name)
@@ -1001,7 +1003,7 @@ class GameRoom:
                     await victim.healed(attacker=p, healer=H)
                 else:
                     await self.emit_sound(sio, p.role.name)
-                    await victim.die(attacker=p)
+                    await victim.die(attacker=p, room=self)
                     p.crimes["살인"] = True
 
         # 대량학살자 살인 적용
@@ -1031,13 +1033,13 @@ class GameRoom:
                             H = p.healed_by.pop()
                             await p.healed(attacker=BG, healer=H)
                         else:
-                            await p.die(attacker=BG)
+                            await p.die(attacker=BG, room=self)
                             BG.crimes["살인"] = True
                         if BG.healed_by:
                             H = BG.healed_by.pop()
                             await BG.healed(attacker=p, healer=H)
                         else:
-                            await BG.die(attacker=p)
+                            await BG.die(attacker=p, room=self)
                             p.crimes["살인"] = True
                     elif not self.killable(p, v):
                         await v.attacked(attacker=p)
@@ -1045,7 +1047,7 @@ class GameRoom:
                         H = v.healed_by.pop()
                         await v.healed(attacker=p, healer=H)
                     else:
-                        await v.die(attacker=p)
+                        await v.die(attacker=p, room=self)
                         p.crimes["살인"] = True
 
         # 어릿광대 자살 적용
@@ -1058,35 +1060,13 @@ class GameRoom:
                 H = victim.healed_by.pop()
                 await victim.healed(attacker=roles.Jester(), healer=H)
             else:
-                await victim.die(attacker=roles.Jester())
+                await victim.die(attacker=roles.Jester(), room=self)
 
         # TODO: 심장마비 자살
         # TODO: 변장자
         # TODO: 밀고자
 
         # 고의 자살 적용
-        for p in self.alive_list:
-            if p.suicide_today:
-                await self.emit_sound(sio, "자살")
-                if p.healed_by:
-                    H = p.healed_by.pop()
-
-                    class Dummy:  # dummy class
-                        pass
-
-                    dummy = Dummy()
-                    dummy.role = Dummy()
-                    dummy.role.name = "자살"
-                    await victim.healed(attacker=dummy, healer=H)
-                else:
-
-                    class Dummy:
-                        pass
-
-                    dummy = Dummy()
-                    dummy.role = Dummy()
-                    dummy.role.name = "자살"
-                    await victim.die(attacker=Dummy)
 
         # 마녀 저주 적용
         for p in self.alive_list:
@@ -1096,21 +1076,38 @@ class GameRoom:
                     H = victim.healed_by.pop()
                     await victim.healed(attacker=p, healer=H)
                 else:
-                    await victim.die(attacker=p)
+                    await victim.die(attacker=p, room=self)
 
         # 사망자들 제거
         for dead in self.die_today:
             self.alive_list.remove(dead)
 
         # 살인직들의 살인이 반영된 방문자 목록 갱신
-        for p in self.alive_list:
-            if p.target1:
-                p.target1.visited_by[self.day].add(p)
-
         # TODO: 변장자, 밀고자 (사망자들 제거된 이후에 능력 발동됨)
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
 
+        # 고의 자살 적용
+        for p in self.alive_list:
+            if p.suicide_today:
+                await self.emit_sound(sio, "자살")
+                if p.healed_by:
+                    H = p.healed_by.pop()
+                    class Dummy:  # dummy class
+                        pass
+                    dummy = Dummy()
+                    dummy.role = Dummy()
+                    dummy.role.name = "자살"
+                    await p.healed(attacker=dummy, healer=H)
+                else:
+                    class Dummy:
+                        pass
+                    dummy = Dummy()
+                    dummy.role = Dummy()
+                    dummy.role.name = "자살"
+                    await p.die(attacker=dummy, room=self)
+                    self.die_today.add(p)
+                    self.alive_list.remove(p)
         # 조사직들 능력 발동
         # 검시관
         for p in self.alive_list:
@@ -1481,6 +1478,7 @@ class GameRoom:
         self.inGame = True
         self.election = asyncio.Event()
         self.day = 0
+        self.die_today = set()
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.MORNING_TIME = 5
@@ -1488,7 +1486,7 @@ class GameRoom:
             self.VOTE_TIME = 10
             self.DEFENSE_TIME = 10
             self.VOTE_EXECUTION_TIME = 10
-            self.EVENING_TIME = 30
+            self.EVENING_TIME = 10
         if self.setup == "8331":
             pass
         elif self.setup == "power_conflict":
@@ -1505,7 +1503,7 @@ class GameRoom:
         self.players = {
             (await sio.get_session(sid))["nickname"]: Player(
                 sid=sid,
-                room=self,
+                roomID=self.roomID,
                 nickname=(await sio.get_session(sid))["nickname"],
                 role=roles_to_distribute.pop(),
                 sio=sio,
@@ -1608,7 +1606,7 @@ class GameRoom:
                     await sio.emit("event", data, room=self.roomID)
                     await asyncio.sleep(self.VOTE_EXECUTION_TIME)
                     if self.elected.voted_guilty > self.elected.voted_innocent:
-                        await self.elected.die(attacker="VOTE")
+                        await self.elected.die(attacker="VOTE", room=self)
                         break
                     else:
                         self.VOTE_TIME_REMAINING = (
@@ -1647,7 +1645,7 @@ class GameRoom:
             await self.clear_up()
 
     async def finish_game(self, sio):
-        print("Game fininshed in room #", self.roomID)
+        print("Game finished in room #", self.roomID)
         self.inGame = False
         remaining = self.alive_list
         if len(remaining) == 0:
@@ -1685,9 +1683,14 @@ class GameRoom:
                                         break
                                 else:
                                     for p in remaining:
-                                        if isinstance(p.role, roles.Town):
-                                            self.win(roles.Town, True)
+                                        if isinstance(p.role, roles.NeutralEvil):
+                                            self.win(roles.NeutralEvil, False)
                                             break
+                                    else:
+                                        for p in remaining:
+                                            if isinstance(p.role, roles.Town):
+                                                self.win(roles.Town, True)
+                                                break
             for p in remaining:
                 if isinstance(p.role, roles.Scumbag):
                     self.win(roles.Scumbag, False)
@@ -1707,12 +1710,27 @@ class GameRoom:
             "winner": [p.nickname for p in self.players.values() if p.win]
         }
         await sio.emit("event", data, room=self.roomID)
+        for in_game_chatID in (self.hellID,
+                               self.mafiaChatID,
+                               self.triadChatID,
+                               self.cultChatID,
+                               self.spyRoomID,
+                               self.masonChatID):
+            await sio.close_room(in_game_chatID)
+        del self.alive_list
+        del self.players
+        del self
+
+    def player_left(self, sid):
+        for p in self.players.values():
+            if p.sid==sid:
+                p.suicide_today = True
+                break
 
 
 class Player:
-    def __init__(self, sid, room, nickname, role, sio):
+    def __init__(self, sid, roomID, nickname, role, sio):
         self.sid = sid
-        self.room = room
         self.nickname = nickname
         self.role = role
         self.role_record = [self.role]
@@ -1741,7 +1759,7 @@ class Player:
         self.oiled = False
         self.jailed = False
         self.jailed_by = []
-        self.jailID = str(room.roomID) + "_Jail_" + self.nickname
+        self.jailID = str(roomID) + "_Jail_" + self.nickname
         self.has_jailed_whom = None
         self.kill_the_jailed_today = False
         self.has_disguised = False
@@ -1766,9 +1784,9 @@ class Player:
             "방화": False,
         }
 
-    async def die(self, attacker, dead_while_guarding=False):
+    async def die(self, room, attacker, dead_while_guarding=False):
         if attacker!="VOTE":
-            self.room.die_today.add(self)
+            room.die_today.add(self)
         self.alive = False
         data = {
             "type": "dead",
@@ -1779,7 +1797,7 @@ class Player:
         if self.nightChatID:
             self.sio.leave_room(self.sid, self.nightChatID)
             self.nightChatID = None
-        self.sio.enter_room(self.sid, self.room.hellID)
+        self.sio.enter_room(self.sid, room.hellID)
 
     async def attacked(self, attacker):
         data = {
