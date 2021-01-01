@@ -68,7 +68,7 @@ async def enter_GameRoom(sid, data):
             await leave_GameRoom(sid, None)
         roomID = data["roomID"]
         if roomID in room_list:
-            if room_list[roomID].isFull():
+            if room_list[roomID].is_full():
                 print(user["username"], "fails to enter room #", roomID)
                 await sio.emit(
                     "failed_to_enter_GameRoom",
@@ -163,8 +163,8 @@ async def create_GameRoom(sid, data):
             host=user,
             setup=data["setup"],
         )
-        await enter_GameRoom(sid, {"roomID": next_roomID})
         next_roomID += 1
+        await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
 
 async def broadcast_room_list():
