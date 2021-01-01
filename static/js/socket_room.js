@@ -205,6 +205,9 @@ Socket.on('event', (data)=> {
           break;
       }
       break;
+    case "spy_result":
+      addchat("오늘 밤 "+data["team"]+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
+      break;
     case 'dead':
       if (data['dead_while_guarding']) {
         addchat('당신은 '+data['attacker']+'에게서 대상을 지키고 대신 사망했습니다.', 'red');

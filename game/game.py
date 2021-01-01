@@ -27,7 +27,7 @@ class GameRoom:
         self.inGame = False
         self.justCreated = True
 
-    def isFull(self):
+    def is_full(self):
         return len(self.members) >= self.capacity
 
     async def handle_message(self, sio, sid, msg):
@@ -1202,6 +1202,17 @@ class GameRoom:
                 }
                 await sio.emit("event", data, room=p.sid)
 
+        # 정보원
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Spy):
+                for p2 in self.alive_list:
+                    if (isinstance(p2.role, roles.Mafia) or isinstance(p2.role, roles.Triad)) and p2.target1:
+                        data = {
+                            "type": "spy_result",
+                            "team": p2.role.team,
+                            "result": p2.target1.nickname,
+                        }
+                        await sio.emit("event", data, room=p.sid)
         # TODO: 변장자 이동
         # TODO: 어릿광대 괴롭히기
 
@@ -1491,10 +1502,10 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.MassMurderer(),
-                roles.Detective(),
+                roles.DragonHead(),
+                roles.Beguiler(),
                 roles.Mafioso(),
-                roles.Veteran(),
+                roles.Spy(),
                 roles.Witch(),
             ]
         # random.shuffle(roles_to_distribute)
@@ -1823,12 +1834,5 @@ class Player:
         data = {
             "type": "bodyguarded",
             "attacker": attacker.role.name,
-        }
-        await self.sio.emit("event", data, room=self.sid)
-
-    async def suicide(self, reason):
-        data = {
-            "type": "suicide",
-            "reason": reason,
         }
         await self.sio.emit("event", data, room=self.sid)
