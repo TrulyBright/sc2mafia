@@ -229,10 +229,19 @@ Socket.on('event', (data)=> {
     case 'suicide':
       switch (data['reason']) {
         case '고의':
-          addchat('당신은 자살했습니다.');
+          addchat('당신은 자살했습니다.', 'red');
           break;
         case '어릿광대':
-          addchat('당신은 어릿광대를 죽였다는 죄책감에 못이겨 자살했습니다.');
+          addchat('당신은 어릿광대를 죽였다는 죄책감에 못이겨 자살했습니다.', 'red');
+          break;
+        case "마녀":
+          addchat("당신은 마녀에게 조종되어 자살당했습니다.", 'red');
+          break;
+        case "잠입자":
+          addchat("당신은 잠입자에게 조종되어 자살당했습니다.", "red");
+          break;
+        case "사기꾼":
+          addchat("당신은 사기꾼에게 조종되어 자살당했습니다.", "red");
           break;
       }
       break;

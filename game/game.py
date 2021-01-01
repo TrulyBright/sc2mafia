@@ -568,6 +568,7 @@ class GameRoom:
                     continue
                 else:
                     p.target1.target1 = p.target2
+                    p.target1.controlled_by = p
                     data = {
                         "type": "Witch_control_success",
                         "target1": p.target1.nickname,
@@ -632,6 +633,7 @@ class GameRoom:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
+                        p2.controlled_by = p
                 p.crimes["무단침입"] = True
                 p.role.ability_opportunity -= 1
                 # TODO: 자살유도 범죄 추가
@@ -647,6 +649,7 @@ class GameRoom:
                 for p2 in self.alive_list:
                     if p2.target1 is p:
                         p2.target1 = p.target1
+                        p2.controlled_by = p
                 p.crimes["무단침입"] = True
                 p.role.ability_opportunity -= 1
                 # TODO: 자살유도 범죄 추가
@@ -773,6 +776,7 @@ class GameRoom:
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, "Suicide_by_control")
+                        await p.suicide(reason=p.controlled_by.role.name)
                     else:
                         data = {"type": "almost_suicide"}
                         await sio.emit("event", data, room=p.sid)
@@ -818,6 +822,7 @@ class GameRoom:
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, "Suicide_by_control")
+                        await p.suicide(reason=p.controlled_by.role.name)
                     else:
                         data = {"type": "almost_suicide"}
                         await sio.emit("event", data, room=p.sid)
@@ -864,6 +869,7 @@ class GameRoom:
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, "Suicide_by_control")
+                        await p.suicide(reason=p.controlled_by.role.name)
                     else:
                         data = {"type": "almost_suicide"}
                         await sio.emit("event", data, room=p.sid)
@@ -907,6 +913,7 @@ class GameRoom:
                 if victim == p:
                     if self.killable(p, p):
                         await self.emit_sound(sio, "Suicide_by_control")
+                        await p.suicide(reason=p.controlled_by.role.name)
                     else:
                         data = {"type": "almost_suicide"}
                         await sio.emit("event", data, room=p.sid)
@@ -1056,9 +1063,14 @@ class GameRoom:
             await self.emit_sound(sio, "자살")
             if victim.healed_by:
                 H = victim.healed_by.pop()
-                await victim.healed(attacker=roles.Jester(), healer=H)
+                class Dummy:
+                    pass
+                d = Dummy()
+                d.role = Dummy()
+                d.role.name = roles.Jester.name
+                await victim.healed(attacker=d, healer=H)
             else:
-                await victim.die(attacker=roles.Jester(), room=self)
+                await victim.suicide(reason=roles.Jester.name)
 
         # TODO: 심장마비 자살
         # TODO: 변장자
@@ -1098,12 +1110,7 @@ class GameRoom:
                     dummy.role.name = "자살"
                     await p.healed(attacker=dummy, healer=H)
                 else:
-                    class Dummy:
-                        pass
-                    dummy = Dummy()
-                    dummy.role = Dummy()
-                    dummy.role.name = "자살"
-                    await p.die(attacker=dummy, room=self)
+                    await p.suicide(reason="고의")
                     self.die_today.add(p)
                     self.alive_list.remove(p)
         # 조사직들 능력 발동
@@ -1202,6 +1209,7 @@ class GameRoom:
                 }
                 await sio.emit("event", data, room=p.sid)
 
+        # TODO: 변장자 이동
         # 정보원
         for p in self.alive_list:
             if isinstance(p.role, roles.Spy):
@@ -1213,9 +1221,7 @@ class GameRoom:
                             "result": p2.target1.nickname,
                         }
                         await sio.emit("event", data, room=p.sid)
-        # TODO: 변장자 이동
         # TODO: 어릿광대 괴롭히기
-
         # 회계
         for p in self.alive_list:
             if isinstance(p.role, roles.Auditor) and p.target1:
@@ -1760,6 +1766,7 @@ class Player:
         self.voted_innocent = 0
         self.lw = ""  # last will
         self.visited_by = [None, set()]
+        self.controlled_by = None
         self.wear_vest_today = False
         self.alert_today = False
         self.burn_today = False
@@ -1834,5 +1841,12 @@ class Player:
         data = {
             "type": "bodyguarded",
             "attacker": attacker.role.name,
+        }
+        await self.sio.emit("event", data, room=self.sid)
+
+    async def suicide(self, reason):
+        data = {
+            "type": "suicide",
+            "reason": reason,
         }
         await self.sio.emit("event", data, room=self.sid)
