@@ -136,7 +136,6 @@ class GameRoom:
                         and visitor.cannot_murder_until >= self.day
                     ):
                         return
-                    # TODO: 특정 직업 제외 스스로 방문 금지
                     visitor.target1 = visited
                     if target2 and (
                         isinstance(visitor.role, roles.Witch)
@@ -542,7 +541,7 @@ class GameRoom:
         # 생존자 방탄 착용
         for p in self.alive_list:
             if isinstance(p.role, roles.Survivor) and p.wear_vest_today:
-                p.defense_level = 1
+                p.role.defense_level = 1
                 data = {
                     "type": "wear_vest_confirmed",
                     "wear_vest": p.wear_vest_today,
@@ -552,7 +551,7 @@ class GameRoom:
         # 시민 방탄 착용
         for p in self.alive_list:
             if isinstance(p.role, roles.Citizen) and p.wear_vest_today:
-                p.defense_level = 1
+                p.role.defense_level = 1
                 data = {
                     "type": "wear_vest",
                 }
@@ -1093,6 +1092,9 @@ class GameRoom:
             self.alive_list.remove(dead)
 
         # 살인직들의 살인이 반영된 방문자 목록 갱신
+        for p in self.alive_list:
+            if p.target1:
+                p.target1.visited_by[self.day].add(p)
         # TODO: 변장자, 밀고자 (사망자들 제거된 이후에 능력 발동됨)
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
