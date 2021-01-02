@@ -45,6 +45,15 @@ class GameRoom:
                     }
                     await sio.emit("event", data, room=self.roomID)
                 return
+            if user["nickname"] not in self.players: # 나중에 들어온 사람일 경우: HellID에 입장한 상태임.
+                data = {
+                    "type": "message",
+                    "who": user["nickname"],
+                    "message": msg,
+                    "hell": True,
+                }
+                await sio.emit("event", data, room=self.hellID)
+                return
 
             commander = self.players[user["nickname"]]
             if msg.startswith("/"):
@@ -288,6 +297,7 @@ class GameRoom:
                         "type": "message",
                         "who": user["nickname"],
                         "message": msg,
+                        "hell": True,
                     }
                     await sio.emit("event", data, room=self.hellID)
                 elif self.STATE == "NIGHT":
@@ -1569,7 +1579,7 @@ class GameRoom:
 
     async def run_game(self, sio):
         print("Game starts in room #", self.roomID)
-        while not self.game_over():
+        while True:
             self.day += 1
             # MORNING
             self.STATE = "MORNING"
@@ -1578,7 +1588,17 @@ class GameRoom:
                 "state": self.STATE,
             }
             await sio.emit("event", data, room=self.roomID)
-            await asyncio.sleep(self.MORNING_TIME)
+            for dead in self.die_today:
+                data = {
+                    "type": "dead_announce",
+                    "dead": dead.nickname,
+                    "lw": dead.lw,
+                }
+                await sio.emit("event", data, room=self.roomID)
+                await asyncio.sleep(5)
+            if self.game_over():
+                return
+            self.die_today = set() # 사망자 목록 초기화
             # DISCUSSION
             self.STATE = "DISCUSSION"
             data = {
@@ -1634,7 +1654,7 @@ class GameRoom:
                             "type": "state",
                             "state": self.STATE,
                         }
-                        await sio.emit("event", self.STATE, room=self.roomID)
+                        await sio.emit("event", data, room=self.roomID)
                 finally:
                     self.election.clear()
                     self.elected = None
@@ -1741,21 +1761,34 @@ class GameRoom:
         del self.players
         del self
 
-    def player_left(self, sid):
-        for p in self.players.values():
-            if p.sid==sid:
-                p.suicide_today = True
-                break
+    async def someone_entered(self, sid, sio):
+        player_list = list(map(lambda s: s["username"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
+        await sio.emit("player_list", player_list, room=self.roomID)
+        if self.inGame:
+            enterer = (await sio.get_session(sid))["nickname"]
+            if enterer in self.players and self.players[enterer].alive:
+                pass
+            else:
+                sio.enter_room(sid, self.hellID)
+
+    async def someone_left(self, sid, sio):
+        player_list = list(map(lambda s: s["username"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
+        await sio.emit("player_list", player_list, room=self.roomID)
+        if self.inGame:
+            for p in self.players.values():
+                if p.sid==sid:
+                    p.suicide_today = True
+                    break
 
 
 class Player:
-    def __init__(self, sid, roomID, nickname, role, sio):
+    def __init__(self, sid, roomID, nickname, role, sio, alive=True):
         self.sid = sid
         self.nickname = nickname
         self.role = role
         self.role_record = [self.role]
         self.sio = sio
-        self.alive = True
+        self.alive = alive
         self.win = False
         self.votes = 1
         self.has_voted = False
@@ -1847,6 +1880,7 @@ class Player:
         await self.sio.emit("event", data, room=self.sid)
 
     async def suicide(self, reason):
+        # TODO: suicide()를 그냥 die()로 대체
         data = {
             "type": "suicide",
             "reason": reason,

@@ -92,6 +92,7 @@ async def enter_GameRoom(sid, data):
                 )
                 print(user["username"], "enters room #", roomID)
                 await broadcast_room_list()
+                await room.someone_entered(sid, sio)
         else:
             print(user["username"], "fails to enter room #", roomID)
             await sio.emit(
@@ -110,12 +111,11 @@ async def leave_GameRoom(sid, data):
         roomID = user["room"]
         room = room_list[roomID]
         room.members.remove(sid)
-        if room.inGame:
-            room.player_left(sid)
         print(user["username"], "leaves room #", roomID)
         sio.leave_room(sid, roomID)
         del user["room"]
         await sio.save_session(sid, user)
+        await room.someone_left(sid, sio)
         if sid == room.host and room.members:
             room.host = room.members[0]
             print(
