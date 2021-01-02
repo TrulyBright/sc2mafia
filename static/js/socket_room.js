@@ -21,6 +21,10 @@ function send_message(event) {
   chatInput.value = '';
 };
 
+Socket.on("player_list", (data)=>{
+  console.log(data);
+});
+
 Socket.on('event', (data)=> {
   console.log(data);
   switch (data['type']) {
@@ -244,6 +248,11 @@ Socket.on('event', (data)=> {
           addchat("당신은 사기꾼에게 조종되어 자살당했습니다.", "red");
           break;
       }
+      break;
+    case "dead_announce":
+      addchat(data["dead"]+"님이 사망헀습니다.");
+      addchat(data["dead"]+"님의 유언:");
+      addchat(data["lw"]);
       break;
     default:
       addchat(data);
