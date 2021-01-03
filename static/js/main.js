@@ -23,8 +23,17 @@ show_modal_button.onclick = (event) => {
     let setup = document.querySelector('#GameRoom_setup').value;
     create_GameRoom(title, capacity, password, setup);
   };
-}
+};
+
 document.querySelector("#leave_GameRoom_button").addEventListener("click", confirm_leave_GameRoom);
+document.querySelector("#start_button").addEventListener("click", (event)=>{
+  Socket.emit("message", "/시작");
+});
+
+document.querySelector("#ready_button").addEventListener("click", (event)=>{
+  Socket.emit("message", "/준비");
+});
+
 
 function enter_GameRoom (roomID) {
   Socket.emit('enter_GameRoom', {
@@ -73,6 +82,7 @@ Socket.on('failed_to_enter_GameRoom', (data)=>{
       console.log(data);
   }
 });
+
 Socket.on('room_list', (room_list)=> {
   console.log(room_list)
   let tbody = document.querySelector('.room_list tbody');

@@ -87,9 +87,11 @@ async def enter_GameRoom(sid, data):
                     room.justCreated = False
                 await sio.save_session(sid, user)
                 await sio.emit("enter_GameRoom_success", roomID, room=sid)
-                await sio.emit(
-                    "event", {"type": "enter", "who": user["nickname"]}, room=roomID
-                )
+                data = {
+                    "type": "enter",
+                    "who": user["nickname"],
+                }
+                await room.emit_event(sio, data, roomID)
                 print(user["username"], "enters room #", roomID)
                 await broadcast_room_list()
                 await room.someone_entered(sid, sio)
@@ -124,14 +126,11 @@ async def leave_GameRoom(sid, data):
                 "new host to",
                 (await sio.get_session(room.host))["nickname"],
             )
-            await sio.emit(
-                "event",
-                {
-                    "type": "newhost",
-                    "who": (await sio.get_session(room.host))["nickname"],
-                },
-                room=roomID,
-            )
+            data = {
+                "type": "newhost",
+                "who": (await sio.get_session(room.host))["nickname"],
+            }
+            await room.emit_event(sio, data, roomID)
         if not room.members:
             await sio.close_room(roomID)
             del room_list[roomID]
@@ -167,6 +166,39 @@ async def create_GameRoom(sid, data):
         await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
 
+@sio.event
+async def kick(sid, kicked):
+    if not isinstance(kicked, str): return
+    async with sio.session(sid) as user:
+        roomID = user.get("room")
+        room = room_list.get(roomID)
+        if not room or room.host!=sid: return
+        if room.inGame:
+            data = {
+                "type": "unable_to_kick",
+                "reason": "게임 중에는 강퇴할 수 없습니다."
+            }
+            await room.emit_event(sio, data, sid)
+            return
+        for m_sid in room.members:
+            if (await sio.get_session(m_sid))["nickname"] == kicked:
+                kicked_sid = m_sid
+                break
+        else:
+            return
+        data = {
+            "type": "kick",
+            "kicker": user["nickname"],
+            "kicked": kicked,
+        }
+        await room.emit_event(sio, data, room.roomID)
+        data = {
+            "type": "kicked",
+        }
+        await room.emit_event(sio, data, kicked_sid)
+        await leave_GameRoom(kicked_sid, None)
+
+
 async def broadcast_room_list():
     to_send = {roomID: room.title for roomID, room in room_list.items()}
     await sio.emit("room_list", to_send)
@@ -180,6 +212,9 @@ async def request_room_list(sid, data):
 
 @sio.event
 async def message(sid, msg):
-    assert type(msg) == str
+    if not isinstance(msg, str): return
     async with sio.session(sid) as user:
-        await room_list[user["room"]].handle_message(sio, sid, msg)
+        if msg.startswith("/강퇴") and len(msg.split())>=2:
+            await kick(sid, msg.split()[1])
+        else:
+            await room_list[user["room"]].handle_message(sio, sid, msg)

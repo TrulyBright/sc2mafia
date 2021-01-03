@@ -29,7 +29,6 @@ Socket.on("player_list", (data)=>{
     let div = document.createElement("div");
     let a = document.createElement("a");
     a.setAttribute("href", "#");
-    a.addEventListener("click", show_modal_for_player)
     a.innerHTML = nickname;
     div.appendChild(a);
     player_list.appendChild(div);
@@ -50,6 +49,15 @@ Socket.on('event', (data)=> {
       break;
     case 'newhost':
       addchat(data['who']+'님이 방장이 되었습니다.');
+      break;
+    case "kick":
+      addchat(data["kicker"]+"님이 "+data["kicked"]+"님을 강퇴했습니다.");
+      break;
+    case "kicked":
+      alert("방장이 당신을 강퇴했습니다.");
+      break;
+    case "unable_to_kick":
+      addchat(data["reason"]);
       break;
     case 'game_over':
       addchat('게임이 끝났습니다. 승자들은 '+data['winner']+' 등입니다.');

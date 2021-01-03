@@ -28,11 +28,14 @@ class GameRoom:
         self.private = private
         self.inGame = False
         self.justCreated = True
+        self.message_record = []
 
     def is_full(self):
         return len(self.members) >= self.capacity
 
     def write_to_record(self, sio, data, room, skip_sid):
+        if not self.inGame:
+            return
         receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid)]
         self.message_record.append((time.time(), str(data), str(receivers)))
 
@@ -1496,7 +1499,7 @@ class GameRoom:
         self.election = asyncio.Event()
         self.day = 0
         self.die_today = set()
-        self.message_record = []
+        self.message_record = [] # 초기화
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.MORNING_TIME = 5
@@ -1751,7 +1754,7 @@ class GameRoom:
                 await DB.execute(query)
                 await DB.commit()
             gamelog_id = "GAMELOG_"+get_random_alphanumeric_string(16)
-            query = f"CREATE TABLE {gamelog_id} (time real not null, record string not null, visible_to string not null);"
+            query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
             await DB.execute(query)
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
@@ -1764,7 +1767,7 @@ class GameRoom:
         del self
 
     async def someone_entered(self, sid, sio):
-        player_list = list(map(lambda s: s["username"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
+        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
         await sio.emit("player_list", player_list, room=self.roomID)
         if self.inGame:
             enterer = (await sio.get_session(sid))["nickname"]
@@ -1774,7 +1777,7 @@ class GameRoom:
                 sio.enter_room(sid, self.hellID)
 
     async def someone_left(self, sid, sio):
-        player_list = list(map(lambda s: s["username"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
+        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
         await sio.emit("player_list", player_list, room=self.roomID)
         if self.inGame:
             for p in self.players.values():
