@@ -95,13 +95,27 @@
           </tbody>
         </table>
       </section>
-      <section v-show="!inLobby" class="chat">
-        <button type="button" name="button" id="leave_GameRoom_button">나가기</button>
-        <ul id="messages"></ul>
-        <form onsubmit="send_message(event);" class="message_input_form">
-          <input id="chat" autocomplete="off" placeholder="여기에 할말 입력"/>
-          <button class="send_message_button">전송</button>
-        </form>
+      <!--TODO: player_list 구현-->
+      <section v-show="!inLobby">
+        <div class="upper">
+          <button type="button" name="button" id="leave_GameRoom_button">나가기</button>
+          <button type="button" name="button" id="ready_button">준비</button>
+          <button type="button" name="button" id="lw_modal_button">유언</button>
+          <button type="button" name="button" id="setup_button">설정</button>
+        </div>
+        <div class="lower">
+          <hr>
+          <div class="player_list">
+          </div>
+          <div class="chat">
+            <ul id="messages">
+            </ul>
+          </div>
+          <form onsubmit="send_message(event);" class="message_input_form">
+            <input id="chat" autocomplete="off" placeholder="여기에 할말 입력"/>
+            <button class="send_message_button">전송</button>
+          </form>
+        </div>
       </section>
     </section>
   </body>

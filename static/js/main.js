@@ -24,13 +24,19 @@ show_modal_button.onclick = (event) => {
     create_GameRoom(title, capacity, password, setup);
   };
 }
-document.querySelector("#leave_GameRoom_button").addEventListener("click", leave_GameRoom);
+document.querySelector("#leave_GameRoom_button").addEventListener("click", confirm_leave_GameRoom);
 
 function enter_GameRoom (roomID) {
   Socket.emit('enter_GameRoom', {
     'roomID': roomID,
   });
 };
+
+function confirm_leave_GameRoom () {
+  if (confirm("정말로 방을 나가시겠습니까?")) {
+    leave_GameRoom();
+  }
+}
 
 function leave_GameRoom (){
   Socket.emit('leave_GameRoom', {});

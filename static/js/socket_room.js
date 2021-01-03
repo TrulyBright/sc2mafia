@@ -23,6 +23,17 @@ function send_message(event) {
 
 Socket.on("player_list", (data)=>{
   console.log(data);
+  let player_list = document.querySelector(".player_list");
+  player_list.innerHTML = "";
+  for (let nickname of data) {
+    let div = document.createElement("div");
+    let a = document.createElement("a");
+    a.setAttribute("href", "#");
+    a.addEventListener("click", show_modal_for_player)
+    a.innerHTML = nickname;
+    div.appendChild(a);
+    player_list.appendChild(div);
+  }
 });
 
 Socket.on('event', (data)=> {
