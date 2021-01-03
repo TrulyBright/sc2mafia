@@ -32,13 +32,13 @@ class GameRoom:
     def is_full(self):
         return len(self.members) >= self.capacity
 
-    def write_to_record(self, data):
-        self.message_record.append((time.time(), json.dumps(data)))
-        # TODO: 메시지의 수신자까지 기록하기
+    def write_to_record(self, sio, data, room, skip_sid):
+        receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid)]
+        self.message_record.append((time.time(), str(data), str(receivers)))
 
-    async def emit_event(self, sio, data, room):
-        await sio.emit("event", data, room=room)
-        self.write_to_record(data, room)
+    async def emit_event(self, sio, data, room, skip_sid=None):
+        await sio.emit("event", data, room=room, skip_sid=skip_sid)
+        self.write_to_record(sio, data, room, skip_sid)
 
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
@@ -116,7 +116,7 @@ class GameRoom:
                             "type": "vote_cancel",
                             "voter": voter.nickname,
                         }
-                        await sio.emit("vote_cancel", data, room=self.roomID)
+                        await self.emit_event(sio, data, room=self.roomID)
                     else:
                         self.vote_execution(voter, guilty=True)
                         data = {
@@ -269,16 +269,12 @@ class GameRoom:
                                 "type": "will_execute",
                                 "executed": commander.has_jailed_whom.nickname,
                             }
-                            await sio.emit(
-                                "event", data, room=commander.has_jailed_whom.jailID
-                            )
+                            await self.emit_event(sio, data, room=commander.has_jailed_whom.jailID)
                         else:
                             data = {
                                 "type": "will_not_execute",
                             }
-                            await sio.emit(
-                                "event", data, room=commander.has_jailed_whom.jailID
-                            )
+                            await self.emit_event(sio, data, room=commander.has_jailed_whom.jailID)
                     elif (
                         isinstance(commander.role, roles.Kidnapper)
                         or isinstance(commander.role, roles.Interrogator)
@@ -291,16 +287,12 @@ class GameRoom:
                                 "type": "will_execute",
                                 "executed": commander.has_jailed_whom.nickname,
                             }
-                            await sio.emit(
-                                "event", data, room=commander.has_jailed_whom.jailID
-                            )
+                            await self.emit_event(sio, data, room=commander.has_jailed_whom.jailID)
                         else:
                             data = {
                                 "type": "will_not_execute",
                             }
-                            await sio.emit(
-                                "event", data, room=commander.has_jailed_whom.jailID
-                            )
+                            await self.emit_events(sio, data, room=commander.has_jailed_whom.jailID)
             else:
                 if commander not in self.alive_list:
                     data = {
@@ -329,9 +321,7 @@ class GameRoom:
                             "who": roles.Jailor.name,
                             "message": msg,
                         }
-                        await sio.emit(
-                            "event", data, room=player.has_jailed_whom.jailID
-                        )
+                        await self.emit_event(sio, data, room=player.has_jailed_whom.jailID)
                     elif (
                         isinstance(player.role, roles.Kidnapper)
                         and player.has_jailed_whom
@@ -346,12 +336,7 @@ class GameRoom:
                             "who": roles.Jailor.name,
                             "message": msg,
                         }
-                        await sio.emit(
-                            "event",
-                            data,
-                            room=player.has_jailed_whom.jailID,
-                            skip_sid=skip_list,
-                        )
+                        await self.emit_event(sio, data, room=player.has_jailed_whom.jailID, skip_sid=skip_list)
                         data["who"] = player.nickname
                         await self.emit_event(sio, data, room=self.mafiaChatID)
                     elif (
@@ -368,12 +353,7 @@ class GameRoom:
                             "who": roles.Jailor.name,
                             "message": msg,
                         }
-                        await sio.emit(
-                            "event",
-                            data,
-                            room=player.has_jailed_whom.jailID,
-                            skip_sid=skip_list,
-                        )
+                        await self.emit_event(sio, data, room=player.has_jailed_whom.jailID, skip_sid=skip_list)
                         data["who"] = player.nickname
                         await self.emit_event(sio, data, room=self.triadChatID)
                     elif isinstance(player.role, roles.Judge) or isinstance(
@@ -1581,12 +1561,7 @@ class GameRoom:
                 p.nightChatID = self.masonChatID
 
         self.alive_list = list(self.players.values())
-        for p in self.players.values():
-            data = {
-                "type": "role",
-                "role": p.role.name,
-            }
-            await self.emit_event(sio, data, room=p.sid)
+        await asyncio.gather(*[self.emit_event(sio, {"type": "role", "role": p.role.name}, room=p.sid) for p in self.players.values()])
 
     async def run_game(self, sio):
         print("Game starts in room #", self.roomID)
@@ -1772,10 +1747,11 @@ class GameRoom:
                 result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
                 return result_str
             async def insert(DB, record):
-                await DB.execute(f"INSERT INTO {gamelog_id} values ({record[0]}, '{record[1]}');")
+                query = f'INSERT INTO {gamelog_id} values ({record[0]}, "{record[1]}", "{record[2]}");'
+                await DB.execute(query)
                 await DB.commit()
             gamelog_id = "GAMELOG_"+get_random_alphanumeric_string(16)
-            query = f"CREATE TABLE {gamelog_id} (time real not null, record string not null);"
+            query = f"CREATE TABLE {gamelog_id} (time real not null, record string not null, visible_to string not null);"
             await DB.execute(query)
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
