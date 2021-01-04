@@ -5,6 +5,7 @@ import random
 import time
 import string
 import json
+import sqlite3
 from datetime import datetime, timedelta
 
 from . import roles
@@ -1753,9 +1754,14 @@ class GameRoom:
                 query = f'INSERT INTO {gamelog_id} values ({record[0]}, "{record[1]}", "{record[2]}");'
                 await DB.execute(query)
                 await DB.commit()
-            gamelog_id = get_random_alphanumeric_string(16)
-            query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
-            await DB.execute(query)
+            while True:
+                try:
+                    gamelog_id = get_random_alphanumeric_string(16)
+                    query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
+                    await DB.execute(query)
+                    break
+                except sqlite3.OperationalError:
+                    continue
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
                 "type": "save_done",
