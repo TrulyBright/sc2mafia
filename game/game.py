@@ -1672,7 +1672,6 @@ class GameRoom:
 
     async def finish_game(self, sio):
         print("Game finished in room #", self.roomID)
-        self.inGame = False
         remaining = self.alive_list
         if len(remaining) == 0:
             pass
@@ -1735,6 +1734,7 @@ class GameRoom:
             "winner": [p.nickname for p in self.players.values() if p.win]
         }
         await self.emit_event(sio, data, room=self.roomID)
+        self.inGame = False
         for in_game_chatID in (self.hellID,
                                self.mafiaChatID,
                                self.triadChatID,
@@ -1745,7 +1745,7 @@ class GameRoom:
         for p in self.players.values():
             await sio.close_room(p.jailID)
         async with aiosqlite.connect("sql/records.db") as DB:
-            def get_random_alphanumeric_string(length):
+            def get_random_alphanumeric_string(length): # TODO: 정말로 alphanum만 오는지 확인 (SQL 인젝션 방어)
                 letters_and_digits = string.ascii_letters + string.digits
                 result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
                 return result_str
@@ -1753,13 +1753,13 @@ class GameRoom:
                 query = f'INSERT INTO {gamelog_id} values ({record[0]}, "{record[1]}", "{record[2]}");'
                 await DB.execute(query)
                 await DB.commit()
-            gamelog_id = "GAMELOG_"+get_random_alphanumeric_string(16)
+            gamelog_id = "GAMELOG_" + get_random_alphanumeric_string(16)
             query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
             await DB.execute(query)
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
                 "type": "save_done",
-                "link": "link", # TODO: link to the archive
+                "link": gamelog_id, # TODO: link to the archive
             }
             await sio.emit("event", data, room=self.roomID)
         del self.alive_list

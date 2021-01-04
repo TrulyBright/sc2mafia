@@ -3,6 +3,8 @@ from sanic.response import redirect, text
 # from sanja import render
 from jinja2_sanic import template, render_template
 
+import aiosqlite
+
 from auth import (
     authenticate,
     create_user,
@@ -75,3 +77,10 @@ async def register_post(request):
 @template("main.html.j2")
 async def main(request):
     return {}
+
+@template("archive.html.j2")
+async def archive(request, gamelog_id):
+    async with aiosqlite.connect("sql/records.db") as DB:
+        cursor = await DB.execute(f"SELECT * FROM {gamelog_id};")
+        log = await cursor.fetchall();
+        return {"log": log}
