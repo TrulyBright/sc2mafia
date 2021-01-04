@@ -63,7 +63,7 @@ Socket.on('event', (data)=> {
       addchat('게임이 끝났습니다. 승자들은 '+data['winner']+' 등입니다.');
       break;
     case "save_done":
-      addchat("게임이 저장되었습니다. 게임 기록을 <a href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
+      addchat("게임이 저장되었습니다. 게임 기록을 <a target='_blank' href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
       break;
     case 'role':
       addchat('당신의 직업은 '+data['role']+'입니다.');
