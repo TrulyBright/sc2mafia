@@ -1753,7 +1753,7 @@ class GameRoom:
                 query = f'INSERT INTO {gamelog_id} values ({record[0]}, "{record[1]}", "{record[2]}");'
                 await DB.execute(query)
                 await DB.commit()
-            gamelog_id = "GAMELOG_" + get_random_alphanumeric_string(16)
+            gamelog_id = get_random_alphanumeric_string(16)
             query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
             await DB.execute(query)
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
