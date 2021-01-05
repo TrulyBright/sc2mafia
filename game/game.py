@@ -71,6 +71,20 @@ class GameRoom:
 
             commander = self.players[user["nickname"]]
             if msg.startswith("/"):
+                if msg.startswith("/유언편집"):
+                    if self.STATE == "NIGHT":
+                        data = {
+                            "type": "unable_to_edit_lw",
+                            "reason": "밤에는 유언을 작성할 수 없습니다.",
+                        }
+                        await self.emit_event(sio, data, room=sid)
+                    else:
+                        commander.lw = msg[6:] # [5:]로 하면 /유언편집과 실제 유언 사이 공백 1칸이 포함됨
+                        data = {
+                            "type": "wrote_lw",
+                            "lw": commander.lw,
+                        }
+                        await self.emit_event(sio, data, room=sid)
                 if commander.jailed:
                     return
                 msg = msg.split()
@@ -90,6 +104,13 @@ class GameRoom:
                     target1 = target2 = None
                 if target1 and commander is self.players[target1] and not commander.role.visitable_himself:
                     return
+                elif cmd == "/유언" and target1 in self.players and not self.players[target1].alive:
+                    data = {
+                        "type": "lw_query",
+                        "whose": target1,
+                        "lw": self.players[target1].lw,
+                    }
+                    await self.emit_event(sio, data, room=sid)
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
                     if not voter.alive:
@@ -167,6 +188,7 @@ class GameRoom:
                         visitor.target2 = self.players[target2]
                     data = {
                         "type": "visit",
+                        "visitor": visitor.nickname,
                         "role": visitor.role.name,
                         "target1": visitor.target1.nickname,
                         "target2": visitor.target2.nickname
@@ -1503,7 +1525,6 @@ class GameRoom:
         self.message_record = [] # 초기화
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
-            self.MORNING_TIME = 5
             self.DISCUSSION_TIME = 10
             self.VOTE_TIME = 10
             self.DEFENSE_TIME = 10
@@ -1580,9 +1601,28 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             for dead in self.die_today:
                 data = {
-                    "type": "dead_announce",
+                    "type": "dead_announced",
                     "dead": dead.nickname,
-                    "lw": dead.lw,
+                }
+                await self.emit_event(sio, data, room=self.roomID)
+                await asyncio.sleep(3)
+                data = {
+                    "type": "dead_reason",
+                    "dead_reason": "asdf", # TODO: 사인 구현하기
+                }
+                await self.emit_event(sio, data, room=self.roomID)
+                await asyncio.sleep(3)
+                data = {
+                    "type": "role_announced",
+                    "who": dead.nickname,
+                    "role": dead.role.name,
+                }
+                await self.emit_event(sio, data, room=self.roomID)
+                await asyncio.sleep(5)
+                data = {
+                    "type": "lw_announced",
+                    "dead": dead.nickname,
+                    "lw": dead.lw
                 }
                 await self.emit_event(sio, data, room=self.roomID)
                 await asyncio.sleep(5)
@@ -1756,11 +1796,11 @@ class GameRoom:
                 await DB.commit()
             while True:
                 try:
-                    gamelog_id = get_random_alphanumeric_string(16)
+                    gamelog_id = get_random_alphanumeric_string(32)
                     query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
                     await DB.execute(query)
                     break
-                except sqlite3.OperationalError:
+                except sqlite3.OperationalError: # gamelog_id가 중복되는 경우
                     continue
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
@@ -1892,6 +1932,8 @@ class Player:
 
     async def suicide(self, room, reason):
         # TODO: suicide(room=self, )를 그냥 die()로 대체
+        room.die_today.add(self)
+        self.alive = False
         data = {
             "type": "suicide",
             "reason": reason,

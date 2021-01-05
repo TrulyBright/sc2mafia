@@ -5,10 +5,13 @@ function updateScroll () {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function addchat(message, color='orange') {
+function addchat(message, color='orange', hell=false) {
   let chatLog = document.getElementById('messages');
   let chat = document.createElement('li');
-  chat.innerHTML = '<span style="color:' + color + '">' + message + '</span>';
+  let span = document.createElement("span");
+  span.setAttribute("style", "color:"+color);
+  span.innerHTML = message;
+  chat.appendChild(span);
   chatLog.appendChild(chat);
   updateScroll();
 }
@@ -106,7 +109,7 @@ Socket.on('event', (data)=> {
       if (data['target2']) {
         addchat('오늘 밤 '+data['target1']+'님을 '+data['target2']+'님에게 가게 합니다.')
       } else {
-        addchat('오늘 밤 '+data['target1']+'님을 방문합니다.');
+        addchat(data["visitor"]+"님이 오늘 밤 방문할 대상: "+data["target1"]);
       }
       break;
     case 'alert':
@@ -271,10 +274,29 @@ Socket.on('event', (data)=> {
           break;
       }
       break;
-    case "dead_announce":
+    case "dead_announced":
       addchat(data["dead"]+"님이 사망헀습니다.");
-      addchat(data["dead"]+"님의 유언:");
-      addchat(data["lw"]);
+      break;
+    case "dead_reason":
+      addchat(data["dead_reason"]);
+      break;
+    case "role_announced":
+      addchat(data["who"]+"님의 직업은 "+data["role"]+"입니다.");
+      break;
+    case "unable_to_edit_lw":
+      addchat(data["reason"]);
+      break;
+    case "wrote_lw":
+      addchat("죽음에 대비해 유언을 작성했습니다.");
+      addchat(data["lw"], "yellow");
+      break;
+    case "lw_query":
+      addchat(data["whose"]+"님의 유언을 열람합니다.");
+      addchat(data["lw"], "yellow");
+      break;
+    case "lw_announced":
+      addchat(data["dead"]+"님은 유언을 남겼습니다:");
+      addchat(data["lw"], "yellow");
       break;
     default:
       addchat(data);
