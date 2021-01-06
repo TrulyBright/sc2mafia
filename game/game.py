@@ -13,11 +13,10 @@ from . import roles
 
 class GameRoom:
     def __init__(
-        self, roomID, title, capacity, host, setup, private=False, password=None
+        self, roomID, title, capacity, host, setup, password=""
     ):
         assert type(title) is str
         assert type(capacity) is int
-        assert type(private) is bool
         assert type(password) is str or password is None
         self.roomID = roomID
         self.title = title
@@ -26,7 +25,7 @@ class GameRoom:
         self.host = host
         self.setup = setup
         self.password = password
-        self.private = private
+        self.private = password!=""
         self.inGame = False
         self.justCreated = True
         self.message_record = []
@@ -35,14 +34,13 @@ class GameRoom:
         return len(self.members) >= self.capacity
 
     def write_to_record(self, sio, data, room, skip_sid):
-        if not self.inGame:
-            return
         receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid)]
         self.message_record.append((time.time(), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=None):
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
-        self.write_to_record(sio, data, room, skip_sid)
+        if self.inGame:
+            self.write_to_record(sio, data, room, skip_sid)
 
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
@@ -71,7 +69,7 @@ class GameRoom:
 
             commander = self.players[user["nickname"]]
             if msg.startswith("/"):
-                if msg.startswith("/유언편집"):
+                if msg.startswith("/유언편집") and commander.alive:
                     if self.STATE == "NIGHT":
                         data = {
                             "type": "unable_to_edit_lw",
@@ -85,8 +83,6 @@ class GameRoom:
                             "lw": commander.lw,
                         }
                         await self.emit_event(sio, data, room=sid)
-                if commander.jailed:
-                    return
                 msg = msg.split()
                 if len(msg) == 3:
                     cmd, target1, target2 = msg
@@ -111,6 +107,30 @@ class GameRoom:
                         "lw": self.players[target1].lw,
                     }
                     await self.emit_event(sio, data, room=sid)
+                elif commander.jailed:
+                    return
+                elif (
+                    cmd == "/감금"
+                    and commander.alive
+                    and self.STATE != "EVENING"
+                    and self.STATE != "NIGHT"
+                    and target1
+                    and (
+                        isinstance(commander.role, roles.Jailor)
+                        or isinstance(commander.role, roles.Kidnapper)
+                        or isinstance(commander.role, roles.Interrogator)
+                    )
+                ):
+                    jailor = commander
+                    to_jail = self.players[target1]
+                    jailor.has_jailed_whom = to_jail
+                    data = {
+                        "type": "will_jail",
+                        "whom": to_jail.nickname,
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
+                elif commander==self.elected:
+                    return
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
                     if not voter.alive:
@@ -240,26 +260,6 @@ class GameRoom:
                         wearer.role.defense_level = 0
                     data = {"type": "wear_vest", "wear_vest": wearer.wear_vest_today}
                     await self.emit_event(sio, data, room=wearer.sid)
-                elif (
-                    cmd == "/감금"
-                    and commander.alive
-                    and self.STATE != "EVENING"
-                    and self.STATE != "NIGHT"
-                    and target1
-                    and (
-                        isinstance(commander.role, roles.Jailor)
-                        or isinstance(commander.role, roles.Kidnapper)
-                        or isinstance(commander.role, roles.Interrogator)
-                    )
-                ):
-                    jailor = commander
-                    to_jail = self.players[target1]
-                    jailor.has_jailed_whom = to_jail
-                    data = {
-                        "type": "will_jail",
-                        "whom": to_jail.nickname,
-                    }
-                    await self.emit_event(sio, data, room=commander.sid)
                 elif (
                     cmd == "/영입"
                     and commander.alive
@@ -426,6 +426,15 @@ class GameRoom:
                             "message": msg,
                         }
                         await self.emit_event(sio, data, room=self.masonChatID)
+                elif self.STATE == "DEFENSE":
+                    if commander==self.elected:
+                        data = {
+                            "type": "message",
+                            "who": user["nickname"],
+                            "message": msg,
+                            "from_elected": True,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
                 else:
                     data = {
                         "type": "message",
@@ -447,32 +456,25 @@ class GameRoom:
 
     def vote_execution(self, voter, guilty):
         assert self.STATE == "VOTE_EXECUTION"
+        voter.has_voted = True
         if guilty:
-            if not voter.has_voted_in_execution_vote:
-                self.elected.voted_guilty += 1
-                voter.has_voted_in_execution_vote = True
-                self.voted_to_which = "guilty"
+            self.elected.voted_guilty += 1
+            voter.voted_to_which = "guilty"
         else:
-            if not voter.has_voted_in_execution_vote:
-                self.elected.voted_innocent += 1
-                voter.has_voted_in_execution_vote = True
-                self.voted_to_which = "innocent"
+            self.elected.voted_innocent += 1
+            voter.voted_to_which = "innocent"
 
     def cancel_vote(self, voter):
-        assert self.STATE in ("VOTE", "VOTE_EXECUTION")
+        voter.has_voted = False
         if self.STATE == "VOTE":
-            if voter.voted_to_whom:
-                voter.voted_to_whom.votes_gotten -= voter.votes
-                voter.has_voted = False
-                voter.voted_to_whom = None
+            voter.voted_to_whom.votes_gotten -= voter.votes
+            voter.voted_to_whom = None
         elif self.STATE == "VOTE_EXECUTION":
-            if voter.has_voted_in_execution_vote:
-                voter.has_voted_in_execution_vote = False
-                if voter.voted_to_which == "guilty":
-                    self.elected.voted_innocent -= 1
-                else:
-                    self.elected.voted_guilty -= 1
-                voter.voted_to_which = None
+            voter.voted_to_which = None
+            if voter.voted_to_which == "guilty":
+                self.elected.voted_innocent -= 1
+            else:
+                self.elected.voted_guilty -= 1
 
     def killable(self, attacker, attacked):
         return attacker.role.offense_level > attacked.role.defense_level
@@ -1520,6 +1522,7 @@ class GameRoom:
         print("Game initiated in room #", self.roomID)
         self.inGame = True
         self.election = asyncio.Event()
+        self.elected = None
         self.day = 0
         self.die_today = set()
         self.message_record = [] # 초기화
@@ -1538,7 +1541,7 @@ class GameRoom:
             roles_to_distribute = [
                 roles.DragonHead(),
                 roles.Beguiler(),
-                roles.Mafioso(),
+                roles.Jester(),
                 roles.Spy(),
                 roles.Witch(),
             ]
@@ -1606,12 +1609,12 @@ class GameRoom:
                 }
                 await self.emit_event(sio, data, room=self.roomID)
                 await asyncio.sleep(3)
-                data = {
-                    "type": "dead_reason",
-                    "dead_reason": "asdf", # TODO: 사인 구현하기
-                }
-                await self.emit_event(sio, data, room=self.roomID)
-                await asyncio.sleep(3)
+                # data = {
+                #     "type": "dead_reason",
+                #     "dead_reason": "asdf", # TODO: 사인 구현하기
+                # }
+                # await self.emit_event(sio, data, room=self.roomID)
+                # await asyncio.sleep(3)
                 data = {
                     "type": "role_announced",
                     "who": dead.nickname,
@@ -1656,6 +1659,8 @@ class GameRoom:
                 except asyncio.TimeoutError:  # nobody has been elected today
                     break
                 else:  # someone has been elected
+                    for p in self.alive_list:
+                        p.has_voted = False
                     self.STATE = "DEFENSE"
                     data = {
                         "type": "state",
@@ -1673,7 +1678,33 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.roomID)
                     await asyncio.sleep(self.VOTE_EXECUTION_TIME)
                     if self.elected.voted_guilty > self.elected.voted_innocent:
+                        if isinstance(self.elected.role, roles.Jester):
+                            for voter in self.alive_list:
+                                if voter.voted_to_which=="guilty":
+                                    voter.voted_to_execution_of_jester = True
+                        # TODO: 어릿광대가 안도의 한숨 내쉬는 이벤트 emit
                         await self.elected.die(attacker="VOTE", room=self)
+                        self.alive_list.remove(self.elected)
+                        data = {
+                            "type": "executed",
+                            "who": self.elected.nickname,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(3)
+                        data = {
+                            "type": "role_announced",
+                            "who": self.elected.nickname,
+                            "role": self.elected.role.name,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(5)
+                        data = {
+                            "type": "lw_announced",
+                            "dead": self.elected.nickname,
+                            "lw": self.elected.lw,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(5)
                         break
                     else:
                         self.VOTE_TIME_REMAINING = (
@@ -1776,15 +1807,13 @@ class GameRoom:
         }
         await self.emit_event(sio, data, room=self.roomID)
         self.inGame = False
-        for in_game_chatID in (self.hellID,
-                               self.mafiaChatID,
-                               self.triadChatID,
-                               self.cultChatID,
-                               self.spyRoomID,
-                               self.masonChatID):
-            await sio.close_room(in_game_chatID)
-        for p in self.players.values():
-            await sio.close_room(p.jailID)
+        await asyncio.gather(*[sio.close_room(in_game_chatID) for in_game_chatID in (self.hellID,
+                                                                                     self.mafiaChatID,
+                                                                                     self.triadChatID,
+                                                                                     self.cultChatID,
+                                                                                     self.spyRoomID,
+                                                                                     self.masonChatID)])
+        await asyncio.gather(*[sio.close_room(p.jailID) for p in self.players.values()])
         async with aiosqlite.connect("sql/records.db") as DB:
             def get_random_alphanumeric_string(length): # TODO: 정말로 alphanum만 오는지 확인 (SQL 인젝션 방어)
                 letters_and_digits = string.ascii_letters + string.digits
@@ -1813,7 +1842,7 @@ class GameRoom:
         del self
 
     async def someone_entered(self, sid, sio):
-        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
+        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members]))) # TODO: 죽었는지 여부도 전송
         await sio.emit("player_list", player_list, room=self.roomID)
         if self.inGame:
             enterer = (await sio.get_session(sid))["nickname"]
@@ -1845,7 +1874,6 @@ class Player:
         self.has_voted = False
         self.voted_to_whom = None
         self.voted_to_execution_of_jester = False
-        self.has_voted_in_execution_vote = False
         self.voted_to_which = None
         self.votes_gotten = 0
         self.voted_guilty = 0
