@@ -237,6 +237,15 @@ Socket.on('event', (data)=> {
     case "spy_result":
       addchat("오늘 밤 "+data["team"]+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
       break;
+    case "executed":
+      addchat(data["who"]+"님이 형장의 이슬로 사라졌습니다.");
+      break;
+    case "executioner_target":
+      addchat("당신의 목표는 "+data["target"]+"입니다.");
+      break;
+    case "execution_success":
+      addchat("당신은 안도의 한숨을 내쉬었습니다...", "green");
+      break;
     case 'dead':
       if (data['dead_while_guarding']) {
         addchat('당신은 '+data['attacker']+'에게서 대상을 지키고 대신 사망했습니다.', 'red');

@@ -1698,16 +1698,16 @@ class GameRoom:
                         for p in self.players.values():
                             if isinstance(p.role, roles.Executioner) and p.role.target==self.elected:
                                 p.win = True
-                        # 처형자 안도의 한숨
-                        await asyncio.gather(*[self.emit_event(sio, data, room=p.sid)
-                                             for p in self.players.values()
-                                             if isinstance(p.role, roles.Executioner)])
                         self.alive_list.remove(self.elected)
                         data = {
                             "type": "executed",
                             "who": self.elected.nickname,
                         }
                         await self.emit_event(sio, data, room=self.roomID)
+                        # 처형자 안도의 한숨
+                        await asyncio.gather(*[self.emit_event(sio, data, room=p.sid)
+                        for p in self.players.values()
+                        if isinstance(p.role, roles.Executioner)])
                         await asyncio.sleep(3)
                         data = {
                             "type": "role_announced",
