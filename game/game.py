@@ -1528,7 +1528,7 @@ class GameRoom:
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.DISCUSSION_TIME = 10
-            self.VOTE_TIME = 10
+            self.VOTE_TIME = 30
             self.DEFENSE_TIME = 10
             self.VOTE_EXECUTION_TIME = 10
             self.EVENING_TIME = 10
@@ -1654,10 +1654,8 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            self.VOTE_ENDS_AT = datetime.now() + timedelta(seconds=self.VOTE_TIME)
-            self.VOTE_TIME_REMAINING = (
-                self.VOTE_ENDS_AT - datetime.now()
-            ).total_seconds()
+            self.VOTE_STARTED_AT = datetime.now()
+            self.VOTE_TIME_REMAINING = self.VOTE_TIME
             while self.VOTE_TIME_REMAINING >= 0:
                 try:
                     await asyncio.wait_for(
@@ -1666,8 +1664,10 @@ class GameRoom:
                 except asyncio.TimeoutError:  # nobody has been elected today
                     break
                 else:  # someone has been elected
+                    self.VOTE_TIME_REMAINING -= (self.VOTE_STARTED_AT-datetime.now()).total_seconds()
                     for p in self.alive_list:
                         p.has_voted = False
+                        p.voted_to_whom = None
                     self.STATE = "DEFENSE"
                     data = {
                         "type": "state",
@@ -1725,9 +1725,7 @@ class GameRoom:
                         await asyncio.sleep(5)
                         break
                     else:
-                        self.VOTE_TIME_REMAINING = (
-                            self.VOTE_ENDS_AT - datetime.now()
-                        ).total_seconds()
+                        self.VOTE_STARTED_AT = datetime.now()
                         self.STATE = "VOTE"
                         data = {
                             "type": "state",
