@@ -129,6 +129,26 @@ class GameRoom:
                         "whom": to_jail.nickname,
                     }
                     await self.emit_event(sio, data, room=commander.sid)
+                elif (
+                    cmd == "/발동"
+                    and commander.alive
+                    and isinstance(commander.role, roles.Mayor)
+                    and self.STATE != "EVENING"
+                    and self.STATE != "NIGHT"
+                    and commander.votes != 4
+                ):
+                    mayor = commander
+                    mayor.votes = 4
+                    data = {
+                        "type": "mayor_ability_activation",
+                        "who": mayor.nickname,
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+                    data = {
+                        "type": "music",
+                        "music": "mayor_normal",
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
                 elif commander==self.elected:
                     return
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
@@ -458,10 +478,10 @@ class GameRoom:
         assert self.STATE == "VOTE_EXECUTION"
         voter.has_voted = True
         if guilty:
-            self.elected.voted_guilty += 1
+            self.elected.voted_guilty += voter.votes
             voter.voted_to_which = "guilty"
         else:
-            self.elected.voted_innocent += 1
+            self.elected.voted_innocent += voter.votes
             voter.voted_to_which = "innocent"
 
     def cancel_vote(self, voter):
@@ -1539,7 +1559,7 @@ class GameRoom:
         elif self.setup == "test":
             roles_to_distribute = [
                 roles.DragonHead(),
-                roles.Beguiler(),
+                roles.Mayor(),
                 roles.Executioner(),
                 roles.Judge(),
                 roles.Witch(),
@@ -1691,6 +1711,7 @@ class GameRoom:
                                     voter.voted_to_execution_of_jester = True
                         # TODO: 어릿광대가 안도의 한숨 내쉬는 이벤트 emit
                         await self.elected.die(attacker="VOTE", room=self)
+                        self.alive_list.remove(self.elected)
                         data = {
                             "type": "execution_success",
                         }
@@ -1698,7 +1719,6 @@ class GameRoom:
                         for p in self.players.values():
                             if isinstance(p.role, roles.Executioner) and p.role.target==self.elected:
                                 p.win = True
-                        self.alive_list.remove(self.elected)
                         data = {
                             "type": "executed",
                             "who": self.elected.nickname,

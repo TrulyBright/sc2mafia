@@ -105,6 +105,9 @@ Socket.on('event', (data)=> {
     case 'vote_cancel':
       addchat(data['voter']+'님이 투표를 취소했습니다.');
       break;
+    case "mayor_ability_activation":
+      addchat(data["who"]+"님은 시장입니다!!!", "skyblue");
+      break;
     case 'visit':
       if (data['target2']) {
         addchat('오늘 밤 '+data['target1']+'님을 '+data['target2']+'님에게 가게 합니다.')
