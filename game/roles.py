@@ -1,3 +1,5 @@
+import random
+
 class Role:
     def __init__(self):
         self.detection_immune = False
@@ -390,6 +392,8 @@ class Cultist(Cult):
 
 class Executioner(NeutralBenign):
     name = "처형자"
+    def set_taget(self, player_list):
+        self.target = random.choice([p for p in player_list if not isinstance(p.role, Jester)])
 
 
 class Jester(NeutralBenign):

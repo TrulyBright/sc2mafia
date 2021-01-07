@@ -1084,9 +1084,8 @@ class GameRoom:
 
         # 어릿광대 자살 적용
         candidates = [p for p in self.alive_list if p.voted_to_execution_of_jester]
-        random.shuffle(candidates)
         if candidates:
-            victim = candidates.pop()
+            victim = random.choice(candidates)
             await self.emit_sound(sio, "자살")
             if victim.healed_by:
                 H = victim.healed_by.pop()
@@ -1541,8 +1540,8 @@ class GameRoom:
             roles_to_distribute = [
                 roles.DragonHead(),
                 roles.Beguiler(),
-                roles.Jester(),
-                roles.Spy(),
+                roles.Executioner(),
+                roles.Judge(),
                 roles.Witch(),
             ]
         # random.shuffle(roles_to_distribute)
@@ -1556,11 +1555,6 @@ class GameRoom:
             )
             for sid in self.members
         }
-
-        for p in self.players.values():
-            if isinstance(p.role, roles.Spy):
-                p.crimes["무단침입"] = True
-
         self.hellID = str(self.roomID) + "_hell"
         self.mafiaChatID = str(self.roomID) + "_Mafia"
         self.triadChatID = str(self.roomID) + "_Triad"
@@ -1590,6 +1584,19 @@ class GameRoom:
 
         self.alive_list = list(self.players.values())
         await asyncio.gather(*[self.emit_event(sio, {"type": "role", "role": p.role.name}, room=p.sid) for p in self.players.values()])
+        for p in self.players.values():
+            if isinstance(p.role, roles.Spy):
+                p.crimes["무단침입"] = True
+        for p in self.players.values():
+            if isinstance(p.role, roles.Executioner):
+                player_list = list(self.players.values())
+                player_list.remove(p)
+                p.role.set_taget(player_list)
+        await asyncio.gather(*[self.emit_event(sio,
+                             {"type": "executioner_target", "target": p.role.target.nickname},
+                             room=p.sid)
+                             for p in self.players.values()
+                             if isinstance(p.role, roles.Executioner)])
 
     async def run_game(self, sio):
         print("Game starts in room #", self.roomID)
@@ -1684,6 +1691,17 @@ class GameRoom:
                                     voter.voted_to_execution_of_jester = True
                         # TODO: 어릿광대가 안도의 한숨 내쉬는 이벤트 emit
                         await self.elected.die(attacker="VOTE", room=self)
+                        data = {
+                            "type": "execution_success",
+                        }
+                        # 처형자 승리
+                        for p in self.players.values():
+                            if isinstance(p.role, roles.Executioner) and p.role.target==self.elected:
+                                p.win = True
+                        # 처형자 안도의 한숨
+                        await asyncio.gather(*[self.emit_event(sio, data, room=p.sid)
+                                             for p in self.players.values()
+                                             if isinstance(p.role, roles.Executioner)])
                         self.alive_list.remove(self.elected)
                         data = {
                             "type": "executed",
