@@ -68,6 +68,9 @@ Socket.on('event', (data)=> {
     case "save_done":
       addchat("게임이 저장되었습니다. 게임 기록을 <a target='_blank' href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
       break;
+    case "music":
+      addchat("음악 재생: "+data["music"])
+      break;
     case 'role':
       addchat('당신의 직업은 '+data['role']+'입니다.');
       break;
@@ -106,7 +109,10 @@ Socket.on('event', (data)=> {
       addchat(data['voter']+'님이 투표를 취소했습니다.');
       break;
     case "mayor_ability_activation":
-      addchat(data["who"]+"님은 시장입니다!!!", "skyblue");
+      addchat(data["who"]+"님은 <span style='color:#00bf00'>시장</span>입니다!!!", "skyblue");
+      break;
+    case "marshall_ability_activation":
+      addchat(data["who"]+"님은 <span style='color:#00bf00'>원수</span>입니다!!!", "skyblue");
       break;
     case 'visit':
       if (data['target2']) {
@@ -247,7 +253,7 @@ Socket.on('event', (data)=> {
       addchat("당신의 목표는 "+data["target"]+"입니다.");
       break;
     case "execution_success":
-      addchat("당신은 안도의 한숨을 내쉬었습니다...", "green");
+      addchat("당신은 성공하여 안도의 한숨을 내쉬었습니다...", "#00bf00");
       break;
     case 'dead':
       if (data['dead_while_guarding']) {
@@ -261,11 +267,11 @@ Socket.on('event', (data)=> {
       break;
     case 'healed':
       addchat('당신은 '+data['attacker']+'에게 공격당했습니다.', 'red');
-      setTimeout(addchat('그러나 '+data['healer']+'가 당신을 살려주었습니다.', 'green'), 500);
+      setTimeout(addchat('그러나 '+data['healer']+'가 당신을 살려주었습니다.', '#00bf00'), 500);
       break;
     case 'bodyguarded':
       addchat('당신은 '+data['attacker']+'에게 공격당했습니다.', 'red');
-      setTimeout(addchat('그러나 경호원이 당신을 보호해주었습니다.', 'green'), 500);
+      setTimeout(addchat('그러나 경호원이 당신을 보호해주었습니다.', '#00bf00'), 500);
       break;
     case 'suicide':
       switch (data['reason']) {

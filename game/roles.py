@@ -169,6 +169,9 @@ class Lookout(TownInvestigative):
 
 class Marshall(TownGovernment):
     name = "원수"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 2
 
 
 class Mason(TownGovernment):

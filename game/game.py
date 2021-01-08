@@ -109,6 +109,7 @@ class GameRoom:
                     await self.emit_event(sio, data, room=sid)
                 elif commander.jailed:
                     return
+                # 이 이하로는 갇혔을 때 사용할 수 없는 명령어들
                 elif (
                     cmd == "/감금"
                     and commander.alive
@@ -151,6 +152,29 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.roomID)
                 elif commander==self.elected:
                     return
+                # 이 이하로는 재판대에 섰을 때 사용할 수 없는 명령어들
+                elif (
+                    cmd == "/집단사형"
+                    and (self.STATE == "DISCUSSION" or self.STATE=="VOTE")
+                    and commander.alive
+                    and isinstance(commander.role, roles.Marshall)
+                    and not commander.activated_lynch_today
+                    and commander.role.ability_opportunity>0
+                ):
+                    marshall = commander
+                    self.in_lynch = True
+                    commander.role.ability_opportunity-=1
+                    data = {
+                        "type": "marshall_ability_activation",
+                        "who": marshall.nickname,
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+                    data = {
+                        "type": "music",
+                        "music": "marshall_normal",
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
                     if not voter.alive:
@@ -771,7 +795,7 @@ class GameRoom:
                             await p.healed(room=self, attacker=p, healer=H)
                         else:
                             await self.emit_sound(sio, p.role.name)
-                            await visitor.die(attacker=p, die_today=self.die_today, room=self)
+                            await visitor.die(attacker=p, die_tonight=self.die_tonight, room=self)
                             p.crimes["살인"] = True
                     else:
                         await self.emit_sound(sio, p.role.name, dead=False)
@@ -1135,7 +1159,7 @@ class GameRoom:
                     await victim.die(attacker=p, room=self)
 
         # 사망자들 제거
-        for dead in self.die_today:
+        for dead in self.die_tonight:
             self.alive_list.remove(dead)
 
         # 살인직들의 살인이 반영된 방문자 목록 갱신
@@ -1160,7 +1184,7 @@ class GameRoom:
                     await p.healed(room=self, attacker=dummy, healer=H)
                 else:
                     await p.suicide(room=self, reason="고의")
-                    self.die_today.add(p)
+                    self.die_tonight.add(p)
                     self.alive_list.remove(p)
         # 조사직들 능력 발동
         # 검시관
@@ -1460,6 +1484,7 @@ class GameRoom:
             p.votes_gotten = 0
             p.voted_guilty = 0
             p.voted_innocent = 0
+            p.activated_lynch_today = False
             p.visited_by.append(set())
             p.wear_vest_today = False
             p.alert_today = False
@@ -1543,7 +1568,7 @@ class GameRoom:
         self.election = asyncio.Event()
         self.elected = None
         self.day = 0
-        self.die_today = set()
+        self.die_tonight = set()
         self.message_record = [] # 초기화
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
@@ -1559,7 +1584,7 @@ class GameRoom:
         elif self.setup == "test":
             roles_to_distribute = [
                 roles.DragonHead(),
-                roles.Mayor(),
+                roles.Marshall(),
                 roles.Executioner(),
                 roles.Judge(),
                 roles.Witch(),
@@ -1629,7 +1654,7 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            for dead in self.die_today:
+            for dead in self.die_tonight:
                 data = {
                     "type": "dead_announced",
                     "dead": dead.nickname,
@@ -1658,7 +1683,7 @@ class GameRoom:
                 await asyncio.sleep(5)
             if self.game_over():
                 return
-            self.die_today = set() # 사망자 목록 초기화
+            self.die_tonight = set() # 사망자 목록 초기화
             # DISCUSSION
             self.STATE = "DISCUSSION"
             data = {
@@ -1676,6 +1701,7 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             self.VOTE_STARTED_AT = datetime.now()
             self.VOTE_TIME_REMAINING = self.VOTE_TIME
+            self.die_today = []
             while self.VOTE_TIME_REMAINING >= 0:
                 try:
                     await asyncio.wait_for(
@@ -1688,63 +1714,32 @@ class GameRoom:
                     for p in self.alive_list:
                         p.has_voted = False
                         p.voted_to_whom = None
-                    self.STATE = "DEFENSE"
-                    data = {
-                        "type": "state",
-                        "state": self.STATE,
-                        "who": self.elected.nickname,
-                    }
-                    await self.emit_event(sio, data, room=self.roomID)
-                    await asyncio.sleep(self.DEFENSE_TIME)
-                    self.STATE = "VOTE_EXECUTION"
-                    data = {
-                        "type": "state",
-                        "state": self.STATE,
-                        "who": self.elected.nickname,
-                    }
-                    await self.emit_event(sio, data, room=self.roomID)
-                    await asyncio.sleep(self.VOTE_EXECUTION_TIME)
-                    if self.elected.voted_guilty > self.elected.voted_innocent:
-                        if isinstance(self.elected.role, roles.Jester):
-                            for voter in self.alive_list:
-                                if voter.voted_to_which=="guilty":
-                                    voter.voted_to_execution_of_jester = True
-                        # TODO: 어릿광대가 안도의 한숨 내쉬는 이벤트 emit
+                    if self.in_lynch:
                         await self.elected.die(attacker="VOTE", room=self)
-                        self.alive_list.remove(self.elected)
-                        data = {
-                            "type": "execution_success",
-                        }
-                        # 처형자 승리
-                        for p in self.players.values():
-                            if isinstance(p.role, roles.Executioner) and p.role.target==self.elected:
-                                p.win = True
                         data = {
                             "type": "executed",
                             "who": self.elected.nickname,
                         }
                         await self.emit_event(sio, data, room=self.roomID)
-                        # 처형자 안도의 한숨
-                        await asyncio.gather(*[self.emit_event(sio, data, room=p.sid)
-                        for p in self.players.values()
-                        if isinstance(p.role, roles.Executioner)])
-                        await asyncio.sleep(3)
-                        data = {
-                            "type": "role_announced",
-                            "who": self.elected.nickname,
-                            "role": self.elected.role.name,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(5)
-                        data = {
-                            "type": "lw_announced",
-                            "dead": self.elected.nickname,
-                            "lw": self.elected.lw,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(5)
-                        break
-                    else:
+                        self.die_today.append(self.elected)
+                        self.alive_list.remove(self.elected)
+                        if len(self.die_today)==3:
+                            for d in self.die_today:
+                                data = {
+                                    "type": "role_announced",
+                                    "who": d.nickname,
+                                    "role": d.role.name,
+                                }
+                                await self.emit_event(sio, data, room=self.roomID)
+                                await asyncio.sleep(1)
+                                data = {
+                                    "type": "lw_announced",
+                                    "dead": d.nickname,
+                                    "lw": d.lw,
+                                }
+                                await self.emit_event(sio, data, room=self.roomID)
+                                await asyncio.sleep(3)
+                            break
                         self.VOTE_STARTED_AT = datetime.now()
                         self.STATE = "VOTE"
                         data = {
@@ -1752,6 +1747,71 @@ class GameRoom:
                             "state": self.STATE,
                         }
                         await self.emit_event(sio, data, room=self.roomID)
+                    else:
+                        self.STATE = "DEFENSE"
+                        data = {
+                            "type": "state",
+                            "state": self.STATE,
+                            "who": self.elected.nickname,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(self.DEFENSE_TIME)
+                        self.STATE = "VOTE_EXECUTION"
+                        data = {
+                            "type": "state",
+                            "state": self.STATE,
+                            "who": self.elected.nickname,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(self.VOTE_EXECUTION_TIME)
+                        if self.elected.voted_guilty > self.elected.voted_innocent:
+                            if isinstance(self.elected.role, roles.Jester):
+                                for voter in self.alive_list:
+                                    if voter.voted_to_which=="guilty":
+                                        voter.voted_to_execution_of_jester = True
+                            # TODO: 어릿광대가 안도의 한숨 내쉬는 이벤트 emit
+                            await self.elected.die(attacker="VOTE", room=self)
+                            self.alive_list.remove(self.elected)
+                            data = {
+                                "type": "execution_success",
+                            }
+                            # 처형자 승리
+                            for p in self.players.values():
+                                if isinstance(p.role, roles.Executioner) and p.role.target==self.elected:
+                                    p.win = True
+                            data = {
+                                "type": "executed",
+                                "who": self.elected.nickname,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            # 처형자 안도의 한숨
+                            await asyncio.gather(*[self.emit_event(sio, data, room=p.sid)
+                                                 for p in self.players.values()
+                                                 if isinstance(p.role, roles.Executioner)])
+                            await asyncio.sleep(3)
+                            data = {
+                                "type": "role_announced",
+                                "who": self.elected.nickname,
+                                "role": self.elected.role.name,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(5)
+                            data = {
+                                "type": "lw_announced",
+                                "dead": self.elected.nickname,
+                                "lw": self.elected.lw,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(5)
+                            break
+                        else:
+                            self.VOTE_STARTED_AT = datetime.now()
+                            self.STATE = "VOTE"
+                            data = {
+                                "type": "state",
+                                "state": self.STATE,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
                 finally:
                     self.election.clear()
                     self.elected = None
@@ -1914,6 +1974,7 @@ class Player:
         self.votes_gotten = 0
         self.voted_guilty = 0
         self.voted_innocent = 0
+        self.activated_lynch_today = False
         self.lw = ""  # last will
         self.visited_by = [None, set()]
         self.controlled_by = None
@@ -1955,7 +2016,7 @@ class Player:
 
     async def die(self, room, attacker, dead_while_guarding=False):
         if attacker!="VOTE":
-            room.die_today.add(self)
+            room.die_tonight.add(self)
         self.alive = False
         data = {
             "type": "dead",
@@ -1996,7 +2057,7 @@ class Player:
 
     async def suicide(self, room, reason):
         # TODO: suicide(room=self, )를 그냥 die()로 대체
-        room.die_today.add(self)
+        room.die_tonight.add(self)
         self.alive = False
         data = {
             "type": "suicide",
