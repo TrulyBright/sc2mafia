@@ -236,6 +236,7 @@ class GameRoom:
                     and commander.alive
                     and self.STATE == "EVENING"
                     and target1
+                    and ((not target1.alive) if isinstance(commander.role, roles.Coroner) else target1.alive)
                 ):
                     visitor = commander
                     visited = self.players[target1]
@@ -363,6 +364,21 @@ class GameRoom:
                                 "type": "will_not_execute",
                             }
                             await self.emit_events(sio, data, room=commander.has_jailed_whom.jailID)
+                elif cmd == "/저주"\
+                and commander.alive\
+                and target1\
+                and self.players[target1]\
+                and isinstance(commander.role, roles.Witch)\
+                and commander.role.ability_opportunity>0\
+                and self.STATE == "EVENING":
+                    commander.curse_target = self.players[target1]
+                    data = {
+                        "type": "will_curse",
+                        "cursed": commander.curse_target.nickname
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
+
+
             else:
                 if commander not in self.alive_list:
                     data = {
@@ -1150,9 +1166,9 @@ class GameRoom:
 
         # 마녀 저주 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.Witch) and p.curse_target and not p.has_cursed:
+            if isinstance(p.role, roles.Witch) and p.curse_target and p.role.ability_opportunity>0:
                 victim = p.curse_target
-                if victim.healed_by:
+                if victim.healed_by: # 마녀 저주도 치료가 되나?
                     H = victim.healed_by.pop()
                     await victim.healed(room=self, attacker=p, healer=H)
                 else:
@@ -1204,7 +1220,7 @@ class GameRoom:
                 result = None
                 for visited in self.alive_list:
                     if p.target1 in visited.visited_by[self.day]:
-                        # 그냥 p.taget1.target1을 주지 않고 이렇게 복잡하게 하는 것은
+                        # 그냥 p.target1.target1을 주지 않고 이렇게 복잡하게 하는 것은
                         # p.target1이 자신의 target1만 설정해놓고 실제로 능력을 쓰지는 못하고 이날 밤에 죽었을 경우에(퇴군에게 죽었을 경우를 제외)
                         # None이 아닌 p.target1.target1을 주게 되면 형사 입장에서는 자기 목표가 능력을 쓰고 죽은 걸로 착각하게 되기 떄문이다.
                         # 예시: 탐정이 시장을 방문. 대부가 탐정을 방문. 형사가 탐정을 방문.
@@ -1636,7 +1652,7 @@ class GameRoom:
             if isinstance(p.role, roles.Executioner):
                 player_list = list(self.players.values())
                 player_list.remove(p)
-                p.role.set_taget(player_list)
+                p.role.set_target(player_list)
         await asyncio.gather(*[self.emit_event(sio,
                              {"type": "executioner_target", "target": p.role.target.nickname},
                              room=p.sid)

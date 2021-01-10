@@ -395,7 +395,7 @@ class Cultist(Cult):
 
 class Executioner(NeutralBenign):
     name = "처형자"
-    def set_taget(self, player_list):
+    def set_target(self, player_list):
         self.target = random.choice([p for p in player_list if not isinstance(p.role, Jester)])
 
 
@@ -445,6 +445,7 @@ class Witch(NeutralEvil):
     def __init__(self):
         super().__init__()
         self.visitable_himself = True
+        self.ability_opportunity = 1
 
 
 class WitchDoctor(Cult):
