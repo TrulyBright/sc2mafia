@@ -154,7 +154,7 @@ class GameRoom:
                     return
                 # 이 이하로는 재판대에 섰을 때 사용할 수 없는 명령어들
                 elif (
-                    cmd == "/집단사형"
+                    cmd == "/개시" # 집단사형 개시
                     and (self.STATE == "DISCUSSION" or self.STATE=="VOTE")
                     and commander.alive
                     and isinstance(commander.role, roles.Marshall)
@@ -1726,7 +1726,7 @@ class GameRoom:
                 except asyncio.TimeoutError:  # nobody has been elected today
                     break
                 else:  # someone has been elected
-                    self.VOTE_TIME_REMAINING -= (self.VOTE_STARTED_AT-datetime.now()).total_seconds()
+                    self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
                     for p in self.alive_list:
                         p.has_voted = False
                         p.voted_to_whom = None
