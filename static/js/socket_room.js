@@ -258,12 +258,12 @@ Socket.on('event', (data)=> {
     case 'dead':
       if (data['dead_while_guarding']) {
         addchat('당신은 '+data['attacker']+'에게서 대상을 지키고 대신 사망했습니다.', 'red');
+      } else if (data["attacker"]=="VOTE") {
+        addchat("당신은 투표로 사형당했습니다.", "red");
+      } else if (data["attacker"]=="마녀") {
+        addchat("당신은 마녀의 저주를 맞아 죽었습니다.", "red");
       } else {
-        if (data["attacker"]=="마녀") {
-          addchat("당신은 마녀의 저주를 맞아 죽었습니다.", "red")
-        } else {
-          addchat('당신은 '+data['attacker']+'에게 죽었습니다.', 'red');
-        }
+        addchat("당신은 "+data["attacker"]+"에게 죽었습니다.", "red");
       }
       break;
     case 'attacked':
