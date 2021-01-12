@@ -215,6 +215,19 @@ Socket.on('event', (data)=> {
       break;
     case 'check_result':
       switch (data['role']) {
+        case "검시관":
+          addchat("대상의 직업은 "+data["result"]["role"]+"입니다.");
+          if (data["result"]["lw"]) {
+            addchat("대상은 유언을 남겼습니다:");
+            addchat(data["lw"], "yellow");
+          } else {
+            addchat("대상은 유언을 남기지 않았습니다.");
+          }
+          for (const [index, visitors] of data["result"]["visitors"].entries()) {
+            let night = index + 1;
+            addchat(night+"번째 밤, 대상을 " + visitors + " 등이 방문했습니다.");
+          }
+          break;
         case '탐정':
           if (typeof data['result'] === 'object') {
             let crimeList = [];
@@ -317,8 +330,12 @@ Socket.on('event', (data)=> {
       addchat(data["lw"], "yellow");
       break;
     case "lw_announced":
-      addchat(data["dead"]+"님은 유언을 남겼습니다:");
-      addchat(data["lw"], "yellow");
+      if (data["lw"]=="") {
+        addchat(data["dead"]+"님은 유언을 남기지 않았습니다.");
+      } else {
+        addchat(data["dead"]+"님은 유언을 남겼습니다:");
+        addchat(data["lw"], "yellow");
+      }
       break;
     default:
       addchat(data);
