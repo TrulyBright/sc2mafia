@@ -10,6 +10,10 @@ from datetime import datetime, timedelta
 
 from . import roles
 
+# TODO: 마녀 저주 5밤 이후부터 써지도록 수정
+# TODO: 죽은 사람에게 투표 안 되도록 수정
+# TODO: 마녀 저주 때 emit_sound 하도록 수정
+# TODO: will_curse 이벤트 프론트엔드에서 받도록 수정
 
 class GameRoom:
     def __init__(
@@ -236,7 +240,7 @@ class GameRoom:
                     and commander.alive
                     and self.STATE == "EVENING"
                     and target1
-                    and ((not target1.alive) if isinstance(commander.role, roles.Coroner) else target1.alive)
+                    and ((not self.players[target1].alive) if isinstance(commander.role, roles.Coroner) else self.players[target1].alive)
                 ):
                     visitor = commander
                     visited = self.players[target1]
@@ -370,7 +374,8 @@ class GameRoom:
                 and self.players[target1]\
                 and isinstance(commander.role, roles.Witch)\
                 and commander.role.ability_opportunity>0\
-                and self.STATE == "EVENING":
+                and self.STATE == "EVENING"
+                and self.day>=5:
                     commander.curse_target = self.players[target1]
                     data = {
                         "type": "will_curse",
@@ -501,7 +506,7 @@ class GameRoom:
                         "who": user["nickname"],
                         "message": msg,
                     }
-                    await self.emit_event(sio, data, room=self.roomID)
+                    await self.emit_event(sio, data, room=self.roomID) # TODO: 죽은사람에게 투표가 되는 버그 수정
 
     def vote(self, voter, voted):
         assert self.STATE == "VOTE"
@@ -650,7 +655,7 @@ class GameRoom:
             if isinstance(p.role, roles.Witch) and p.target1 and p.target2:
                 p.target1.visited_by[self.day].add(p)
                 if (isinstance(p.target1, roles.Veteran) and p.target1.alert_today) or (
-                    isinstance(p.target1, roles.MassMurderer) and p.target1.murder_today
+                    isinstance(p.target1, roles.MassMurderer) and p.target1
                 ):
                     continue
                 else:
@@ -1209,7 +1214,9 @@ class GameRoom:
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
-                    "result": [[(visitor.nickname, visitor.role) for visitor in visitors] for visitors in p.target1.visited_by[1:]]
+                    "result": {"lw": p.target1.lw,
+                               "role": p.target1.role.name,
+                               "visitors": [[visitor.role.name for visitor in visitors] for visitors in p.target1.visited_by[1:]],}
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
@@ -1491,7 +1498,7 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.triadChatID)
 
     async def clear_up(self):
-        for p in self.alive_list:
+        for p in self.players.values():
             p.has_voted = False
             p.voted_to_whom = None
             p.voted_to_execution_of_jester = False
@@ -1586,6 +1593,7 @@ class GameRoom:
         self.day = 0
         self.die_tonight = set()
         self.message_record = [] # 초기화
+        self.in_lynch = False
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.DISCUSSION_TIME = 10
@@ -1599,10 +1607,10 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.DragonHead(),
+                roles.Mafioso(),
                 roles.Marshall(),
-                roles.Executioner(),
-                roles.Judge(),
+                roles.MassMurderer(),
+                roles.Coroner(),
                 roles.Witch(),
             ]
         # random.shuffle(roles_to_distribute)
