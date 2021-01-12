@@ -1168,11 +1168,11 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Witch) and p.curse_target and p.role.ability_opportunity>0:
                 victim = p.curse_target
-                if victim.healed_by: # 마녀 저주도 치료가 되나?
-                    H = victim.healed_by.pop()
-                    await victim.healed(room=self, attacker=p, healer=H)
-                else:
-                    await victim.die(attacker=p, room=self)
+                # if victim.healed_by: # 마녀 저주는 치료 안 됨
+                #     H = victim.healed_by.pop()
+                #     await victim.healed(room=self, attacker=p, healer=H)
+                # else:
+                await victim.die(attacker=p, room=self)
 
         # 사망자들 제거
         for dead in self.die_tonight:
