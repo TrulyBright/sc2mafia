@@ -95,3 +95,7 @@ Socket.on('room_list', (room_list)=> {
     document.querySelector("#room"+roomID).addEventListener("click", ()=>{enter_GameRoom(Number(roomID))});
   }
 });
+
+Socket.on("multiple_login", (data)=>{
+  alert("다른 곳에서 계정 접속이 시도되어 연결을 종료합니다.");
+});

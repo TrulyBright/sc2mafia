@@ -15,7 +15,7 @@ sio = socketio.AsyncServer(
 room_list = {}
 next_roomID = 1
 
-online_users = set()
+online_users = dict()
 
 
 def setup_socketio(app):
@@ -24,6 +24,7 @@ def setup_socketio(app):
 
 @sio.event
 async def connect(sid, environ):
+    print(online_users)
     try:
         # KeyError occurs here
         HTTP_SID = environ["sanic.request"].cookies["session"]
@@ -44,8 +45,9 @@ async def connect(sid, environ):
     await sio.save_session(sid, HTTPsession)
     async with sio.session(sid) as user:
         if user["username"] in online_users:
-            raise ConnectionRefusedError("다중접속")
-        online_users.add(user["username"])
+            await sio.emit("multiple_login", {}, room=online_users[user["username"]])
+            await sio.disconnect(online_users[user["username"]])
+        online_users[user["username"]]=sid
         print("user connected:", user["username"])
 
 
@@ -55,7 +57,7 @@ async def disconnect(sid):
         username = user.get("username")
         if username is not None:
             print("user disconnected: ", user.get("username"))
-            online_users.remove(username)
+            del online_users[username]
             if "room" in user:
                 await leave_GameRoom(sid, None)
 
