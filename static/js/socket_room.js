@@ -1,4 +1,7 @@
+// TODO: will_execute_the_jailed 이벤트 받기
 'use strict';
+
+let now_playing = null;
 
 function updateScroll () {
   let chatBox = document.querySelector('#messages');
@@ -23,6 +26,51 @@ function send_message(event) {
   Socket.emit('message', message);
   chatInput.value = '';
 };
+
+function swap_audio(audio_name) {
+  switch (audio_name) {
+    case "court_normal":
+      if (now_playing) {
+        now_playing.pause();
+      }
+      now_playing = new Audio("/static/music/Ace Attorney - Court Suite 3.mp3");
+      now_playing.play();
+      addchat("음악 재생: 역전재판 주제곡 - Court Suite 3");
+      break;
+    case "court_with_lynch":
+      if (now_playing) {
+        now_playing.pause();
+      }
+      now_playing = new Audio("/static/music/Phoenix Wright Ace Attorney OST - Pressing Pursuit Cornered.mp3");
+      now_playing.play();
+      addchat("음악 재생: 역전재판 주제곡 - Pressing Pursuit Cornered");
+      break;
+    case "mayor_normal":
+      if (now_playing) {
+        now_playing.pause();
+      }
+      now_playing = new Audio("/static/music/Hail to the Chief.mp3");
+      now_playing.play();
+      addchat("음악 재생: 미국 대통령 헌정곡");
+      break;
+    case "marshall_normal":
+      if (now_playing) {
+        now_playing.pause();
+      }
+      if (Math.random()>=0.5) {
+        now_playing = new Audio("/static/music/National Anthem of USSR.mp3");
+        now_playing.play();
+        addchat("음악 재생: 소련 국가");
+      } else {
+        now_playing = new Audio("/static/music/National Anthem of North Korea Instrumental.mp3");
+        now_playing.play();
+        addchat("음악 재생: 북한 국가");
+      }
+      break;
+    default:
+    addchat(data["music"]);
+  }
+}
 
 Socket.on("player_list", (data)=>{
   console.log(data);
@@ -69,7 +117,7 @@ Socket.on('event', (data)=> {
       addchat("게임이 저장되었습니다. 게임 기록을 <a target='_blank' href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
       break;
     case "music":
-      addchat("음악 재생: "+data["music"])
+      swap_audio(data["music"]);
       break;
     case 'role':
       addchat('당신의 직업은 '+data['role']+'입니다.');
@@ -91,6 +139,12 @@ Socket.on('event', (data)=> {
         case 'VOTE_EXECUTION':
           addchat(data['who']+'님에게 사형을 선고하고 싶다면 "/유죄", 아니라면 "/무죄"를 입력하세요.');
           break;
+        case "EXECUTION":
+          addchat("마을은 "+data["who"]+"님을 사형시키기로 결정했습니다.");
+          break;
+        case "LAST_WORD":
+          addchat(data["who"]+"님, 마지막으로 할 말을 남기세요.");
+          break;
         case 'EVENING':
           addchat('저녁이 되었습니다.');
           break;
@@ -108,11 +162,18 @@ Socket.on('event', (data)=> {
     case 'vote_cancel':
       addchat(data['voter']+'님이 투표를 취소했습니다.');
       break;
+    case "vote_done":
+      addchat("사형투표가 종료되었습니다.");
+      addchat("결과는 유죄 "+data["guilty"]+"표에 무죄 "+data["innocent"]+"표.");
+      break;
     case "mayor_ability_activation":
       addchat(data["who"]+"님은 <span style='color:#00bf00'>시장</span>입니다!!!", "skyblue");
       break;
     case "marshall_ability_activation":
       addchat(data["who"]+"님은 <span style='color:#00bf00'>원수</span>입니다!!!", "skyblue");
+      break;
+    case "court":
+      addchat("판사가 부패한 재판을 개정했습니다!", "firebrick");
       break;
     case 'visit':
       if (data['target2']) {

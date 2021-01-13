@@ -406,7 +406,9 @@ class Jester(NeutralBenign):
 class Judge(NeutralEvil):
     team = "판사"
     name = "판사"
-
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 2
 
 class MassMurderer(NeutralKilling):
     team = "대량학살자"
