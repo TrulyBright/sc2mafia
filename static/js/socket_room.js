@@ -104,7 +104,7 @@ Socket.on("player_list", (data)=>{
       a.setAttribute("href", "#");
       a.innerHTML = nickname;
       if (readied) {
-        a.setAttribute("style", "background-color: #2C2F33");
+        a.style.backgroundColor = "#6B6B84";
       }
       div.appendChild(a);
       player_list.appendChild(div);
@@ -135,6 +135,11 @@ Socket.on('event', (data)=> {
       break;
     case "unable_to_kick":
       addchat(data["reason"]);
+      break;
+    case "unable_to_start":
+      if (data["reason"]=="not_readied") {
+        addchat(data["not_readied"]+"님 등이 준비하지 않아 시작할 수 없습니다.");
+      }
       break;
     case 'game_over':
       addchat('게임이 끝났습니다. 승자들은 '+data['winner']+' 등입니다.');
