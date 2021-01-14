@@ -18,6 +18,8 @@ from . import roles
 # TODO: 대부-마피아 일원 살인 일원화 구현
 
 class GameRoom:
+    def __del__(self):
+        print(f"room #{self.roomID} DELETED")
     def __init__(
         self, roomID, title, capacity, host, setup, password=""
     ):
@@ -28,6 +30,7 @@ class GameRoom:
         self.title = title
         self.capacity = capacity
         self.members = []
+        self.readied = set()
         self.host = host
         self.setup = setup
         self.password = password
@@ -53,7 +56,24 @@ class GameRoom:
             if not self.inGame:
                 if msg.startswith("/유언편집"):
                     return
+                if msg == "/준비":
+                    if sid in self.readied:
+                        self.readied.remove(sid)
+                    else:
+                        self.readied.add(sid)
+                    await self.emit_player_list(sio)
+                    return
                 if msg == "/시작" and sid == self.host:
+                    if len(self.readied)!=len(self.members):
+                        not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied])
+                        not_readied = [session["nickname"] for session in not_readied]
+                        data = {
+                            "type": "unable_to_start",
+                            "reason": "not_readied",
+                            "not_readied": not_readied,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        return
                     await self.init_game(sio)
                     await self.run_game(sio)
                     await self.finish_game(sio)
@@ -643,14 +663,14 @@ class GameRoom:
                 "role": dead.role.name,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
             data = {
                 "type": "lw_announced",
                 "dead": dead.nickname,
                 "lw": dead.lw,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
         else:
             for d in dead:
                 data = {
@@ -659,14 +679,15 @@ class GameRoom:
                     "role": d.role.name,
                 }
                 await self.emit_event(sio, data, room=self.roomID)
-                await asyncio.sleep(1)
+                await asyncio.sleep(5)
                 data = {
                     "type": "lw_announced",
                     "dead": d.nickname,
                     "lw": d.lw,
                 }
                 await self.emit_event(sio, data, room=self.roomID)
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)
+        await self.emit_player_list(sio)
 
     def killable(self, attacker, attacked):
         return attacker.role.offense_level > attacked.role.defense_level
@@ -1720,6 +1741,7 @@ class GameRoom:
         # init game
         print("Game initiated in room #", self.roomID)
         self.inGame = True
+        self.readied = set()
         self.election = asyncio.Event()
         self.elected = None
         self.day = 0
@@ -1757,6 +1779,7 @@ class GameRoom:
             )
             for sid in self.members
         }
+        await self.emit_player_list(sio)
         self.hellID = str(self.roomID) + "_hell"
         self.mafiaChatID = str(self.roomID) + "_Mafia"
         self.triadChatID = str(self.roomID) + "_Triad"
@@ -1817,9 +1840,8 @@ class GameRoom:
                     "dead": dead.nickname,
                 }
                 await self.emit_event(sio, data, room=self.roomID)
-                await asyncio.sleep(3)
-                await self.announce_role_and_lw_of(dead, sio)
                 await asyncio.sleep(5)
+                await self.announce_role_and_lw_of(dead, sio)
             if self.game_over():
                 return
             self.die_tonight = set() # 사망자 목록 초기화
@@ -2038,9 +2060,22 @@ class GameRoom:
         del self.players
         del self
 
+    async def emit_player_list(self, sio):
+        player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])) # TODO: 죽었는지 여부도 전송
+        if self.inGame:
+            player_list = [(nickname, self.players[nickname].alive if nickname in self.players else False) for nickname in player_list]
+        else:
+            readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied])
+            readied = {s["nickname"] for s in readied}
+            player_list = [(nickname, nickname in readied) for nickname in player_list]
+        data = {
+            "player_list": player_list,
+            "inGame": self.inGame,
+        }
+        await sio.emit("player_list", data, room=self.roomID)
+
     async def someone_entered(self, sid, sio):
-        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members]))) # TODO: 죽었는지 여부도 전송
-        await sio.emit("player_list", player_list, room=self.roomID)
+        await self.emit_player_list(sio)
         if self.inGame:
             enterer = (await sio.get_session(sid))["nickname"]
             if enterer in self.players and self.players[enterer].alive:
@@ -2049,8 +2084,7 @@ class GameRoom:
                 sio.enter_room(sid, self.hellID)
 
     async def someone_left(self, sid, sio):
-        player_list = list(map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])))
-        await sio.emit("player_list", player_list, room=self.roomID)
+        await self.emit_player_list(sio)
         if self.inGame:
             for p in self.players.values():
                 if p.sid==sid:
@@ -2059,6 +2093,8 @@ class GameRoom:
 
 
 class Player:
+    def __del__(self):
+        print(f"player #{self.nickname} DELETED")
     def __init__(self, sid, roomID, nickname, role, sio, alive=True):
         self.sid = sid
         self.nickname = nickname

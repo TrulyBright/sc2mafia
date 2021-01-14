@@ -2,6 +2,7 @@
 'use strict';
 import { app } from "/static/js/main.js"
 
+document.querySelector(".message_input_form").addEventListener("submit", send_message)
 let now_playing = null;
 
 function updateScroll () {
@@ -77,13 +78,37 @@ Socket.on("player_list", (data)=>{
   console.log(data);
   let player_list = document.querySelector(".player_list");
   player_list.innerHTML = "";
-  for (let nickname of data) {
-    let div = document.createElement("div");
-    let a = document.createElement("a");
-    a.setAttribute("href", "#");
-    a.innerHTML = nickname;
-    div.appendChild(a);
-    player_list.appendChild(div);
+  if (data["inGame"]) {
+    for (let player of data["player_list"]) {
+      let nickname = player[0];
+      let alive = player[1];
+      let div = document.createElement("div");
+      let del = document.createElement("del");
+      let a = document.createElement("a");
+      a.setAttribute("href", "#");
+      a.innerHTML = nickname;
+      if (!alive) {
+        del.appendChild(a);
+        div.appendChild(del);
+      } else {
+        div.appendChild(a);
+      }
+      player_list.appendChild(div);
+    }
+  } else {
+    for (let player of data["player_list"]) {
+      let nickname = player[0];
+      let readied = player[1];
+      let div = document.createElement("div");
+      let a = document.createElement("a");
+      a.setAttribute("href", "#");
+      a.innerHTML = nickname;
+      if (readied) {
+        a.setAttribute("style", "background-color: #2C2F33");
+      }
+      div.appendChild(a);
+      player_list.appendChild(div);
+    }
   }
 });
 
