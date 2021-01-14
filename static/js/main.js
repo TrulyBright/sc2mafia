@@ -4,10 +4,17 @@ Vue.component("modal", {
   template: "#modal-template"
 });
 
-let main = new Vue({
+Vue.component("lw-modal", {
+  template: "#lw-modal-template"
+});
+
+let app = new Vue({
   el: "#main",
   data: {
     showModal: false,
+    showLwModal: false,
+    showSetupModal: false,
+    showPlayerMenuModal: false,
     inLobby: true,
   }
 });
@@ -29,9 +36,14 @@ document.querySelector("#leave_GameRoom_button").addEventListener("click", confi
 document.querySelector("#start_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/시작");
 });
-
 document.querySelector("#ready_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/준비");
+});
+document.querySelector("#lw_button").addEventListener("click", (event)=>{
+  Socket.emit("message", "/유언편집");
+});
+document.querySelector("#lw_submit").addEventListener("click", (event)=>{
+  Socket.emit("message", "/유언편집 "+document.querySelector("#lw").value);
 });
 
 
@@ -61,11 +73,11 @@ function create_GameRoom (title, capacity, password, setup) {
 };
 
 Socket.on('enter_GameRoom_success', (roomID)=> {
-  main.inLobby = false;
+  app.inLobby = false;
 });
 
 Socket.on('leave_GameRoom_success', (data)=>{
-  main.inLobby = true;
+  app.inLobby = true;
   let ul = document.querySelector("#messages");
   ul.innerHTML = "";
 });
@@ -99,3 +111,5 @@ Socket.on('room_list', (room_list)=> {
 Socket.on("multiple_login", (data)=>{
   alert("다른 곳에서 계정 접속이 시도되어 연결을 종료합니다.");
 });
+
+export { app };

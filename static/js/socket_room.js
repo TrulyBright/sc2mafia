@@ -1,5 +1,6 @@
 // TODO: will_execute_the_jailed 이벤트 받기
 'use strict';
+import { app } from "/static/js/main.js"
 
 let now_playing = null;
 
@@ -397,6 +398,10 @@ Socket.on('event', (data)=> {
         addchat(data["dead"]+"님은 유언을 남겼습니다:");
         addchat(data["lw"], "yellow");
       }
+      break;
+    case "lw_edit":
+      app.showLwModal = true;
+      document.querySelector("#lw").value = data["lw"];
       break;
     default:
       addchat(data);

@@ -51,6 +51,8 @@ class GameRoom:
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
             if not self.inGame:
+                if msg.startswith("/유언편집"):
+                    return
                 if msg == "/시작" and sid == self.host:
                     await self.init_game(sio)
                     await self.run_game(sio)
@@ -80,6 +82,12 @@ class GameRoom:
                         data = {
                             "type": "unable_to_edit_lw",
                             "reason": "밤에는 유언을 작성할 수 없습니다.",
+                        }
+                        await self.emit_event(sio, data, room=sid)
+                    elif msg == "/유언편집": # 그냥 /유언편집 만 치면 현재 자기 유언 보내주도록 설정
+                        data = {
+                            "type": "lw_edit",
+                            "lw": commander.lw,
                         }
                         await self.emit_event(sio, data, room=sid)
                     else:
@@ -1929,6 +1937,7 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
             await self.clear_up()
+            await asyncio.sleep(5)
 
     async def finish_game(self, sio):
         print("Game finished in room #", self.roomID)
