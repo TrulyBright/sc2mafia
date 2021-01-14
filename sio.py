@@ -24,7 +24,6 @@ def setup_socketio(app):
 
 @sio.event
 async def connect(sid, environ):
-    print(online_users)
     try:
         # KeyError occurs here
         HTTP_SID = environ["sanic.request"].cookies["session"]
