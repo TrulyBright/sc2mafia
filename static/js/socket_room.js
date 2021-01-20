@@ -207,9 +207,20 @@ Socket.on('event', (data)=> {
       addchat("판사가 부패한 재판을 개정했습니다!", "firebrick");
       break;
     case 'visit':
-      if (data['target2']) {
-        addchat('오늘 밤 '+data['target1']+'님을 '+data['target2']+'님에게 가게 합니다.')
-      } else {
+      switch (data["role"]) {
+        case "대부":
+          addchat(data["visitor"] +"님이 죽일 대상: "+data["target1"]);
+          break;
+        case "마피아 일원":
+          addchat(data["visitor"]+"님이 죽일 대상(대부의 지시가 우선합니다): "+data["target1"]);
+          break;
+        case "용두":
+          addchat(data["visitor"]+"님이 죽일 대상: " + data["target1"]);
+          break;
+        case "홍곤":
+          addchat(data["visitor"]+"님이 죽일 대상(용두의 지시가 우선합니다): " + data["target1"]);
+          break;
+        default:
         addchat(data["visitor"]+"님이 오늘 밤 방문할 대상: "+data["target1"]);
       }
       break;
@@ -285,6 +296,9 @@ Socket.on('event', (data)=> {
       break;
     case 'blocked':
       addchat('아리따운 누군가가 당신에게 찾아왔습니다. 당신은 그녀와 황홀한 밤을 보냈습니다. 능력이 차단되었습니다.', 'magenta');
+      break;
+    case "attack_failed":
+      addchat("공격에 실패했습니다. 오늘 밤 대상의 방어수준은 당신의 공격 수준 이상이었습니다.");
       break;
     case 'oiling_success':
       addchat('당신은 '+data['target1']+'님에게 기름을 묻혔습니다.');
