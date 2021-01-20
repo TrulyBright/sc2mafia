@@ -112,4 +112,8 @@ Socket.on("multiple_login", (data)=>{
   alert("다른 곳에서 계정 접속이 시도되어 연결을 종료합니다.");
 });
 
+Socket.on("disconnect", (data)=>{
+  alert("서버와의 연결이 종료되었습니다.");
+});
+
 export { app };
