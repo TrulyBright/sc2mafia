@@ -211,7 +211,7 @@ class Spy(TownPower):
     name = "정보원"
 
 
-class Stump(TownGovernment):
+class Stump(Town):
     name = "나무 그루터기"
 
 
@@ -275,6 +275,7 @@ class Godfather(MafiaKilling):
     def __init__(self):
         super().__init__()
         self.offense_level = 1
+        self.defense_level = 1
 
 
 class Janitor(MafiaDeception):
