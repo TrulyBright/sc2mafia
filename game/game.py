@@ -16,6 +16,7 @@ from . import roles
 # TODO: will_curse 이벤트 프론트엔드에서 받도록 수정
 # TODO: 판사 구현
 # TODO: 대부-마피아 일원 살인 일원화 구현
+# TODO: 기억상실자
 
 class GameRoom:
     def __del__(self):
@@ -111,7 +112,7 @@ class GameRoom:
                         }
                         await self.emit_event(sio, data, room=sid)
                     else:
-                        commander.lw = msg[6:] # [5:]로 하면 /유언편집과 실제 유언 사이 공백 1칸이 포함됨
+                        commander.lw = msg[6:206] # [5:]로 하면 /유언편집과 실제 유언 사이 공백 1칸이 포함됨
                         data = {
                             "type": "wrote_lw",
                             "lw": commander.lw,
@@ -141,6 +142,25 @@ class GameRoom:
                         "lw": self.players[target1].lw,
                     }
                     await self.emit_event(sio, data, room=sid)
+                elif cmd == "/기억" and target1 in self.players and not self.players[target1].alive:
+                    target = self.players[target1]
+                    for banned in (roles.Mayor,
+                                   roles.Marshall,
+                                   roles.Judge,
+                                   roles.Crier,
+                                   roles.WitchDoctor,
+                                   roles.Godfather,
+                                   roles.DragonHead,
+                                   roles.MasonLeader):
+                        if isinstance(target.role, banned):
+                            return
+                    commander.remember_today = True
+                    commander.remember_target = target
+                    data = {
+                        "type": "will_remember",
+                        "remember_target": target.nickname,
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
                 elif commander.jailed:
                     return
                 # 이 이하로는 갇혔을 때 사용할 수 없는 명령어들
@@ -705,13 +725,13 @@ class GameRoom:
         if convertor.nightChatID:
             sio.leave_room(converted.sid, convertor.nightChatID)
             convertor.nightChatID = None
-        converted.role = role
-        converted.role_record.append(role)
         data = {
             "type": "role_converted",
             "role": role.name,
             "convertor": convertor.role.name if convertor else None,
         }
+        converted.role = role
+        converted.role_record.append(role)
         await self.emit_event(sio, data, room=converted.sid)
         if isinstance(converted.role, roles.Mafia):
             sio.enter_room(converted.sid, self.mafiaChatID)
@@ -1645,6 +1665,11 @@ class GameRoom:
                     data = {"type": "recruit_failed"}
                     await self.emit_event(sio, data, room=self.triadChatID)
 
+        # 기억상실자 기억
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Amnesiac) and p.remember_today:
+                await self.convert_role(sio, p, p, p.remember_target.role.__class__())
+
     async def clear_up(self):
         self.clear_vote()
         self.in_lynch = False
@@ -1763,8 +1788,8 @@ class GameRoom:
         elif self.setup == "test":
             roles_to_distribute = [
                 roles.Mafioso(),
-                roles.Marshall(),
-                roles.Judge(),
+                roles.Godfather(),
+                roles.Detective(),
                 roles.Coroner(),
                 roles.Jester(),
             ]
@@ -2118,6 +2143,7 @@ class Player:
         self.alert_today = False
         self.burn_today = False
         self.curse_today = False
+        self.remember_today = False
         self.suicide_today = False
         self.cannot_murder_until = 0
         self.protected_from_cult = False
@@ -2136,6 +2162,7 @@ class Player:
         self.target2 = None
         self.curse_target = None
         self.recruit_target = None
+        self.remember_target = None
         self.nightChatID = None
         self.crimes = {
             "무단침입": False,

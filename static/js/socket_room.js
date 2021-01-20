@@ -433,6 +433,12 @@ Socket.on('event', (data)=> {
       app.showLwModal = true;
       document.querySelector("#lw").value = data["lw"];
       break;
+    case "will_remember":
+      addchat("오늘밤 기억할 대상: "+data["remember_target"]);
+      break;
+    case "role_converted":
+      addchat(data["convertor"]+"의 능력으로 직업이 "+data["role"]+"(으)로 바뀌었습니다.");
+      break;
     default:
       addchat(data);
   }
