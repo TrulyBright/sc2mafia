@@ -295,7 +295,10 @@ Socket.on('event', (data)=> {
       addchat('마녀에게 조종당하고 있습니다!', 'Orchid');
       break;
     case 'blocked':
-      addchat('아리따운 누군가가 당신에게 찾아왔습니다. 당신은 그녀와 황홀한 밤을 보냈습니다. 능력이 차단되었습니다.', 'magenta');
+      addchat('아리따운 누군가가 당신을 찾아왔습니다. 당신은 그녀와 황홀한 밤을 보냈습니다. 능력이 차단되었습니다.', 'magenta');
+      break;
+    case "blackmailed":
+      addchat("누군가 찾아와 내일 입을 열었다가는 해코지를 당할 것이라 협박했습니다. 당신은 내일 하루종일 입을 꾹 닫기로 했습니다.");
       break;
     case "attack_failed":
       addchat("공격에 실패했습니다. 오늘 밤 대상의 방어수준은 당신의 공격 수준 이상이었습니다.");

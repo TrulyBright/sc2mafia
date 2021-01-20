@@ -54,6 +54,7 @@ class GameRoom:
 
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
+            msg = msg[:206] # 최대 글자수
             if not self.inGame:
                 if msg.startswith("/유언편집"):
                     return
@@ -191,6 +192,7 @@ class GameRoom:
                     and self.STATE != "EVENING"
                     and self.STATE != "NIGHT"
                     and commander.votes != 4
+                    and not commander.blackmailed
                 ):
                     mayor = commander
                     mayor.votes = 4
@@ -214,6 +216,7 @@ class GameRoom:
                     and isinstance(commander.role, roles.Judge)
                     and not self.in_court
                     and commander.role.ability_opportunity>0
+                    and not commander.blackmailed
                 ):
                     judge = commander
                     commander.votes = 3
@@ -235,6 +238,7 @@ class GameRoom:
                     and isinstance(commander.role, roles.Marshall)
                     and not self.in_lynch
                     and commander.role.ability_opportunity>0
+                    and not commander.blackmailed
                 ):
                     marshall = commander
                     self.in_lynch = True
@@ -474,7 +478,7 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.hellID)
                 elif self.STATE == "NIGHT":
                     return
-                elif self.STATE == "EVENING":
+                elif self.STATE == "EVENING" and not commander.blackmailed:
                     player = commander
                     if player.jailed:
                         data = {
@@ -570,7 +574,7 @@ class GameRoom:
                             "message": msg,
                         }
                         await self.emit_event(sio, data, room=self.masonChatID)
-                elif self.STATE == "DEFENSE" or self.STATE=="VOTE_EXECUTION":
+                elif (self.STATE == "DEFENSE" or self.STATE=="VOTE_EXECUTION") and not commander.blackmailed:
                     data = {
                         "type": "message",
                         "who": user["nickname"],
@@ -578,7 +582,7 @@ class GameRoom:
                         "from_elected": commander==self.elected,
                     }
                     await self.emit_event(sio, data, room=self.roomID)
-                else:
+                elif not commander.blackmailed or self.STATE=="LAST_WORD":
                     data = {
                         "type": "message",
                         "who": user["nickname"],
@@ -1693,6 +1697,24 @@ class GameRoom:
             if isinstance(p.role, roles.Amnesiac) and p.remember_today:
                 await self.convert_role(sio, p, p, p.remember_target.role.__class__())
 
+        # 협박자 협박
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Blackmailer) and p.target1:
+                p.target1.blackmailed = True
+                data = {
+                    "type": "blackmailed",
+                }
+                await self.emit_event(sio, data, room=p.target1.sid)
+
+        # 침묵자 협박
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Silencer) and p.target1:
+                p.target1.blackmailed = True
+                data = {
+                    "type": "blackmailed",
+                }
+                await self.emit_event(sio, data, room=p.target1.sid)
+
     async def clear_up(self):
         self.clear_vote()
         self.in_lynch = False
@@ -1821,7 +1843,7 @@ class GameRoom:
             roles_to_distribute = [
                 roles.Mafioso(),
                 roles.Godfather(),
-                roles.DragonHead(),
+                roles.Blackmailer(),
                 roles.Coroner(),
                 roles.Jester(),
             ]
@@ -2006,7 +2028,8 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await asyncio.sleep(self.EVENING_TIME)
-
+            for p in self.alive_list:
+                p.blackmailed = False
             # NIGHT
             self.STATE = "NIGHT"
             data = {
@@ -2177,6 +2200,7 @@ class Player:
         self.curse_today = False
         self.remember_today = False
         self.suicide_today = False
+        self.blackmailed = False
         self.cannot_murder_until = 0
         self.protected_from_cult = False
         self.protected_from_auditor = False
