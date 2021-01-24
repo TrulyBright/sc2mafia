@@ -14,9 +14,10 @@ from . import roles
 # TODO: 죽은 사람에게 투표 안 되도록 수정: 해결
 # TODO: 마녀 저주 때 emit_sound 하도록 수정
 # TODO: will_curse 이벤트 프론트엔드에서 받도록 수정
-# TODO: 판사 구현
-# TODO: 대부-마피아 일원 살인 일원화 구현
+# TODO: 판사 구현: 해결
+# TODO: 대부-마피아 일원 살인 일원화 구현: 해결
 # TODO: 기억상실자
+# TODO: 사인 공개되도록 수정
 
 class GameRoom:
     def __del__(self):
@@ -206,6 +207,7 @@ class GameRoom:
                         "music": "mayor_normal",
                     }
                     await self.emit_event(sio, data, room=self.roomID)
+                    mayor.crimes["부패"] = True
                 elif commander==self.elected:
                     return
                 # 이 이하로는 재판대에 섰을 때 사용할 수 없는 명령어들
@@ -231,6 +233,7 @@ class GameRoom:
                         "music": "court_with_lynch" if self.in_lynch else "court_normal",
                     }
                     await self.emit_event(sio, data, room=self.roomID)
+                    judge.crimes["부패"] = True
                 elif (
                     cmd == "/개시" # 집단사형 개시
                     and (self.STATE == "DISCUSSION" or self.STATE=="VOTE")
@@ -242,7 +245,7 @@ class GameRoom:
                 ):
                     marshall = commander
                     self.in_lynch = True
-                    commander.role.ability_opportunity-=1
+                    marshall.role.ability_opportunity-=1
                     data = {
                         "type": "marshall_ability_activation",
                         "who": marshall.nickname,
@@ -253,6 +256,7 @@ class GameRoom:
                         "music": "court_with_lynch" if self.in_court else "marshall_normal",
                     }
                     await self.emit_event(sio, data, room=self.roomID)
+                    marshall.crimes["부패"] = True
 
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
@@ -1437,17 +1441,6 @@ class GameRoom:
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
-        # 탐정
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Investigator) and p.target1:
-                p.crimes["무단침입"] = True
-                data = {
-                    "type": "check_result",
-                    "role": p.role.name,
-                    "result": p.target1.crimes,
-                }
-                await self.emit_event(sio, data, room=p.sid)
-
         # 감시자
         for p in self.alive_list:
             if isinstance(p.role, roles.Lookout) and p.target1:
@@ -1500,6 +1493,57 @@ class GameRoom:
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
+        # 요원
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Agent) and p.target1:
+                p.crimes["무단침입"] = True
+                for visited in self.alive_list:
+                    if p.target1 in visited.visited_by[self.day]:
+                        # 그냥 p.target1.target1을 주지 않고 이렇게 복잡하게 하는 것은
+                        # p.target1이 자신의 target1만 설정해놓고 실제로 능력을 쓰지는 못하고 이날 밤에 죽었을 경우에(퇴군에게 죽었을 경우를 제외)
+                        # None이 아닌 p.target1.target1을 주게 되면 형사 입장에서는 자기 목표가 능력을 쓰고 죽은 걸로 착각하게 되기 떄문이다.
+                        # 예시: 탐정이 시장을 방문. 대부가 탐정을 방문. 형사가 탐정을 방문.
+                        # 이때 그냥 p.target1.target1을 주게 되면 형사에게는 탐정이 시장을 방문한 것으로 보이게 됨. 실제로는 방문하지 못했음에도 불구.
+                        # 따라서 각 플레이어들의 visited_by에 p.target1이 들어가 있는지를 확인하여 실제로 방문했을 때만 결과를 전송해야 한다.
+                        visiting = visited.nickname
+                        break
+                else:
+                    visiting = None
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": {
+                        "visiting": visiting,
+                        "visited_by": [p.nickname for p in p.target1.visited_by[self.day]],
+                    }
+                }
+                await self.emit_event(sio, data, room=p.sid)
+
+        # 선봉
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Vanguard) and p.target1:
+                p.crimes["무단침입"] = True
+                for visited in self.alive_list:
+                    if p.target1 in visited.visited_by[self.day]:
+                        # 그냥 p.target1.target1을 주지 않고 이렇게 복잡하게 하는 것은
+                        # p.target1이 자신의 target1만 설정해놓고 실제로 능력을 쓰지는 못하고 이날 밤에 죽었을 경우에(퇴군에게 죽었을 경우를 제외)
+                        # None이 아닌 p.target1.target1을 주게 되면 형사 입장에서는 자기 목표가 능력을 쓰고 죽은 걸로 착각하게 되기 떄문이다.
+                        # 예시: 탐정이 시장을 방문. 대부가 탐정을 방문. 형사가 탐정을 방문.
+                        # 이때 그냥 p.target1.target1을 주게 되면 형사에게는 탐정이 시장을 방문한 것으로 보이게 됨. 실제로는 방문하지 못했음에도 불구.
+                        # 따라서 각 플레이어들의 visited_by에 p.target1이 들어가 있는지를 확인하여 실제로 방문했을 때만 결과를 전송해야 한다.
+                        visiting = visited.nickname
+                        break
+                else:
+                    visiting = None
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": {
+                        "visiting": visiting,
+                        "visited_by": [p.nickname for p in p.target1.visited_by[self.day]],
+                    }
+                }
+                await self.emit_event(sio, data, room=p.sid)
         # TODO: 변장자 이동
         # 정보원
         for p in self.alive_list:
@@ -1513,6 +1557,19 @@ class GameRoom:
                         }
                         await self.emit_event(sio, data, room=p.sid)
         # TODO: 어릿광대 괴롭히기
+
+        # 탐정 (코드 내 위치에 따라서 발견할 수 있는 범죄가 달라지는 데 유의할 것.)
+        #     (이 위치에서는 조사직들과 살인직들만 발견 가능하고 회계, 비조 등은 발견 못 함.)
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Investigator) and p.target1:
+                p.crimes["무단침입"] = True
+                data = {
+                    "type": "check_result",
+                    "role": p.role.name,
+                    "result": p.target1.crimes,
+                }
+                await self.emit_event(sio, data, room=p.sid)
+
         # 회계
         for p in self.alive_list:
             if isinstance(p.role, roles.Auditor) and p.target1:
@@ -1696,6 +1753,8 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Amnesiac) and p.remember_today:
                 await self.convert_role(sio, p, p, p.remember_target.role.__class__())
+                if isinstance(p.role, roles.Spy):
+                    p.crimes["무단침입"] = True
 
         # 협박자 협박
         for p in self.alive_list:
