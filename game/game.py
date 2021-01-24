@@ -125,7 +125,7 @@ class GameRoom:
                     cmd, target1, target2 = msg
                     if target1 not in self.players:
                         return
-                    if target2 not in self.players:
+                    if cmd!="/귓" and target2 not in self.players:
                         return
                 elif len(msg) == 2:
                     cmd, target1 = msg
@@ -211,6 +211,28 @@ class GameRoom:
                 elif commander==self.elected:
                     return
                 # 이 이하로는 재판대에 섰을 때 사용할 수 없는 명령어들
+                elif (
+                    cmd == "/귓" # 귓속말
+                    and self.STATE!="NIGHT"
+                    and self.STATE!="EVENING"
+                    and commander.alive
+                    and not self.in_court
+                    and not commander.blackmailed
+                    and target1
+                ):
+                    whisper = target2
+                    data = {
+                        "type": "whispering",
+                        "to": self.players[target1].nickname,
+                        "message": whisper,
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
+                    data = {
+                        "type": "whispered",
+                        "from": commander.nickname,
+                        "message": whisper,
+                    }
+                    await self.emit_event(sio, data, room=self.players[target1].sid)
                 elif (
                     cmd == "/개정" # 부패한 재판 개정
                     and (self.STATE=="DISCUSSION" or self.STATE=="VOTE")
@@ -1559,7 +1581,7 @@ class GameRoom:
         # TODO: 어릿광대 괴롭히기
 
         # 탐정 (코드 내 위치에 따라서 발견할 수 있는 범죄가 달라지는 데 유의할 것.)
-        #     (이 위치에서는 조사직들과 살인직들만 발견 가능하고 회계, 비조 등은 발견 못 함.)
+        #     (이 위치에서는 조사직들과 살인직들만 발견 가능하고 회계, 비조 등은 당일 밤에는 발견 못 함.)
         for p in self.alive_list:
             if isinstance(p.role, roles.Investigator) and p.target1:
                 p.crimes["무단침입"] = True

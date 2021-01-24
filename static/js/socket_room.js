@@ -118,6 +118,12 @@ Socket.on('event', (data)=> {
     case 'message':
       addchat(data['who']+': '+data['message'], 'white');
       break;
+    case "whispering":
+      addchat(data["to"]+"님께 귓속말: " + data["message"], "green");
+      break;
+    case "whispered":
+      addchat(data["from"]+"님에게서 귓속말: " + data["message"], "green");
+      break;
     case 'enter':
       addchat(data['who']+'님이 입장했습니다.');
       break;
