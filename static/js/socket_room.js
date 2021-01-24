@@ -70,7 +70,7 @@ function swap_audio(audio_name) {
       }
       break;
     default:
-    addchat(data["music"]);
+      addchat(data["music"]);
   }
 }
 
@@ -178,6 +178,9 @@ Socket.on('event', (data)=> {
           break;
         case 'EVENING':
           addchat('저녁이 되었습니다.');
+          if (now_playing) {
+            now_playing.pause();
+          }
           break;
         case 'NIGHT':
           addchat('밤이 되었습니다.');
@@ -345,13 +348,13 @@ Socket.on('event', (data)=> {
                 crimeList.push(crime);
               }
             }
-            addchat('대상이 저지른 범죄:' + crimeList);
+            addchat('대상이 저지른 범죄: ' + crimeList);
           } else { // 정확한 직업을 알 수 있는 경우
             addchat('대상의 직업은' + data['result'] + '입니다.');
           }
           break;
         case '형사':
-          addchat('대상은 오늘 밤' + data['result'] + '님을 방문했습니다.');
+          addchat('대상은 오늘 밤 ' + data['result'] + '님을 방문했습니다.');
           break;
         case '감시자':
           addchat('오늘 밤 ' + data['result'] + '님이 대상을 방문했습니다.');
@@ -362,6 +365,14 @@ Socket.on('event', (data)=> {
           } else {
             addchat('대상은 수상하지 않습니다.');
           }
+          break;
+        case "요원":
+          addchat("대상은 오늘 밤 " + data["result"]["visiting"]+"님을 방문했습니다.");
+          addchat("오늘 밤 " + data["result"]["visited_by"]+"님이 대상을 방문했습니다.");
+          break;
+        case "선봉":
+          addchat("대상은 오늘 밤 " + data["result"]["visiting"]+"님을 방문했습니다.");
+          addchat("오늘 밤 " + data["result"]["visited_by"]+"님이 대상을 방문했습니다.");
           break;
       }
       break;

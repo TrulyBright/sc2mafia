@@ -1900,11 +1900,11 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Mafioso(),
-                roles.Godfather(),
+                roles.Judge(),
+                roles.Investigator(),
                 roles.Blackmailer(),
-                roles.Coroner(),
-                roles.Jester(),
+                roles.Mayor(),
+                roles.Agent(),
             ]
         # random.shuffle(roles_to_distribute)
         self.players = {
