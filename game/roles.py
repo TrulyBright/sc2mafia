@@ -267,6 +267,9 @@ class Disguiser(MafiaDeception, MafiaSupport):
 
 class Framer(MafiaDeception):
     name = "조작자"
+    def __init__(self):
+        super().__init__()
+        self.detection_immune = True
 
 
 class Godfather(MafiaKilling):
@@ -334,6 +337,9 @@ class Enforcer(TriadKilling):
 
 class Forger(TriadDeception):
     name = "위조꾼"
+    def __init__(self):
+        super().__init__()
+        self.detection_immune = True
 
 
 class IncenseMaster(TriadDeception):

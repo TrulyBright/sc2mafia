@@ -759,7 +759,6 @@ class GameRoom:
             "number_of_murdered": number_of_murdered,
         }
         await self.emit_event(sio, data, room=self.roomID)
-        await asyncio.sleep(5)
 
     async def convert_role(self, sio, convertor, converted, role):
         if convertor.nightChatID:
@@ -956,6 +955,27 @@ class GameRoom:
 
         # 방문자 모두 확정되면 방문자 목록에 추가
         # TODO: 방문자 로직 수정
+
+        # 조작자 조작
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Framer) and p.target1:
+                p.target1.framed = True
+                not_did = []
+                for crime, did in p.target1.crimes.items():
+                    if not did:
+                        not_did.append(crime)
+                if not_did:
+                    p.target1.crimes[random.choice(not_did)] = True
+        # 위조꾼 조작
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Forger) and p.target1:
+                p.target1.framed = True
+                not_did = []
+                for crime, did in p.target1.crimes.items():
+                    if not did:
+                        not_did.append(crime)
+                if not_did:
+                    p.target1.crimes[random.choice(not_did)] = True
 
         # 방화범 기름칠 적용
         for p in self.alive_list:
@@ -1445,7 +1465,6 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Detective) and p.target1:
                 p.crimes["무단침입"] = True
-                result = None
                 for visited in self.alive_list:
                     if p.target1 in visited.visited_by[self.day]:
                         # 그냥 p.target1.target1을 주지 않고 이렇게 복잡하게 하는 것은
@@ -1456,6 +1475,17 @@ class GameRoom:
                         # 따라서 각 플레이어들의 visited_by에 p.target1이 들어가 있는지를 확인하여 실제로 방문했을 때만 결과를 전송해야 한다.
                         result = visited.nickname
                         break
+                else:
+                    result = None
+                if p.target1.framed:
+                    framed_to_visit = []
+                    for murderring_role in (roles.Mafia, roles.Triad, roles.Arsonist,
+                                            roles.MassMurderer, roles.SerialKiller,
+                                            roles.Witch):
+                        for dead in self.die_tonight:
+                            if murderring_role.team in dead.murdered_by:
+                                framed_to_visit.append(dead.nickname)
+                    result = random.choice(framed_to_visit)
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
@@ -1467,10 +1497,18 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Lookout) and p.target1:
                 p.crimes["무단침입"] = True
+                result = [visitor.nickname for visitor in p.target1.visited_by[self.day]]
+                if p.target1.murdered_by:
+                    for can_be_framed in self.alive_list:
+                        if can_be_framed.framed:
+                            result.append(can_be_framed.nickname)
+                            break
+                random.shuffle(result)
+                result = list(set(result))
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
-                    "result": [p.nickname for p in p.target1.visited_by[self.day]]
+                    "result": result,
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
@@ -1491,6 +1529,15 @@ class GameRoom:
                         if isinstance(p.target1.role, killing):
                             data["result"] = killing.name
                             break
+                if p.framed:
+                    result = []
+                    for evil in (roles.Mafia, roles.Triad, roles.Cult):
+                        if isinstance(p.target1.role, evil):
+                            result.append(evil.team)
+                    for killing in (roles.SerialKiller, roles.MassMurderer, roles.Arsonist):
+                        if isinstance(p.target1.role, killing):
+                            result.append(killing.name)
+                    data["result"] = random.choice(result)
                 await self.emit_event(sio, data, room=p.sid)
 
         # 조언자
@@ -1922,11 +1969,11 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Judge(),
+                roles.Detective(),
                 roles.Investigator(),
-                roles.Blackmailer(),
-                roles.Mayor(),
-                roles.Agent(),
+                roles.Lookout(),
+                roles.Framer(),
+                roles.Godfather(),
             ]
         # random.shuffle(roles_to_distribute)
         self.players = {
@@ -2274,6 +2321,7 @@ class Player:
         self.voted_innocent = 0
         self.lw = ""  # last will
         self.visited_by = [None, set()]
+        self.murdered_by = []
         self.controlled_by = None
         self.wear_vest_today = False
         self.alert_today = False
@@ -2282,6 +2330,7 @@ class Player:
         self.remember_today = False
         self.suicide_today = False
         self.blackmailed = False
+        self.framed = False
         self.cannot_murder_until = 0
         self.protected_from_cult = False
         self.protected_from_auditor = False
@@ -2318,6 +2367,7 @@ class Player:
         if attacker!="VOTE":
             room.die_tonight.add(self)
         self.alive = False
+        self.murdered_by.append(attacker.role.team)
         data = {
             "type": "dead",
             "attacker": attacker.role.name if attacker!="VOTE" else "VOTE",
@@ -2339,6 +2389,7 @@ class Player:
             "type": "attack_failed",
         }
         await room.emit_event(self.sio, data, room=attacker.sid)
+        await asyncio.sleep(5)
 
     async def healed(self, room, attacker, healer):
         data = {
@@ -2347,6 +2398,7 @@ class Player:
             "healer": healer.role.name,
         }
         await room.emit_event(self.sio, data, room=self.sid)
+        await asyncio.sleep(5)
 
     async def bodyguarded(self, room, attacker):
         data = {
@@ -2354,13 +2406,16 @@ class Player:
             "attacker": attacker.role.name,
         }
         await room.emit_event(self.sio, data, room=self.sid)
+        await asyncio.sleep(5)
 
     async def suicide(self, room, reason):
         # TODO: suicide(room=self, )를 그냥 die()로 대체
         room.die_tonight.add(self)
         self.alive = False
+        self.murdered_by.append(reason)
         data = {
             "type": "suicide",
             "reason": reason,
         }
         await room.emit_event(self.sio, data, room=self.sid)
+        await asyncio.sleep(5)
