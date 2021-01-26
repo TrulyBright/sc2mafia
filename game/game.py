@@ -45,7 +45,7 @@ class GameRoom:
         return len(self.members) >= self.capacity
 
     def write_to_record(self, sio, data, room, skip_sid):
-        receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid)]
+        receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid) and p.sid not in (skip_sid or [])]
         self.message_record.append((time.time(), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=None):
@@ -1700,6 +1700,7 @@ class GameRoom:
 
         # 이교도 개종
         for p in self.alive_list:
+            # TODO: 개종 최대 수 제한 넣기
             if isinstance(p.role, roles.Cultist) and p.target1:
                 p.crimes["호객행위"] = True
                 if isinstance(p.target1.role, roles.Mason) or isinstance(
@@ -2274,6 +2275,7 @@ class GameRoom:
     async def emit_player_list(self, sio):
         player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])) # TODO: 죽었는지 여부도 전송
         if self.inGame:
+            # TODO: 자기팀 누군지 알 수 있게 하기
             player_list = [(nickname, self.players[nickname].alive if nickname in self.players else False) for nickname in player_list]
         else:
             readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied])
