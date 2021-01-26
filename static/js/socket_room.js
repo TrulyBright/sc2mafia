@@ -297,6 +297,21 @@ Socket.on('event', (data)=> {
         addchat('방탄조끼를 벗었습니다.');
       }
       break;
+    case "unable_to_audit":
+      addchat("대상을 회계할 수 없습니다.");
+      break;
+    case "audit_success":
+      addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+data["role"]+"입니다.");
+      break;
+    case "will_recruit":
+      addchat("대부/용두가 영입할 대상: "+data["recruited"]);
+      break;
+    case "recruit_success":
+      addchat(data["who"]+"님이 영입 제안을 수락하고 "+data["role"]+"(으)로 합류했습니다!");
+      break;
+    case "recruit_failed":
+      addchat("대상이 영입 제안을 거절했습니다.");
+      break;
     case 'Witch_control_success':
       addchat('당신은 '+data['target1']+'님을 '+data['target2']+'님에게 가도록 조종했습니다.', 'Orchid');
       break;
