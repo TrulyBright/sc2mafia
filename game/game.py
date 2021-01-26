@@ -1426,6 +1426,24 @@ class GameRoom:
         # TODO: 관리인/향주 직업 수거
         # TODO: 조작자/위조꾼
 
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Janitor) and p.target1 and not p.target1.alive:
+                p.target1.sanitized = True
+                data = {
+                    "type": "sanitized_lw",
+                    "lw": p.target1.lw,
+                }
+                await self.emit_event(sio, data, room=p.sid)
+
+        for p in self.alive_list:
+            if isinstance(p.role, roles.IncenseMaster) and p.taregt1 and not p.target1.alive:
+                p.target1.sanitized = True
+                data = {
+                    "type": "sanitized_lw",
+                    "lw": p.target1.lw,
+                }
+                await self.emit_event(sio, data, room=p.sid)
+
         # 고의 자살 적용
         for p in self.alive_list:
             if p.suicide_today:
@@ -1962,7 +1980,7 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.WitchDoctor(),
+                roles.Janitor(),
                 roles.Godfather(),
                 roles.MasonLeader(),
                 roles.Mason(),
@@ -2017,7 +2035,6 @@ class GameRoom:
             self.day += 1
             # MORNING
             self.STATE = "MORNING"
-            await self.emit_player_list(sio)
             data = {
                 "type": "state",
                 "state": self.STATE,
@@ -2030,7 +2047,17 @@ class GameRoom:
                 }
                 await self.emit_event(sio, data, room=self.roomID)
                 await asyncio.sleep(5)
-                await self.announce_role_and_lw_of(dead, sio)
+                if dead.sanitized:
+                    data = {
+                        "type": "the_dead_is_sanitized",
+                        "who": dead.nickname,
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+                    await asyncio.sleep(5)
+                else:
+                    await self.announce_role_and_lw_of(dead, sio)
+                await self.emit_player_list(sio)
+            await self.emit_player_list(sio)
             if self.game_over():
                 return
             self.die_tonight = set() # 사망자 목록 초기화
@@ -2258,7 +2285,7 @@ class GameRoom:
                 to_send = []
                 if isinstance(p.role, roles.Mafia):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mafia) or not p2.alive else None))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mafia) or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2266,7 +2293,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Triad):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Triad) or not p2.alive else None))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Triad) or not p2.alive else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2274,7 +2301,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Cult):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Cult) or not p2.alive else None))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Cult) or not p2.alive else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2282,7 +2309,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Mason):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mason) or not p2.alive else None))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mason) or not p2.alive else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2290,7 +2317,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 else:
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p.role.name if p is p2 else None))
+                        to_send.append((p2.nickname, p2.alive, p.role.name if p is p2 or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2357,6 +2384,7 @@ class Player:
         self.suicide_today = False
         self.blackmailed = False
         self.framed = False
+        self.sanitized = False
         self.cannot_murder_until = 0
         self.protected_from_cult = False
         self.protected_from_auditor = False

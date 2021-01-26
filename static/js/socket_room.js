@@ -410,6 +410,17 @@ Socket.on('event', (data)=> {
     case "spy_result":
       addchat("오늘 밤 "+data["team"]+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
       break;
+    case "sanitized_lw":
+      if (data["lw"]) {
+        addchat("대상이 남긴 유언:");
+        addchat(data["lw"], "yellow");
+      } else {
+        addchat("대상은 유언을 남기지 않았습니다.");
+      }
+      break;
+    case "the_dead_is_sanitized":
+      addchat("우리는 " +data["who"]+"님의 유언을 찾을 수 없었습니다.");
+      break;
     case "executed":
       addchat(data["who"]+"님이 형장의 이슬로 사라졌습니다.");
       break;
