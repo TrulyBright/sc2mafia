@@ -149,7 +149,16 @@ Socket.on('event', (data)=> {
       }
       break;
     case 'game_over':
-      addchat('게임이 끝났습니다. 승자들은 '+data['winner']+' 등입니다.');
+      let result = "";
+      for (const [index, info] of data["winner"].entries()) {
+        let winner = info[0];
+        let role = info[1];
+        result += winner+"("+role+")";
+        if (index<data["winner"].length-1) {
+          result += ", ";
+        }
+      }
+      addchat('게임이 끝났습니다. 승자들은 '+result+' 등입니다.');
       break;
     case "save_done":
       addchat("게임이 저장되었습니다. 게임 기록을 <a target='_blank' href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
