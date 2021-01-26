@@ -178,7 +178,7 @@ class Mason(TownGovernment):
     name = "비밀조합원"
 
 
-class MasonLeader(TownGovernment):
+class MasonLeader(Mason):
     name = "비밀조합장"
 
     def __init__(self):

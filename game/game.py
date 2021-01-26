@@ -375,16 +375,10 @@ class GameRoom:
                         if visitor.target2
                         else None,
                     }
-                    if isinstance(visitor.role, roles.Mafia):
-                        await self.emit_event(sio, data, room=self.night_chat[roles.Mafia])
-                    elif isinstance(visitor.role, roles.Triad):
-                        await self.emit_event(sio, data, room=self.night_chat[roles.Triad])
-                    elif isinstance(visitor.role, roles.Cult):
-                        await self.emit_event(sio, data, room=self.night_chat[roles.Cult])
-                    elif isinstance(visitor.role, roles.Mason) or isinstance(
-                        visitor.role, roles.MasonLeader
-                    ):
-                        await self.emit_event(sio, data, room=self.masonChatID)
+                    for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Mason):
+                        if isinstance(visitor.role, night_chatting_role):
+                            await self.emit_event(sio, data, room=self.night_chat[night_chatting_role])
+                            break
                     else:
                         await self.emit_event(sio, data, room=visitor.sid)
                 elif (
@@ -591,15 +585,13 @@ class GameRoom:
                             "message": msg,
                         }
                         await self.emit_event(sio, data, room=self.night_chat[roles.Cult])
-                    elif isinstance(player.role, roles.Mason) or isinstance(
-                        player.role, roles.MasonLeader
-                    ):
+                    elif isinstance(player.role, roles.Mason):
                         data = {
                             "type": "message",
                             "who": user["nickname"],
                             "message": msg,
                         }
-                        await self.emit_event(sio, data, room=self.masonChatID)
+                        await self.emit_event(sio, data, room=self.night_chat[roles.Mason])
                 elif (self.STATE == "DEFENSE" or self.STATE=="VOTE_EXECUTION") and not commander.blackmailed:
                     data = {
                         "type": "message",
@@ -774,8 +766,8 @@ class GameRoom:
         await self.emit_event(sio, data, room=converted.sid)
         for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Mason, roles.Spy):
             if isinstance(converted.role, night_chatting_role):
-                sio.enter_room(converted.sid, self.night_chat.get(night_chatting_role))
-                converted.night_chat = self.night_chat.get(night_chatting_role)
+                sio.enter_room(converted.sid, self.night_chat[night_chatting_role])
+                converted.night_chat = self.night_chat[night_chatting_role]
 
     async def trigger_evening_events(self, sio):
         for p in self.alive_list:
@@ -1703,9 +1695,7 @@ class GameRoom:
             # TODO: 개종 최대 수 제한 넣기
             if isinstance(p.role, roles.Cultist) and p.target1:
                 p.crimes["호객행위"] = True
-                if isinstance(p.target1.role, roles.Mason) or isinstance(
-                    p.target1.role, roles.MasonLeader
-                ):
+                if isinstance(p.target1.role, roles.Mason):
                     data = {
                         "type": "recruited_by_cult",
                         "who": p.nickname,
@@ -1996,27 +1986,14 @@ class GameRoom:
         self.night_chat[roles.Triad] = str(self.roomID) + "_Triad"
         self.night_chat[roles.Cult] = str(self.roomID) + "_Cult"
         self.night_chat[roles.Spy] = str(self.roomID) + "_Spy"
-        self.masonChatID = str(self.roomID) + "_Mason"
+        self.night_chat[roles.Mason] = str(self.roomID) + "_Mason"
 
         for p in self.players.values():
             sio.enter_room(p.sid, p.jailID)
-            if isinstance(p.role, roles.Mafia):
-                sio.enter_room(p.sid, self.night_chat[roles.Mafia])
-                p.night_chat = self.night_chat[roles.Mafia]
-            elif isinstance(p.role, roles.Triad):
-                sio.enter_room(p.sid, self.night_chat[roles.Triad])
-                p.night_chat = self.night_chat[roles.Triad]
-            elif isinstance(p.role, roles.Cult):
-                sio.enter_room(p.sid, self.night_chat[roles.Cult])
-                p.night_chat = self.night_chat[roles.Cult]
-            elif isinstance(p.role, roles.Spy):
-                sio.enter_room(p.sid, self.night_chat[roles.Spy])
-                p.night_chat = self.night_chat[roles.Spy]
-            elif isinstance(p.role, roles.Mason) or isinstance(
-                p.role, roles.MasonLeader
-            ):
-                sio.enter_room(p.sid, self.masonChatID)
-                p.night_chat = self.masonChatID
+            for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Spy, roles.Mason):
+                if isinstance(p.role, night_chatting_role):
+                    sio.enter_room(p.sid, self.night_chat[night_chatting_role])
+                    p.night_chat = self.night_chat[night_chatting_role]
 
         self.alive_list = list(self.players.values())
         await asyncio.gather(*[self.emit_event(sio, {"type": "role", "role": p.role.name}, room=p.sid) for p in self.players.values()])
@@ -2040,6 +2017,7 @@ class GameRoom:
             self.day += 1
             # MORNING
             self.STATE = "MORNING"
+            await self.emit_player_list(sio)
             data = {
                 "type": "state",
                 "state": self.STATE,
@@ -2243,7 +2221,7 @@ class GameRoom:
                                                                                      self.night_chat[roles.Triad],
                                                                                      self.night_chat[roles.Cult],
                                                                                      self.night_chat[roles.Spy],
-                                                                                     self.masonChatID)])
+                                                                                     self.night_chat[roles.Mason])])
         await asyncio.gather(*[sio.close_room(p.jailID) for p in self.players.values()])
         async with aiosqlite.connect("sql/records.db") as DB:
             def get_random_alphanumeric_string(length): # TODO: 정말로 alphanum만 오는지 확인 (SQL 인젝션 방어)
@@ -2273,19 +2251,62 @@ class GameRoom:
         del self
 
     async def emit_player_list(self, sio):
-        player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])) # TODO: 죽었는지 여부도 전송
         if self.inGame:
             # TODO: 자기팀 누군지 알 수 있게 하기
-            player_list = [(nickname, self.players[nickname].alive if nickname in self.players else False) for nickname in player_list]
+            coros = []
+            for p in self.players.values():
+                to_send = []
+                if isinstance(p.role, roles.Mafia):
+                    for p2 in self.players.values():
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mafia) or not p2.alive else None))
+                    data = {
+                        "player_list": to_send,
+                        "inGame": self.inGame,
+                    }
+                    coros.append(sio.emit("player_list", data, room=p.sid))
+                elif isinstance(p.role, roles.Triad):
+                    for p2 in self.players.values():
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Triad) or not p2.alive else None))
+                    data = {
+                        "player_list": to_send,
+                        "inGame": self.inGame,
+                    }
+                    coros.append(sio.emit("player_list", data, room=p.sid))
+                elif isinstance(p.role, roles.Cult):
+                    for p2 in self.players.values():
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Cult) or not p2.alive else None))
+                    data = {
+                        "player_list": to_send,
+                        "inGame": self.inGame,
+                    }
+                    coros.append(sio.emit("player_list", data, room=p.sid))
+                elif isinstance(p.role, roles.Mason):
+                    for p2 in self.players.values():
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mason) or not p2.alive else None))
+                    data = {
+                        "player_list": to_send,
+                        "inGame": self.inGame,
+                    }
+                    coros.append(sio.emit("player_list", data, room=p.sid))
+                else:
+                    for p2 in self.players.values():
+                        to_send.append((p2.nickname, p2.alive, p.role.name if p is p2 else None))
+                    data = {
+                        "player_list": to_send,
+                        "inGame": self.inGame,
+                    }
+                    coros.append(sio.emit("player_list", data, room=p.sid))
+            await asyncio.gather(*coros)
         else:
+            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])) # TODO: 죽었는지 여부도 전송
             readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied])
             readied = {s["nickname"] for s in readied}
             player_list = [(nickname, nickname in readied) for nickname in player_list]
-        data = {
-            "player_list": player_list,
-            "inGame": self.inGame,
-        }
-        await sio.emit("player_list", data, room=self.roomID)
+            data = {
+                "player_list": player_list,
+                "inGame": self.inGame,
+            }
+            await sio.emit("player_list", data, room=self.roomID)
 
     async def someone_entered(self, sid, sio):
         await self.emit_player_list(sio)
@@ -2372,7 +2393,7 @@ class Player:
         if attacker!="VOTE":
             room.die_tonight.add(self)
         self.alive = False
-        self.murdered_by.append(attacker.role.team)
+        self.murdered_by.append(attacker if attacker=="VOTE" else attacker.role.team)
         data = {
             "type": "dead",
             "attacker": attacker.role.name if attacker!="VOTE" else "VOTE",
@@ -2404,7 +2425,7 @@ class Player:
         }
         await room.emit_event(self.sio, data, room=self.sid)
         if isinstance(healer.role, roles.WitchDoctor):
-            if isinstance(self.role, roles.Mason) or isinstance(self.role, roles.MasonLeader):
+            if isinstance(self.role, roles.Mason):
                 pass # TODO: 발각
             else:
                 await room.convert_role(self.sio, healer, self, roles.Cultist())

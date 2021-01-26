@@ -82,11 +82,12 @@ Socket.on("player_list", (data)=>{
     for (let player of data["player_list"]) {
       let nickname = player[0];
       let alive = player[1];
+      let role = player[2];
       let div = document.createElement("div");
       let del = document.createElement("del");
       let a = document.createElement("a");
       a.setAttribute("href", "#");
-      a.innerHTML = nickname;
+      a.innerHTML = nickname + (role ? " | " + role : "");
       if (!alive) {
         del.appendChild(a);
         div.appendChild(del);
