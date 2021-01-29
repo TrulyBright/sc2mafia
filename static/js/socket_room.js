@@ -29,6 +29,175 @@ function send_message(event) {
   chatInput.value = '';
 };
 
+function colored(role_name) {
+  let color = "";
+  switch (role_name) {
+    case "경호원":
+      color = "00CC66";
+      break;
+    case "버스기사":
+      color = "55CC11";
+      break;
+    case "시민":
+      color = "33CC33";
+      break;
+    case "검시관":
+      color = "00DD55";
+      break;
+    case "포고꾼":
+      color = "66CC33";
+      break;
+    case "형사":
+      color = "00FF44";
+      break;
+    case "의사":
+      color = "00FF00";
+      break;
+    case "기생":
+      color = "00FF00";
+      break;
+    case "탐정":
+      color = "00FF66";
+      break;
+    case "간수":
+      color = "66CC00";
+      break;
+    case "감시자":
+      color = "44FF00";
+      break;
+    case "원수":
+      color = "23EF32";
+      break;
+    case "비밀조합원":
+      color = "00FF44";
+      break;
+    case "비밀조합장":
+      color = "22FF77";
+      break;
+    case "시장":
+      color = "44FF44";
+      break;
+    case "보안관":
+      color = "00FF00";
+      break;
+    case "정보원":
+      color = "66AA00";
+      break;
+    case "나무 그루터기":
+      color = "00FF00";
+      break;
+    case "퇴역군인":
+      color = "AAFF55";
+      break;
+    case "자경대원":
+      color = "88CC00";
+      break;
+    case "판사":
+      color = "BB6655";
+      break;
+    case "회계사":
+      color = "bbcc88";
+      break;
+    case "요술사":
+      color = "aa55ff";
+      break;
+    case "대량학살자":
+      color = "bb4455";
+      break;
+    case "이교도":
+      color = "bb44aa";
+      break;
+    case "기억상실자":
+      color = "66ffcc";
+      break;
+    case "처형자":
+      color = "aaccff";
+      break;
+    case "방화범":
+      color = "ffaa00";
+      break;
+    case "마녀":
+      color = "6622cc";
+      break;
+    case "어릿광대":
+      color = "ffaaff";
+      break;
+    case "생존자":
+      color = "ffff00";
+      break;
+    case "연쇄살인마":
+      color = "ff00cc";
+      break;
+    case "잠입자":
+      color = "bb3355";
+      break;
+    case "요원":
+      color = "ff2244";
+      break;
+    case "납치범":
+      color = "aa3333";
+      break;
+    case "변장자":
+      color = "dd6644";
+      break;
+    case "협박자":
+      color = "dd0000";
+      break;
+    case "관리인":
+      color = "ff3333";
+      break;
+    case "조작자":
+      color = "dd6600"
+      break;
+    case "조언자":
+      color = "ff5533";
+      break;
+    case "매춘부":
+      color = "ff0000";
+      break;
+    case "대부":
+      color = "ff4488";
+      break;
+    case "마피아 일원":
+      color = "cc0000";
+      break;
+    case "사기꾼":
+      color = "6969BB";
+      break;
+    case "선봉":
+      color = "697aff";
+      break;
+    case "심문자":
+      color = "4a62aa";
+      break;
+    case "밀고자":
+      color = "6295dd";
+      break;
+    case "침묵자":
+      color = "2c58dd";
+      break;
+    case "향주":
+      color = "5b84ff";
+      break;
+    case "위조꾼":
+      color = "2c95dd";
+      break;
+    case "백지선":
+      color = "5b99ff";
+      break;
+    case "간통범":
+      color = "3366ff";
+      break;
+    case "용두":
+      color = "9f8eff";
+      break;
+    case "홍곤":
+      color = "2851cc";
+      break;
+  }
+  return "<span style='color:#"+color+"'>"+role_name+"</span>";
+};
+
 function swap_audio(audio_name) {
   switch (audio_name) {
     case "court_normal":
@@ -87,7 +256,7 @@ Socket.on("player_list", (data)=>{
       let del = document.createElement("del");
       let a = document.createElement("a");
       a.setAttribute("href", "#");
-      a.innerHTML = nickname + (role ? " | " + role : "");
+      a.innerHTML = nickname + (role ? " | " + colored(role) : "");
       if (!alive) {
         del.appendChild(a);
         div.appendChild(del);
@@ -167,7 +336,7 @@ Socket.on('event', (data)=> {
       swap_audio(data["music"]);
       break;
     case 'role':
-      addchat('당신의 직업은 '+data['role']+'입니다.');
+      addchat('당신의 직업은 '+colored(data["role"])+'입니다.');
       break;
     case 'state':
       switch (data['state']) {
@@ -223,7 +392,7 @@ Socket.on('event', (data)=> {
       addchat(data["who"]+"님은 <span style='color:#00bf00'>원수</span>입니다!!!", "skyblue");
       break;
     case "court":
-      addchat("판사가 부패한 재판을 개정했습니다!", "firebrick");
+      addchat("판사가 부패한 재판을 개정했습니다!", "#BB6655");
       break;
     case 'visit':
       switch (data["role"]) {
@@ -257,7 +426,7 @@ Socket.on('event', (data)=> {
           break;
         case '퇴역군인':
           addchat('이 조용한 마을에서 누군가 싸우는 소리를 들을 수 있었습니다.', 'red');
-          break;
+          break;convertor
         case '경호원':
           addchat('격렬한 총격전의 소리를 들었습니다.', 'red');
           break;
@@ -311,13 +480,13 @@ Socket.on('event', (data)=> {
       addchat("대상을 회계할 수 없습니다.");
       break;
     case "audit_success":
-      addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+data["role"]+"입니다.");
+      addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+colored(data["role"])+"입니다.");
       break;
     case "will_recruit":
       addchat("대부/용두가 영입할 대상: "+data["recruited"]);
       break;
     case "recruit_success":
-      addchat(data["who"]+"님이 영입 제안을 수락하고 "+data["role"]+"(으)로 합류했습니다!");
+      addchat(data["who"]+"님이 영입 제안을 수락하고 "+colored(data["role"])+"(으)로 합류했습니다!");
       break;
     case "recruit_failed":
       addchat("대상이 영입 제안을 거절했습니다.");
@@ -326,19 +495,19 @@ Socket.on('event', (data)=> {
       addchat('당신은 '+data['target1']+'님을 '+data['target2']+'님에게 가도록 조종했습니다.', 'Orchid');
       break;
     case 'controlled_by_Witch':
-      addchat('마녀에게 조종당하고 있습니다!', 'Orchid');
+      addchat('마녀에게 조종당하고 있습니다!', '#6622CC');
       break;
     case 'blocked':
       addchat('아리따운 누군가가 당신을 찾아왔습니다. 당신은 그녀와 황홀한 밤을 보냈습니다. 능력이 차단되었습니다.', 'magenta');
       break;
     case "blackmailed":
-      addchat("누군가 찾아와 내일 입을 열었다가는 해코지를 당할 것이라 협박했습니다. 당신은 내일 하루종일 입을 꾹 닫기로 했습니다.");
+      addchat("누군가 찾아와 내일 입을 열었다가는 해코지를 당할 것이라 협박했습니다. 당신은 내일 하루종일 입을 꾹 닫기로 했습니다.", "red");
       break;
     case "attack_failed":
       addchat("공격에 실패했습니다. 오늘 밤 대상의 방어수준은 당신의 공격 수준 이상이었습니다.");
       break;
     case 'oiling_success':
-      addchat('당신은 '+data['target1']+'님에게 기름을 묻혔습니다.');
+      addchat('당신은 '+data['target1']+'님에게 기름을 묻혔습니다.', "#ffaa00");
       break;
     case 'someone_visited_to_Veteran':
       addchat('누군가가 경계 중인 당신을 찾아왔습니다. 당신은 그와 유익한 거래를 하기 위해 총을 꺼냅니다.');
@@ -478,7 +647,7 @@ Socket.on('event', (data)=> {
       addchat(data["dead_reason"]);
       break;
     case "role_announced":
-      addchat(data["who"]+"님의 직업은 "+data["role"]+"입니다.");
+      addchat(data["who"]+"님의 직업은 "+colored(data["role"])+"입니다.");
       break;
     case "unable_to_edit_lw":
       addchat(data["reason"]);
@@ -507,7 +676,7 @@ Socket.on('event', (data)=> {
       addchat("오늘밤 기억할 대상: "+data["remember_target"]);
       break;
     case "role_converted":
-      addchat(data["convertor"]+"의 능력으로 직업이 "+data["role"]+"(으)로 바뀌었습니다.");
+      addchat(colored(data["convertor"])+"의 능력으로 직업이 "+colored(data["role"])+"(으)로 바뀌었습니다.");
       break;
     default:
       addchat(data);
