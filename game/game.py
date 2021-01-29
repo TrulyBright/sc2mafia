@@ -1975,16 +1975,89 @@ class GameRoom:
             self.VOTE_EXECUTION_TIME = 10
             self.EVENING_TIME = 10
         if self.setup == "8331":
-            pass
+            self.STATE = "MORNING"  # game's first state when game starts
+            self.DISCUSSION_TIME = 10
+            self.VOTE_TIME = 30
+            self.DEFENSE_TIME = 10
+            self.VOTE_EXECUTION_TIME = 10
+            self.EVENING_TIME = 10
+            role_pool = {
+                roles.TownGovernment: [roles.Mayor,
+                                       roles.Marshall,
+                                       roles.Crier,
+                                       # NOTE: the pool, in initial state, does not contain roles.MasonLeader.
+                                       ],
+                roles.TownInvestigative: [roles.Sheriff,
+                                          roles.Coroner,
+                                          roles.Investigator,
+                                          roles.Detective,
+                                          roles.Lookout,],
+                roles.TownPower: [roles.Jailor,
+                                  # roles.BusDriver,
+                                  roles.Spy,
+                                  roles.Veteran,],
+                roles.TownProtective: [roles.Bodyguard,
+                                       roles.Doctor,
+                                       roles.Escort,],
+                roles.TownKilling: [roles.Bodyguard,
+                                    roles.Jailor,
+                                    # roles.BusDriver,
+                                    roles.Veteran,
+                                    roles.Vigilante,],
+                roles.MafiaKilling: [#roles.Disguiser,
+                                     roles.Kidnapper,
+                                    ],
+                roles.MafiaSupport: [roles.Agent,
+                                     roles.Blackmailer,
+                                     roles.Consigliere,
+                                     roles.Consort,
+                                     roles.Kidnapper,],
+                roles.MafiaDeception: [roles.Beguiler,
+                                       roles.Framer,
+                                       #roles.Disguiser,
+                                       roles.Janitor,],
+                roles.Neutral: [roles.Amnesiac,
+                                roles.Auditor,
+                                roles.Cultist,
+                                roles.Executioner,
+                                roles.Jester,
+                                roles.Judge,
+                                roles.Survivor,
+                                roles.Witch,],
+                roles.NeutralKilling: [roles.SerialKiller,
+                                       roles.Arsonist,
+                                       roles.MassMurderer],
+            }
+            mafia_random = role_pool[roles.MafiaKilling]+role_pool[roles.MafiaDeception]+role_pool[roles.MafiaSupport]
+            town_random = role_pool[roles.TownKilling]+role_pool[roles.TownPower]+role_pool[roles.TownProtective]+role_pool[roles.TownInvestigative]
+            all_random = town_random+role_pool[roles.Neutral]
+            roles_to_distribute = []
+            roles_to_distribute.append(random.choice(role_pool[roles.Neutral]))
+            roles_to_distribute.append(random.choice(role_pool[roles.Neutral]))
+            if roles.Auditor in roles_to_distribute or roles.Cultist in roles_to_distribute:
+                role_pool[roles.TownGovernment].append(roles.MasonLeader)
+            roles_to_distribute.append(random.choice(mafia_random))
+            roles_to_distribute.append(random.choice(mafia_random))
+            roles_to_distribute.append(roles.Godfather)
+            roles_to_distribute.append(random.choice(role_pool[roles.TownGovernment]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownProtective]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownProtective]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownKilling]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownPower]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownInvestigative]))
+            roles_to_distribute.append(random.choice(role_pool[roles.TownInvestigative]))
+            roles_to_distribute.append(random.choice(town_random))
+            roles_to_distribute.append(random.choice(role_pool[roles.NeutralKilling]))
+            roles_to_distribute.append(random.choice(all_random))
         elif self.setup == "power_conflict":
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Janitor(),
-                roles.Godfather(),
-                roles.MasonLeader(),
-                roles.Mason(),
-                roles.Auditor(),
+                roles.Janitor,
+                roles.Godfather,
+                roles.MasonLeader,
+                roles.Mason,
+                roles.Auditor,
             ]
         # random.shuffle(roles_to_distribute)
         self.players = {
@@ -1992,7 +2065,7 @@ class GameRoom:
                 sid=sid,
                 roomID=self.roomID,
                 nickname=(await sio.get_session(sid))["nickname"],
-                role=roles_to_distribute.pop(),
+                role=(roles_to_distribute.pop())(),
                 sio=sio,
             )
             for sid in self.members
@@ -2070,77 +2143,49 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await asyncio.sleep(self.DISCUSSION_TIME)
             # VOTE
-            self.STATE = "VOTE"
-            data = {
-                "type": "state",
-                "state": self.STATE,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            self.VOTE_STARTED_AT = datetime.now()
-            self.VOTE_TIME_REMAINING = self.VOTE_TIME
-            self.die_today = [] # 선거사망자 목록 초기화
-            while self.VOTE_TIME_REMAINING >= 0:
-                try:
-                    await asyncio.wait_for(
-                        self.election.wait(), timeout=self.VOTE_TIME_REMAINING
-                    )
-                except asyncio.TimeoutError:  # nobody has been elected today
-                    break
-                else:  # someone has been elected
-                    self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
-                    if self.in_court and self.in_lynch:
-                        await self.execute_the_elected(sio)
-                        await asyncio.sleep(3)
-                        self.VOTE_STARTED_AT = datetime.now()
-                        self.clear_vote()
-                        if len(self.die_today)==3:
-                            break
-                        self.STATE = "VOTE"
-                        data = {
-                            "type": "state",
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                    elif self.in_court:
-                        await self.execute_the_elected(sio)
-                        await asyncio.sleep(3)
+            if self.day == 1: # 첫날에는 토론만 하고 바로 저녁이 되도록.
+                pass
+            else:
+                self.STATE = "VOTE"
+                data = {
+                    "type": "state",
+                    "state": self.STATE,
+                }
+                await self.emit_event(sio, data, room=self.roomID)
+                self.VOTE_STARTED_AT = datetime.now()
+                self.VOTE_TIME_REMAINING = self.VOTE_TIME
+                self.die_today = [] # 선거사망자 목록 초기화
+                while self.VOTE_TIME_REMAINING >= 0:
+                    try:
+                        await asyncio.wait_for(
+                            self.election.wait(), timeout=self.VOTE_TIME_REMAINING
+                        )
+                    except asyncio.TimeoutError:  # nobody has been elected today
                         break
-                    elif self.in_lynch:
-                        await self.execute_the_elected(sio)
-                        await asyncio.sleep(3)
-                        self.clear_vote()
-                        if len(self.die_today)==3:
-                            break
-                        self.VOTE_STARTED_AT = datetime.now()
-                        self.STATE = "VOTE"
-                        data = {
-                            "type": "state",
-                            "state": self.STATE,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                    else:
-                        self.clear_vote()
-                        self.STATE = "DEFENSE"
-                        data = {
-                            "type": "state",
-                            "state": self.STATE,
-                            "who": self.elected.nickname,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(self.DEFENSE_TIME)
-                        self.STATE = "VOTE_EXECUTION"
-                        data = {
-                            "type": "state",
-                            "state": self.STATE,
-                            "who": self.elected.nickname,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(self.VOTE_EXECUTION_TIME)
-                        if self.elected.voted_guilty > self.elected.voted_innocent:
+                    else:  # someone has been elected
+                        self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
+                        if self.in_court and self.in_lynch:
+                            await self.execute_the_elected(sio)
+                            await asyncio.sleep(3)
+                            self.VOTE_STARTED_AT = datetime.now()
+                            self.clear_vote()
+                            if len(self.die_today)==3:
+                                break
+                            self.STATE = "VOTE"
+                            data = {
+                                "type": "state",
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                        elif self.in_court:
                             await self.execute_the_elected(sio)
                             await asyncio.sleep(3)
                             break
-                        else:
+                        elif self.in_lynch:
+                            await self.execute_the_elected(sio)
+                            await asyncio.sleep(3)
                             self.clear_vote()
+                            if len(self.die_today)==3:
+                                break
                             self.VOTE_STARTED_AT = datetime.now()
                             self.STATE = "VOTE"
                             data = {
@@ -2148,14 +2193,45 @@ class GameRoom:
                                 "state": self.STATE,
                             }
                             await self.emit_event(sio, data, room=self.roomID)
-                finally:
-                    self.clear_vote()
-                    self.election.clear()
-                    self.elected = None
-            await self.announce_role_and_lw_of(self.die_today, sio)
+                        else:
+                            self.clear_vote()
+                            self.STATE = "DEFENSE"
+                            data = {
+                                "type": "state",
+                                "state": self.STATE,
+                                "who": self.elected.nickname,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(self.DEFENSE_TIME)
+                            self.STATE = "VOTE_EXECUTION"
+                            data = {
+                                "type": "state",
+                                "state": self.STATE,
+                                "who": self.elected.nickname,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(self.VOTE_EXECUTION_TIME)
+                            if self.elected.voted_guilty > self.elected.voted_innocent:
+                                await self.execute_the_elected(sio)
+                                await asyncio.sleep(3)
+                                break
+                            else:
+                                self.clear_vote()
+                                self.VOTE_STARTED_AT = datetime.now()
+                                self.STATE = "VOTE"
+                                data = {
+                                    "type": "state",
+                                    "state": self.STATE,
+                                }
+                                await self.emit_event(sio, data, room=self.roomID)
+                    finally:
+                        self.clear_vote()
+                        self.election.clear()
+                        self.elected = None
+                await self.announce_role_and_lw_of(self.die_today, sio)
 
-            if self.game_over():
-                return
+                if self.game_over():
+                    return
             # EVENING
             self.STATE = "EVENING"
             data = {
