@@ -257,7 +257,7 @@ class Consort(MafiaSupport):
     name = "매춘부"
 
 
-class Disguiser(MafiaDeception, MafiaSupport):
+class Disguiser(MafiaDeception, MafiaKilling):
     name = "변장자"
 
     def __init__(self):
