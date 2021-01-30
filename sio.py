@@ -43,21 +43,20 @@ async def connect(sid, environ):
         raise ConnectionRefusedError("인증필요")
     await sio.save_session(sid, HTTPsession)
     async with sio.session(sid) as user:
-        if user["username"] in online_users:
-            await sio.emit("multiple_login", {}, room=online_users[user["username"]])
-            await sio.disconnect(online_users[user["username"]])
-        online_users[user["username"]]=sid
-        print("user connected:", user["username"])
+        if user['nickname'] in online_users:
+            raise ConnectionRefusedError('다중접속')
+        online_users.add(user['nickname'])
+        print('user connected:', user['nickname'])
 
 
 @sio.event
 async def disconnect(sid):
     async with sio.session(sid) as user:
-        username = user.get("username")
-        if username is not None:
-            print("user disconnected: ", user.get("username"))
-            del online_users[username]
-            if "room" in user:
+        nickname = user.get('nickname')
+        if nickname is not None:
+            print('user disconnected: ', nickname)
+            online_users.remove(nickname)
+            if 'room' in user:
                 await leave_GameRoom(sid, None)
 
 
@@ -70,7 +69,7 @@ async def enter_GameRoom(sid, data):
         roomID = data["roomID"]
         if roomID in room_list:
             if room_list[roomID].is_full():
-                print(user["username"], "fails to enter room #", roomID)
+                print(user["nickname"], "fails to enter room #", roomID)
                 await sio.emit(
                     "failed_to_enter_GameRoom",
                     {
@@ -83,28 +82,23 @@ async def enter_GameRoom(sid, data):
                 user["room"] = roomID
                 room = room_list[roomID]
                 room.members.append(sid)
-                if room.justCreated and user["username"] == room.host["username"]:
+                if room.justCreated and user['nickname'] == room.host['nickname']:
                     room.host = sid
                     room.justCreated = False
                 await sio.save_session(sid, user)
-                await sio.emit("enter_GameRoom_success", roomID, room=sid)
-                data = {
-                    "type": "enter",
-                    "who": user["nickname"],
-                }
-                await room.emit_event(sio, data, roomID)
-                print(user["username"], "enters room #", roomID)
+                await sio.emit('enter_GameRoom_success', roomID, room=sid)
+                await sio.emit('event',
+                               {'type': 'enter',
+                                'who': user['nickname']},
+                               room=roomID)
+                print(user['nickname'], 'enters room #', roomID)
                 await broadcast_room_list()
                 await room.someone_entered(sid, sio)
         else:
-            print(user["username"], "fails to enter room #", roomID)
-            await sio.emit(
-                "failed_to_enter_GameRoom",
-                {
-                    "reason": "No such room",
-                },
-                room=sid,
-            )
+            print(user['nickname'], 'fails to enter room #', roomID)
+            await sio.emit('failed_to_enter_GameRoom', {
+                'reason': 'No such room',
+            }, room=sid)
 
 
 @sio.event
@@ -114,7 +108,7 @@ async def leave_GameRoom(sid, data):
         roomID = user["room"]
         room = room_list[roomID]
         room.members.remove(sid)
-        print(user["username"], "leaves room #", roomID)
+        print(user['nickname'], 'leaves room #', roomID)
         sio.leave_room(sid, roomID)
         del user["room"]
         await sio.save_session(sid, user)
@@ -155,14 +149,13 @@ async def create_GameRoom(sid, data):
     assert "title" in data
     assert "capacity" in data
     async with sio.session(sid) as user:
-        print(user["username"], "creates room #", next_roomID)
-        room_list[next_roomID] = GameRoom(
-            roomID=next_roomID,
-            title=data["title"],
-            capacity=data["capacity"],
-            host=user,
-            setup=data["setup"],
-        )
+        print(user['nickname'], 'creates room #', next_roomID)
+        room_list[next_roomID] = GameRoom(roomID=next_roomID,
+                                          title=data['title'],
+                                          capacity=data['capacity'],
+                                          host=user,
+                                          setup=data['setup'])
+        await sio.emit('create_GameRoom_success', next_roomID, room=sid)
         next_roomID += 1
         await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
