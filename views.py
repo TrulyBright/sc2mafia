@@ -1,4 +1,5 @@
 from sanic.response import redirect, text
+
 # from sanja import render
 from jinja2_sanic import template, render_template
 
@@ -9,12 +10,12 @@ from auth import (create_user,
                   getUserByNaverId)
 
 
-@template('index.html.j2')
+@template("index.html.j2")
 async def index(request):
-    if request.ctx.session.get('logged_in'):
-        return {'logged_in': True}
+    if request.ctx.session.get("logged_in"):
+        return {"logged_in": True}
     else:
-        return {'logged_in': False}
+        return {"logged_in": False}
 
 @template('callback.html.j2')
 async def callback(request):
@@ -42,12 +43,14 @@ async def login(request):
     request.ctx.session['logged_in'] = True
     return redirect('/lobby')
 
-@template('register.html.j2')
+@template("register.html.j2")
 async def register_get(request):
-    if request.args.get('register_failed'):
-        reason = request.args.get('reason')
-        data = {'register_failed': True,
-                   'reason': reason, }
+    if request.args.get("register_failed"):
+        reason = request.args.get("reason")
+        data = {
+            "register_failed": True,
+            "reason": reason,
+        }
         return data
     return {}
 
@@ -77,7 +80,10 @@ async def lobby(request):
     return {}
 
 
-# @render('room.html.j2', 'html')
-@template('room.html.j2')
-async def room(request, roomID):
-    return {'roomID': roomID}
+@template("archive.html.j2")
+async def archive(request, gamelog_id):
+    if not gamelog_id.isalnum(): return
+    async with aiosqlite.connect("sql/records.db") as DB:
+        cursor = await DB.execute(f"SELECT * FROM {gamelog_id};")
+        log = await cursor.fetchall();
+        return {"log": log}

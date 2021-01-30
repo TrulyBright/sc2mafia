@@ -1,7 +1,41 @@
 * {
   box-sizing: border-box;
 }
-body {
+
+.upper button {
+  float: right;
+  margin: 1px;
+}
+
+.lower {
+  clear: both;
+}
+
+.player_list {
+  background: black;
+  width: 13%;
+  height: 100%;
+  float: right;
+  margin: auto;
+  overflow: auto;
+}
+
+.player_list div {
+  border: white solid 1px;
+}
+
+.player_list div a {
+  display: block;
+  text-decoration: none;
+}
+
+.player_list div a:hover {
+  color: black;
+  background-color: white !important;
+}
+
+.chat {
+  border: white solid 1px;
 }
 
 .message_input_form {

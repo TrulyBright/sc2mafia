@@ -3,10 +3,12 @@ import re
 
 
 
+
 class ImproperNicknameError(Exception):
     """
     Raised when nickname is improper
     """
+
 
 class NicknameDuplicateError(Exception):
     """
