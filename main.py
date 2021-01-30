@@ -6,6 +6,7 @@ from jinja2 import FileSystemLoader
 from sanic_session import Session, AIORedisSessionInterface
 
 from routes import setup_routes
+from sio import setup_socketio
 
 app = Sanic(__name__)
 
@@ -26,6 +27,7 @@ async def client_close(app, loop):
 app.static("/static", "./static")
 setup_routes(app)
 setup_jinja2(app, loader=FileSystemLoader("templates/"))
+setup_socketio(app)
 
 # run
 if __name__ == "__main__":

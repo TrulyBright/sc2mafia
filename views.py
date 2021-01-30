@@ -1,3 +1,4 @@
+import aiosqlite
 from sanic.response import redirect, text
 
 # from sanja import render
@@ -41,7 +42,7 @@ async def login(request):
     request.ctx.session['is_superuser'] = user[3]
     request.ctx.session['disabled'] = user[4]
     request.ctx.session['logged_in'] = True
-    return redirect('/lobby')
+    return redirect('/game')
 
 @template("register.html.j2")
 async def register_get(request):
@@ -75,8 +76,8 @@ async def register_post(request):
         return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}&access_token={access_token}')
 
 
-@template('lobby.html.j2')
-async def lobby(request):
+@template('main.html.j2')
+async def main(request):
     return {}
 
 
