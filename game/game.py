@@ -2059,7 +2059,7 @@ class GameRoom:
                 roles.Mason,
                 roles.Auditor,
             ]
-        # random.shuffle(roles_to_distribute)
+        random.shuffle(roles_to_distribute)
         self.players = {
             (await sio.get_session(sid))["nickname"]: Player(
                 sid=sid,
