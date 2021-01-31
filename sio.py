@@ -44,7 +44,9 @@ async def connect(sid, environ):
     await sio.save_session(sid, HTTPsession)
     async with sio.session(sid) as user:
         if user['nickname'] in online_users:
-            raise ConnectionRefusedError('다중접속')
+            await sio.emit("multiple_login", {}, room=online_users[user["nickname"]])
+            await sio.disconnect(online_users[user["nickname"]])
+            online_users[user["nickname"]]=sid
         online_users[user["nickname"]]=sid
         print('user connected:', user['nickname'])
 
@@ -55,7 +57,7 @@ async def disconnect(sid):
         nickname = user.get('nickname')
         if nickname is not None:
             print('user disconnected: ', nickname)
-            del online_users[user["nickname"]]
+            del online_users[nickname]
             if 'room' in user:
                 await leave_GameRoom(sid, None)
 
