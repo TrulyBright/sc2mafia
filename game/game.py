@@ -5,6 +5,7 @@ import random
 import string
 import json
 import sqlite3
+from sanic.log import logger
 from datetime import datetime, timedelta
 
 from . import roles
@@ -19,8 +20,6 @@ from . import roles
 # TODO: 사인 공개되도록 수정
 
 class GameRoom:
-    def __del__(self):
-        print(f"room #{self.roomID} DELETED")
     def __init__(
         self, roomID, title, capacity, host, setup, password=""
     ):
@@ -1951,7 +1950,7 @@ class GameRoom:
 
     async def init_game(self, sio):
         # init game
-        print("Game initiated in room #", self.roomID)
+        logger.info(f"Game initiated in room #{self.roomID}")
         self.inGame = True
         self.readied = set()
         self.election = asyncio.Event()
@@ -2102,7 +2101,7 @@ class GameRoom:
                              if isinstance(p.role, roles.Executioner)])
 
     async def run_game(self, sio):
-        print("Game starts in room #", self.roomID)
+        logger.info(f"Game starts in room #{self.roomID}")
         while True:
             self.day += 1
             # MORNING
@@ -2254,7 +2253,7 @@ class GameRoom:
             await asyncio.sleep(5)
 
     async def finish_game(self, sio):
-        print("Game finished in room #", self.roomID)
+        logger.info(f"Game finished in room #{self.roomID}")
         remaining = self.alive_list
         if len(remaining) == 0:
             pass
@@ -2332,7 +2331,6 @@ class GameRoom:
                 return result_str
             async def insert(DB, record):
                 query = f'INSERT INTO {gamelog_id} values ("{record[0]}", "{record[1]}", "{record[2]}");'
-                print(query)
                 await DB.execute(query)
                 await DB.commit()
             while True:
@@ -2430,8 +2428,6 @@ class GameRoom:
 
 
 class Player:
-    def __del__(self):
-        print(f"player {self.nickname} DELETED")
     def __init__(self, sid, roomID, nickname, role, sio, alive=True):
         self.sid = sid
         self.nickname = nickname
