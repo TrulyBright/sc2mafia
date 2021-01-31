@@ -2,7 +2,6 @@ import random
 import asyncio
 import aiosqlite
 import random
-import time
 import string
 import json
 import sqlite3
@@ -46,7 +45,7 @@ class GameRoom:
 
     def write_to_record(self, sio, data, room, skip_sid):
         receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid) and p.sid not in (skip_sid or [])]
-        self.message_record.append((time.time(), str(data), str(receivers)))
+        self.message_record.append((datetime.now().strftime("%y/%m/%d %H:%M:%S"), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=None):
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
@@ -2332,13 +2331,14 @@ class GameRoom:
                 result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
                 return result_str
             async def insert(DB, record):
-                query = f'INSERT INTO {gamelog_id} values ({record[0]}, "{record[1]}", "{record[2]}");'
+                query = f'INSERT INTO {gamelog_id} values ("{record[0]}", "{record[1]}", "{record[2]}");'
+                print(query)
                 await DB.execute(query)
                 await DB.commit()
             while True:
                 try:
                     gamelog_id = get_random_alphanumeric_string(32)
-                    query = f"CREATE TABLE {gamelog_id} (time real not null, message string not null, receivers string not null);"
+                    query = f"CREATE TABLE {gamelog_id} (time string not null, message string not null, receivers string not null);"
                     await DB.execute(query)
                     break
                 except sqlite3.OperationalError: # gamelog_id가 중복되는 경우
