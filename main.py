@@ -8,11 +8,9 @@ from sanic_session import Session, AIORedisSessionInterface
 from routes import setup_routes
 from sio import setup_socketio
 
-app = Sanic(__name__)
+app = Sanic("sc2mafia")
 
 # sanic_session initialization
-
-
 @app.listener("before_server_start")
 async def session_init(app, loop):
     app.redis = await aioredis.create_redis_pool("redis://localhost")
@@ -28,7 +26,3 @@ app.static("/static", "./static")
 setup_routes(app)
 setup_jinja2(app, loader=FileSystemLoader("templates/"))
 setup_socketio(app)
-
-# run
-if __name__ == "__main__":
-    app.run(host="localhost", port=8080)

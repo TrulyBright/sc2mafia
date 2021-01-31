@@ -9,7 +9,7 @@ from game.game import GameRoom
 
 
 sio = socketio.AsyncServer(
-    async_mode="sanic", cors_allowed_origins="http://localhost:8080"
+    async_mode="sanic", cors_allowed_origins="http://sc2mafia.kr"
 )
 
 room_list = {}

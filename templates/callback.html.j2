@@ -8,7 +8,7 @@
 	var naverLogin = new naver.LoginWithNaverId(
 		{
 			clientId: "bY2qhrwJZdj2joElsfWV",
-			callbackUrl: "http://" + window.location.hostname + ((location.port==""||location.port==undefined)?"":":" + location.port),
+			callbackUrl: "http://sc2mafia.kr/oauth",
 			isPopup: false,
 			callbackHandle: true
 			/* callback 페이지가 분리되었을 경우에 callback 페이지에서는 callback처리를 해줄수 있도록 설정합니다. */
@@ -30,7 +30,7 @@
 					naverLogin.reprompt();
 					return;
 				}
-				window.location.replace("http://" + window.location.hostname + ((location.port==""||location.port==undefined)?"":":" + location.port) + "/login?access_token="+naverLogin.accessToken);
+				window.location.replace("http://sc2mafia.kr/login?access_token="+naverLogin.accessToken);
 			} else {
 				console.log("callback 처리에 실패하였습니다.");
 			}
