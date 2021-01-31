@@ -1,15 +1,17 @@
 import asyncio
-import game
 import socketio
 import json
 from aioredis import create_redis_pool
+from sanic.log import logger
 from ast import literal_eval
+from datetime import datetime
 
+import game
 from game.game import GameRoom
 
 
 sio = socketio.AsyncServer(
-    async_mode="sanic", cors_allowed_origins="http://sc2mafia.kr"
+    async_mode="sanic", cors_allowed_origins=["http://sc2mafia.kr", "http://localhost:8000"]
 )
 
 room_list = {}
@@ -48,7 +50,7 @@ async def connect(sid, environ):
             await sio.disconnect(online_users[user["nickname"]])
             online_users[user["nickname"]]=sid
         online_users[user["nickname"]]=sid
-        print('user connected:', user['nickname'])
+        logger.info("user connected: "+user["nickname"])
 
 
 @sio.event
@@ -56,7 +58,7 @@ async def disconnect(sid):
     async with sio.session(sid) as user:
         nickname = user.get('nickname')
         if nickname is not None:
-            print('user disconnected: ', nickname)
+            logger.info("user disconnected: "+nickname)
             del online_users[nickname]
             if 'room' in user:
                 await leave_GameRoom(sid, None)
@@ -71,7 +73,6 @@ async def enter_GameRoom(sid, data):
         roomID = data["roomID"]
         if roomID in room_list:
             if room_list[roomID].is_full():
-                print(user["nickname"], "fails to enter room #", roomID)
                 await sio.emit(
                     "failed_to_enter_GameRoom",
                     {
@@ -93,11 +94,9 @@ async def enter_GameRoom(sid, data):
                                {'type': 'enter',
                                 'who': user['nickname']},
                                room=roomID)
-                print(user['nickname'], 'enters room #', roomID)
                 await broadcast_room_list()
                 await room.someone_entered(sid, sio)
         else:
-            print(user['nickname'], 'fails to enter room #', roomID)
             await sio.emit('failed_to_enter_GameRoom', {
                 'reason': 'No such room',
             }, room=sid)
@@ -110,19 +109,12 @@ async def leave_GameRoom(sid, data):
         roomID = user["room"]
         room = room_list[roomID]
         room.members.remove(sid)
-        print(user['nickname'], 'leaves room #', roomID)
         sio.leave_room(sid, roomID)
         del user["room"]
         await sio.save_session(sid, user)
         await room.someone_left(sid, sio)
         if sid == room.host and room.members:
             room.host = room.members[0]
-            print(
-                "room #",
-                roomID,
-                "new host to",
-                (await sio.get_session(room.host))["nickname"],
-            )
             data = {
                 "type": "newhost",
                 "who": (await sio.get_session(room.host))["nickname"],
@@ -151,7 +143,6 @@ async def create_GameRoom(sid, data):
     assert "title" in data
     assert "capacity" in data
     async with sio.session(sid) as user:
-        print(user['nickname'], 'creates room #', next_roomID)
         room_list[next_roomID] = GameRoom(roomID=next_roomID,
                                           title=data['title'],
                                           capacity=data['capacity'],
@@ -210,6 +201,7 @@ async def request_room_list(sid, data):
 async def message(sid, msg):
     if not isinstance(msg, str): return
     async with sio.session(sid) as user:
+        logger.info(datetime.now().strftime("[%y/%m/%d %H:%M:%S] ")+user["nickname"]+": "+msg)
         if msg.startswith("/강퇴") and len(msg.split())>=2:
             await kick(sid, msg.split()[1])
         else:
