@@ -7,8 +7,13 @@ let now_playing = null;
 
 function updateScroll () {
   let chatBox = document.querySelector('#messages');
-  chatBox.scrollTop = chatBox.scrollHeight;
+  let scrolledToBottom = chatBox.scrollHeight-chatBox.clientHeight<=chatBox.scrollTop+35;
+  if (scrolledToBottom) {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 }
+
+setInterval(updateScroll);
 
 function addchat(message, color='orange', hell=false) {
   let chatLog = document.getElementById('messages');
@@ -18,7 +23,6 @@ function addchat(message, color='orange', hell=false) {
   span.innerHTML = message;
   chat.appendChild(span);
   chatLog.appendChild(chat);
-  updateScroll();
 }
 
 function send_message(event) {
