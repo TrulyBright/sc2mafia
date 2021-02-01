@@ -71,7 +71,12 @@ async def register_post(request):
     naverId = result['response']['id']
     try:
         await create_user(naverId, nickname)
-        return redirect('/')
+        user = await getUserByNaverId(naverId)
+        request.ctx.session['nickname'] = user[2]
+        request.ctx.session['is_superuser'] = user[3]
+        request.ctx.session['disabled'] = user[4]
+        request.ctx.session['logged_in'] = True
+        return redirect("/game")
     except (ImproperNicknameError, NicknameDuplicateError, NicknameTooLongError) as e:
         return redirect(f'/register?register_failed=True&reason={e.__class__.__name__}&access_token={access_token}')
 
