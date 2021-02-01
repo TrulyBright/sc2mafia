@@ -66,7 +66,14 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.readied)!=len(self.members):
+                    if len(self.members)!=15:
+                        data = {
+                            "type": "unable_to_start",
+                            "reason": "not_enough_members",
+                        }
+                        await self.emit_event(sio, data, room=sid)
+                        return
+                    elif len(self.readied)!=len(self.members):
                         not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied])
                         not_readied = [session["nickname"] for session in not_readied]
                         data = {

@@ -313,9 +313,16 @@ Socket.on('event', (data)=> {
       addchat(data["reason"]);
       break;
     case "unable_to_start":
-      if (data["reason"]=="not_readied") {
-        addchat(data["not_readied"]+"님 등이 준비하지 않아 시작할 수 없습니다.");
-      }
+      switch (data["reason"]) {
+        case "not_readied":
+          addchat(data["not_readied"]+"님 등이 준비하지 않아 시작할 수 없습니다.");
+          break;
+        case "not_enough_members":
+          addchat("인원이 부족합니다. 15인이어야 시작할 수 있습니다.");
+          break;
+        default:
+          addchat("게임 시작 불가: "+data["reason"])
+        }
       break;
     case 'game_over':
       let result = "";
