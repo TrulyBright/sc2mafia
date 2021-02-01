@@ -4,8 +4,6 @@ import json
 from aioredis import create_redis_pool
 from sanic.log import logger
 from ast import literal_eval
-from datetime import datetime
-
 import game
 from game.game import GameRoom
 
@@ -201,7 +199,6 @@ async def request_room_list(sid, data):
 async def message(sid, msg):
     if not isinstance(msg, str): return
     async with sio.session(sid) as user:
-        logger.info(datetime.now().strftime("[%y/%m/%d %H:%M:%S] ")+user["nickname"]+": "+msg)
         if msg.startswith("/강퇴") and len(msg.split())>=2:
             await kick(sid, msg.split()[1])
         else:

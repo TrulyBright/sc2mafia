@@ -54,6 +54,7 @@ class GameRoom:
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
             msg = msg[:206] # 최대 글자수
+            logger.info(f"[room #{self.roomID}] {user['nickname']}: {msg}")
             if not self.inGame:
                 if msg.startswith("/유언편집"):
                     return
