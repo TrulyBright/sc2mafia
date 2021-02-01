@@ -21,7 +21,7 @@ async def session_and_logger_init(app, loop):
     Session().init_app(app, interface=AIORedisSessionInterface(app.redis))
     app.oauth_client = aiohttp.ClientSession()
     # logger
-    handler = RotatingFileHandler("sc2mafia.log", maxBytes=1024*16, backupCount=10)
+    handler = RotatingFileHandler("sc2mafia.log", maxBytes=16*1024*1024, backupCount=64)
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter(fmt="%(asctime)s - (%(name)s)[%(levelname)s]: %(message)s",
                                   datefmt="%Y-%m-%d %H:%M:%S")
