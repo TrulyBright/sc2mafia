@@ -322,7 +322,7 @@ Socket.on('event', (data)=> {
       for (const [index, info] of data["winner"].entries()) {
         let winner = info[0];
         let role = info[1];
-        result += winner+"("+role+")";
+        result += winner+"("+colored(role)+")";
         if (index<data["winner"].length-1) {
           result += ", ";
         }
