@@ -8,18 +8,18 @@
     <link rel="stylesheet" href="/static/css/index.css">
   </head>
   <body>
-    {% if register_failed %}
-      {% if reason=='NicknameTooLongError' %}
-        <p>닉네임이 너무 깁니다. 8자 이하로 해주세요.</p>
-      {% elif reason=='NicknameDuplicateError' %}
-        <p>이미 사용 중인 닉네임입니다.</p>
-      {% elif reason=='ImproperNicknameError' %}
-        <p>닉네임이 올바르지 않습니다.</p>
-      {% endif %}
-    {% endif %}
     <form action="/register" method="post" class="login-form">
       <p>게임 내에서 사용할 닉네임을 입력해주세요.</p>
-      <input type="text" name="nickname" placeholder="닉네임(한글, 영문)" class="login-username" autofocus style="border-bottom: 1px solid white">
+      <input type="text" name="nickname" placeholder="닉네임(한글, 영문, 숫자)" class="login-username" autofocus style="border-bottom: 1px solid white">
+      {% if register_failed %}
+        {% if reason=='NicknameTooLongError' %}
+        <p>닉네임이 너무 깁니다. 8자 이하로 해주세요.</p>
+        {% elif reason=='NicknameDuplicateError' %}
+        <p>이미 사용 중인 닉네임입니다.</p>
+        {% elif reason=='ImproperNicknameError' %}
+        <p>닉네임이 올바르지 않습니다.</p>
+        {% endif %}
+      {% endif %}
       <input hidden type="text" name="access_token" value="" id="access_token_input">
       <input type="submit" value="회원가입" class="login-submit">
     </form>
