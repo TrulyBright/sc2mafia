@@ -217,6 +217,9 @@ class Stump(Town):
 
 class Veteran(TownKilling, TownPower):
     name = "퇴역군인"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 3
 
 
 class Vigilante(TownKilling):
@@ -225,6 +228,7 @@ class Vigilante(TownKilling):
     def __init__(self):
         super().__init__()
         self.offense_level = 1
+        self.ability_opportunity = 2
 
 
 # Mafia

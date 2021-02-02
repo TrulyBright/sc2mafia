@@ -393,6 +393,7 @@ class GameRoom:
                     cmd == "/경계"
                     and self.STATE == "EVENING"
                     and isinstance(commander.role, roles.Veteran)
+                    and commander.role.ability_opportunity>0
                 ):
                     V = commander
                     V.alert_today = not V.alert_today
@@ -786,6 +787,14 @@ class GameRoom:
                 converted.night_chat = self.night_chat[night_chatting_role]
 
     async def trigger_evening_events(self, sio):
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Mason) and not isinstance(p.role, roles.MasonLeader):
+                for p2 in self.alive_list:
+                    if isinstance(p.role, roles.MasonLeader):
+                        break
+                else: # 비조장이 없다. 한 명 비조장으로 승격
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.MasonLeader())
+                    await self.emit_player_list(sio)
         if not self.die_today: # 사형이 있은 날에는 감금 불가
             for p in self.alive_list:
                 if (
@@ -1016,6 +1025,12 @@ class GameRoom:
         # 경계 중인 퇴역군인에게 간 애들부터 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Veteran) and p.alert_today:
+                p.role.ability_opportunity-=1
+                data = {
+                    "type": "remaining_ability_opportunity",
+                    "remaining_ability_opportunity": p.role.ability_opportunity,
+                }
+                await self.emit_event(sio, data, room=p.sid)
                 p.crimes["재물 손괴"] = True
                 for visitor in [visitor for visitor in self.alive_list if visitor.target1 is p]:
                     p.visited_by[self.day].add(visitor)
@@ -1072,6 +1087,11 @@ class GameRoom:
                 await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
+                data = {
+                    "type": "remaining_ability_opportunity",
+                    "remaining_ability_opportunity": p.role.ability_opportunity,
+                }
+                await self.emit_event(sio, data, room=p.sid)
 
         # 납치범의 처형대상이 죽는다.
         for p in self.alive_list:
@@ -1084,6 +1104,11 @@ class GameRoom:
                 await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
+                data = {
+                    "type": "remaining_ability_opportunity",
+                    "remaining_ability_opportunity": p.role.ability_opportunity,
+                }
+                await self.emit_event(sio, data, room=p.sid)
 
         # 심문자의 처형대상이 죽는다.
         for p in self.alive_list:
@@ -1096,10 +1121,21 @@ class GameRoom:
                 await p.has_jailed_whom.die(attacker=p, room=self)
                 p.crimes["살인"] = True
                 p.role.ability_opportunity -= 1
+                data = {
+                    "type": "remaining_ability_opportunity",
+                    "remaining_ability_opportunity": p.role.ability_opportunity,
+                }
+                await self.emit_event(sio, data, room=p.sid)
         # TODO: 조종자살 시 소리만 나는 것 수정
         # 자경대원의 대상이 죽는다.
         for p in self.alive_list:
             if isinstance(p.role, roles.Vigilante) and p.target1:
+                p.role.ability_opportunity -= 1
+                data = {
+                    "type": "remaining_ability_opportunity",
+                    "remaining_ability_opportunity": p.role.ability_opportunity,
+                }
+                await self.emit_event(sio, data, room=p.sid)
                 victim = p.target1
                 victim.visited_by[self.day].add(p)
                 if isinstance(victim.role, roles.Veteran) and victim.alert_today:
@@ -2052,7 +2088,12 @@ class GameRoom:
             all_random = town_random+role_pool[roles.Neutral]
             roles_to_distribute = []
             roles_to_distribute.append(random.choice(role_pool[roles.Neutral]))
-            roles_to_distribute.append(random.choice(role_pool[roles.Neutral]))
+            while to_insert:=random.choice(role_pool[roles.Neutral]):
+                if roles.Judge in roles_to_distribute and to_insert is roles.Judge:
+                    continue
+                else:
+                    roles_to_distribute.append(to_insert)
+                    break
             if roles.Auditor in roles_to_distribute or roles.Cultist in roles_to_distribute:
                 role_pool[roles.TownGovernment].append(roles.MasonLeader)
             roles_to_distribute.append(random.choice(mafia_random))
@@ -2067,13 +2108,18 @@ class GameRoom:
             roles_to_distribute.append(random.choice(role_pool[roles.TownInvestigative]))
             roles_to_distribute.append(random.choice(town_random))
             roles_to_distribute.append(random.choice(role_pool[roles.NeutralKilling]))
-            roles_to_distribute.append(random.choice(all_random))
+            while to_insert:=random.choice(all_random):
+                if roles.Judge in roles_to_distribute and to_insert is roles.Judge:
+                    continue
+                else:
+                    roles_to_distribute.append(to_insert)
+                    break
         elif self.setup == "power_conflict":
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Arsonist,
-                roles.Investigator,
+                roles.Veteran,
+                roles.Mafioso,
                 roles.Investigator,
             ]
         random.shuffle(roles_to_distribute)
@@ -2118,6 +2164,13 @@ class GameRoom:
                              room=p.sid)
                              for p in self.players.values()
                              if isinstance(p.role, roles.Executioner)])
+        for i in range(10, 0, -1):
+            data = {
+                "type": "will_start",
+                "in": i,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(1)
 
     async def run_game(self, sio):
         logger.info(f"Game starts in room #{self.roomID}")

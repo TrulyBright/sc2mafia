@@ -294,6 +294,9 @@ Socket.on("player_list", (data)=>{
 Socket.on('event', (data)=> {
   console.log(data);
   switch (data['type']) {
+    case "will_start":
+      addchat("게임이 "+data["in"]+"초 후에 시작됩니다...");
+      break;
     case 'message':
       addchat(data['who']+': '+data['message'], 'white');
       break;
@@ -366,6 +369,7 @@ Socket.on('event', (data)=> {
         case "시민":
           addchat("당신은 진실과 정의를 믿는 일반적인 시민입니다.");
           addchat("당신은 특별한 능력은 따로 없고, 단 한 번, 방탄조끼를 착용하여 밤에 공격에서 보호받을 수 있습니다.");
+          break;
         case "비밀조합장":
           addchat("당신은 비밀조합의 지도자입니다.");
           addchat("당신은 밤마다 '/방문 닉네임'을 입력하여 그 사람을 "+colored("비밀조합원")+"으로 영입하려 시도할 수 있습니다.");
@@ -431,6 +435,7 @@ Socket.on('event', (data)=> {
         case "퇴역군인":
           addchat("당신은 편집증으로 퇴역한 사람으로, 자기를 괴롭히면 그 사람이 누구든지 죽입니다.");
           addchat("밤에 '/경계'를 입력하여 그날 밤 경계를 설 수 있습니다. 경계한 날 밤 누군가 당신을 방문하면 당신은 그 사람을 죽입니다.");
+          addchat("당신은 총 3회 경계할 수 있습니다.");
           break;
         case "정보원":
           addchat("당신은 비밀스러운 대화를 몰래 도청할 수 있는 정보원입니다.");
@@ -714,6 +719,12 @@ Socket.on('event', (data)=> {
     case "will_jail":
       addchat("감금할 대상: "+data["whom"]);
       break;
+    case "jailed":
+      addchat("당신은 감옥에 갇혔습니다!");
+      break;
+    case "will_execute_the_jailed":
+      addchat("간수가 처형할 대상: "+data["executed"])
+      break;
     case "has_jailed_someone":
       addchat("당신은 그 사람을 감옥에 가두었습니다. '/처형' 명령어를 입력하면 수감자를 죽일 수 있습니다. 명령어를 다시 입력하면 취소됩니다.")
       break;
@@ -759,6 +770,9 @@ Socket.on('event', (data)=> {
       break;
     case 'almost_suicide':
       addchat('당신은 당신의 목을 조르려 했습니다. 당신은 거의 죽을 뻔 했습니다!');
+      break;
+    case "remaining_ability_opportunity":
+      addchat("능력을 사용할 기회가 "+data["remaining_ability_opportunity"]+"번 남았습니다.");
       break;
     case 'check_result':
       switch (data['role']) {
