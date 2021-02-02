@@ -786,7 +786,7 @@ class GameRoom:
                 converted.night_chat = self.night_chat[night_chatting_role]
 
     async def trigger_evening_events(self, sio):
-        if self.die_today: # 사형이 있은 날에는 감금 불가
+        if not self.die_today: # 사형이 있은 날에는 감금 불가
             for p in self.alive_list:
                 if (
                     (
