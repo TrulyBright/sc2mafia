@@ -361,10 +361,11 @@ Socket.on('event', (data)=> {
         case "원수":
           addchat("당신은 마을 민병대의 지도자입니다.");
           addchat("당신은 낮에 '/개시'를 입력하여 집단 사형을 개시할 수 있습니다.");
+          addchat("능력은 단 2번 사용할 수 있습니다.");
           break;
         case "시민":
           addchat("당신은 진실과 정의를 믿는 일반적인 시민입니다.");
-          addchat("당신은 특별한 능력은 따로 없고, 단 한 번, 방탄조끼를 착용하여 밤의 공격에서 보호받을 수 있습니다.");
+          addchat("당신은 특별한 능력은 따로 없고, 단 한 번, 방탄조끼를 착용하여 밤에 공격에서 보호받을 수 있습니다.");
         case "비밀조합장":
           addchat("당신은 비밀조합의 지도자입니다.");
           addchat("당신은 밤마다 '/방문 닉네임'을 입력하여 그 사람을 "+colored("비밀조합원")+"으로 영입하려 시도할 수 있습니다.");
@@ -447,7 +448,7 @@ Socket.on('event', (data)=> {
         case "용두":
           addchat("당신은 범죄 조직의 지도자입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 죽일 수 있습니다.");
-          addchat("매일 밤 '/영입 닉네임'을 입력하여 그 사람을 조직으로 영압 시도할 수 있습니다.");
+          addchat("매일 밤 '/영입 닉네임'을 입력하여 그 사람을 조직으로 영입 시도할 수 있습니다.");
           break;
         case "변장자":
         case "밀고자":
@@ -709,6 +710,12 @@ Socket.on('event', (data)=> {
       break;
     case "will_burn_today":
       addchat("오늘밤 불을 피우기로 합니다.");
+      break;
+    case "will_jail":
+      addchat("감금할 대상: "+data["whom"]);
+      break;
+    case "has_jailed_someone":
+      addchat("당신은 그 사람을 감옥에 가두었습니다. '/처형' 명령어를 입력하면 수감자를 죽일 수 있습니다. 명령어를 다시 입력하면 취소됩니다.")
       break;
     case "will_recruit":
       addchat("대부/용두가 영입할 대상: "+data["recruited"]);
