@@ -18,6 +18,7 @@ from . import roles
 # TODO: 대부-마피아 일원 살인 일원화 구현: 해결
 # TODO: 기억상실자
 # TODO: 사인 공개되도록 수정
+# TODO: 정보원은 마피아/삼합회가 존재해야만 등장할 수 있도록 수정
 
 class GameRoom:
     def __init__(
@@ -67,7 +68,7 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.members)!=15:
+                    if len(self.members)!=3:
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_enough_members",
@@ -494,6 +495,14 @@ class GameRoom:
                         "cursed": commander.curse_target.nickname
                     }
                     await self.emit_event(sio, data, room=commander.sid)
+                elif cmd == "/방화"\
+                and commander.alive\
+                and self.STATE == "EVENING":
+                    commander.burn_today = True
+                    data = {
+                        "type": "will_burn_today",
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
             else:
                 if commander not in self.alive_list:
                     data = {
@@ -777,54 +786,55 @@ class GameRoom:
                 converted.night_chat = self.night_chat[night_chatting_role]
 
     async def trigger_evening_events(self, sio):
-        for p in self.alive_list:
-            if (
-                (
-                    isinstance(p.role, roles.Jailor)
-                    or isinstance(p.role, roles.Kidnapper)
-                    or isinstance(p.role, roles.Interrogator)
-                )
-                and not p.jailed
-                and p.has_jailed_whom
-            ):
-                p.has_jailed_whom.jailed = True
-                p.crimes["납치"] = True
-        for p in self.alive_list:
-            if not p.jailed:
-                if isinstance(p.role, roles.Jailor) and p.has_jailed_whom:
-                    sio.enter_room(p.sid, p.has_jailed_whom.jailID)
-                    data = {
-                        "type": "has_jailed_someone",
-                    }
-                    await self.emit_event(sio, data, p.sid)
-                    data = {
-                        "type": "jailed",
-                    }
-                    await self.emit_event(sio, data, p.has_jailed_whom.sid)
-                elif isinstance(p.role, roles.Kidnapper) and p.has_jailed_whom:
-                    data = {
-                        "type": "has_jailed_someone",
-                    }
-                    await self.emit_event(sio, data, p.sid)
-                    for maf in self.alive_list:
-                        if isinstance(maf.role, roles.Mafia) and not maf.jailed:
-                            sio.enter_room(maf.sid, p.has_jailed_whom.jailID)
-                    data = {
-                        "type": "jailed",
-                    }
-                    await self.emit_event(sio, data, p.has_jailed_whom.sid)
-                elif isinstance(p.role, roles.Interrogator) and p.has_jailed_whom:
-                    data = {
-                        "type": "has_jailed_someone",
-                    }
-                    await self.emit_event(sio, data, p.sid)
-                    for trd in self.alive_list:
-                        if isinstance(trd.role, roles.Triad) and not trd.jailed:
-                            sio.enter_room(trd.sid, p.has_jailed_whom.jailID)
-                    data = {
-                        "type": "jailed",
-                    }
-                    await self.emit_event(sio, data, p.has_jailed_whom.sid)
+        if self.die_today: # 사형이 있은 날에는 감금 불가
+            for p in self.alive_list:
+                if (
+                    (
+                        isinstance(p.role, roles.Jailor)
+                        or isinstance(p.role, roles.Kidnapper)
+                        or isinstance(p.role, roles.Interrogator)
+                    )
+                    and not p.jailed
+                    and p.has_jailed_whom
+                ):
+                    p.has_jailed_whom.jailed = True
+                    p.crimes["납치"] = True
+            for p in self.alive_list:
+                if not p.jailed:
+                    if isinstance(p.role, roles.Jailor) and p.has_jailed_whom:
+                        sio.enter_room(p.sid, p.has_jailed_whom.jailID)
+                        data = {
+                            "type": "has_jailed_someone",
+                        }
+                        await self.emit_event(sio, data, p.sid)
+                        data = {
+                            "type": "jailed",
+                        }
+                        await self.emit_event(sio, data, p.has_jailed_whom.sid)
+                    elif isinstance(p.role, roles.Kidnapper) and p.has_jailed_whom:
+                        data = {
+                            "type": "has_jailed_someone",
+                        }
+                        await self.emit_event(sio, data, p.sid)
+                        for maf in self.alive_list:
+                            if isinstance(maf.role, roles.Mafia) and not maf.jailed:
+                                sio.enter_room(maf.sid, p.has_jailed_whom.jailID)
+                        data = {
+                            "type": "jailed",
+                        }
+                        await self.emit_event(sio, data, p.has_jailed_whom.sid)
+                    elif isinstance(p.role, roles.Interrogator) and p.has_jailed_whom:
+                        data = {
+                            "type": "has_jailed_someone",
+                        }
+                        await self.emit_event(sio, data, p.sid)
+                        for trd in self.alive_list:
+                            if isinstance(trd.role, roles.Triad) and not trd.jailed:
+                                sio.enter_room(trd.sid, p.has_jailed_whom.jailID)
+                        data = {
+                            "type": "jailed",
+                        }
+                        await self.emit_event(sio, data, p.has_jailed_whom.sid)
 
     async def trigger_night_events(self, sio):
         # 감옥 채팅 나가기
@@ -1286,21 +1296,22 @@ class GameRoom:
             if isinstance(p.role, roles.Arsonist) and p.burn_today:
                 p.crimes["방화"] = True
                 p.crimes["재물 손괴"] = True
-                victims = {v for v in self.alive_list if v.oiled}
-                for v in victims:
-                    if v.target1:
-                        victims.add(v.target1)
+                oiled = {v for v in self.alive_list if v.oiled}
+                victims = oiled.copy()
+                for o in oiled:
+                    if o.target1:
+                        victims.add(o.target1)
                 await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
-                for victim in self.victims:
+                for victim in victims:
                     if self.killable(p, victim):
                         if victim.healed_by:
                             H = victim.healed_by.pop()
-                            victim.healed(room=self, attacker=p, healer=H)
+                            await victim.healed(room=self, attacker=p, healer=H)
                         else:
-                            victim.die(attacker=p, room=self)
+                            await victim.die(attacker=p, room=self)
                             p.crimes["살인"] = True
                     else:
-                        victim.attacked(room=self, attacker=p)
+                        await victim.attacked(room=self, attacker=p)
 
         # 비밀조합장의 살인 적용
         for p in self.alive_list:
@@ -1331,7 +1342,7 @@ class GameRoom:
                         H = BG.healed_by.pop()
                         await BG.healed(room=self, attacker=p)
                     else:
-                        BG.die(attacker=p, dead_while_guarding=True, room=self)
+                        await BG.die(attacker=p, dead_while_guarding=True, room=self)
                         p.crimes["살인"] = True
                 elif not self.killable(p, victim):
                     await self.emit_sound(sio, p.role.name)
@@ -1965,6 +1976,7 @@ class GameRoom:
         self.election = asyncio.Event()
         self.elected = None
         self.day = 0
+        self.die_today = set()
         self.die_tonight = set()
         self.message_record = [] # 초기화
         self.in_lynch = False
@@ -2060,11 +2072,9 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Janitor,
-                roles.Godfather,
-                roles.MasonLeader,
-                roles.Mason,
-                roles.Auditor,
+                roles.Arsonist,
+                roles.Investigator,
+                roles.Investigator,
             ]
         random.shuffle(roles_to_distribute)
         self.players = {
@@ -2376,7 +2386,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Triad):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Triad) or not p2.alive else ("???" if p2.sanitized else None)))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Triad) or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2384,7 +2394,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Cult):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Cult) or not p2.alive else ("???" if p2.sanitized else None)))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Cult) or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2392,7 +2402,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 elif isinstance(p.role, roles.Mason):
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mason) or not p2.alive else ("???" if p2.sanitized else None)))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mason) or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
@@ -2400,7 +2410,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
                 else:
                     for p2 in self.players.values():
-                        to_send.append((p2.nickname, p2.alive, p.role.name if p is p2 or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
+                        to_send.append((p2.nickname, p2.alive, p2.role.name if p is p2 or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
                     data = {
                         "player_list": to_send,
                         "inGame": self.inGame,
