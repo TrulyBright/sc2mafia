@@ -29,7 +29,9 @@ function send_message(event) {
   event.preventDefault();
   let chatInput = document.querySelector('#chat')
   let message = chatInput.value;
-  Socket.emit('message', message);
+  if (message) {
+    Socket.emit('message', message);
+  }
   chatInput.value = '';
 };
 
@@ -704,6 +706,9 @@ Socket.on('event', (data)=> {
       break;
     case "audit_success":
       addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+colored(data["role"])+"입니다.");
+      break;
+    case "will_burn_today":
+      addchat("오늘밤 불을 피우기로 합니다.");
       break;
     case "will_recruit":
       addchat("대부/용두가 영입할 대상: "+data["recruited"]);
