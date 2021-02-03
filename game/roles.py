@@ -287,6 +287,9 @@ class Godfather(MafiaKilling):
 
 class Janitor(MafiaDeception):
     name = "관리인"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 2
 
 
 class Kidnapper(MafiaKilling, MafiaSupport):
@@ -348,6 +351,9 @@ class Forger(TriadDeception):
 
 class IncenseMaster(TriadDeception):
     name = "향주"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 2
 
 
 class Informant(TriadDeception, TriadKilling):

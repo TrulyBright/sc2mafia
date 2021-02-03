@@ -1477,11 +1477,10 @@ class GameRoom:
             if p.target1:
                 p.target1.visited_by[self.day].add(p)
         # TODO: 변장자, 밀고자 (사망자들 제거된 이후에 능력 발동됨)
-        # TODO: 관리인/향주 직업 수거
-        # TODO: 조작자/위조꾼
 
         for p in self.alive_list:
-            if isinstance(p.role, roles.Janitor) and p.target1 and not p.target1.alive:
+            if isinstance(p.role, roles.Janitor) and p.target1 and not p.target1.alive and p.role.ability_opportunity>0:
+                p.role.ability_opportunity -= 1
                 p.target1.sanitized = True
                 data = {
                     "type": "sanitized_lw",
@@ -1490,7 +1489,8 @@ class GameRoom:
                 await self.emit_event(sio, data, room=p.sid)
 
         for p in self.alive_list:
-            if isinstance(p.role, roles.IncenseMaster) and p.taregt1 and not p.target1.alive:
+            if isinstance(p.role, roles.IncenseMaster) and p.taregt1 and not p.target1.alive and p.role.ability_opportunity>0:
+                p.role.ability_opportunity -= 1
                 p.target1.sanitized = True
                 data = {
                     "type": "sanitized_lw",
