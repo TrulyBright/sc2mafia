@@ -1571,6 +1571,7 @@ class GameRoom:
                             break
                 random.shuffle(result)
                 result = list(set(result))
+                result = [visitor for visitor in result if not visitor.role.detection_immune]
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
