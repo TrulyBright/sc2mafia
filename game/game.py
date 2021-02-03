@@ -1708,7 +1708,7 @@ class GameRoom:
 
         # 회계
         for p in self.alive_list:
-            if isinstance(p.role, roles.Auditor) and p.target1:
+            if isinstance(p.role, roles.Auditor) and p.target1 and p.role.ability_opportunity>0:
                 if p.target1.role.defense_level > 0 or isinstance(
                     p.target1.role, roles.Cult
                 ):
@@ -1717,6 +1717,7 @@ class GameRoom:
                     }
                     await self.emit_event(sio, data, room=p.sid)
                 else:
+                    p.role.ability_opportunity-=1
                     if p.target1 is p:
                         await self.convert_role(
                             sio, convertor=p, converted=p, role=roles.Stump()

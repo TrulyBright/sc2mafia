@@ -407,6 +407,9 @@ class Arsonist(NeutralKilling):
 class Auditor(NeutralEvil):
     team = "회계사"
     name = "회계사"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 3
 
 
 class Cultist(Cult):
