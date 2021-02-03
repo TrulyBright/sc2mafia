@@ -1395,7 +1395,7 @@ class GameRoom:
 
         # 대량학살자 살인 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.MassMurderer) and p.target1:
+            if isinstance(p.role, roles.MassMurderer) and p.target1 and p.cannot_murder_until<self.day:
                 p.crimes["무단침입"] = True
                 p.target1.visited_by[self.day].add(p)
                 victims = {
@@ -1412,6 +1412,7 @@ class GameRoom:
                 await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
                 if len(victims) > 1:
                     p.crimes["재물손괴"] = True
+                    p.cannot_murder_until = self.day + 1
                 for v in victims:
                     if v.bodyguarded_by:
                         BG = v.bodyguarded_by.pop()
