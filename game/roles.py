@@ -126,6 +126,9 @@ class BusDriver(TownProtective, TownPower):
 
 class Citizen(TownGovernment):
     name = "시민"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 1
 
 
 class Coroner(TownInvestigative):
@@ -456,6 +459,9 @@ class SerialKiller(NeutralKilling):
 class Survivor(NeutralBenign):
     team = "생존자"
     name = "생존자"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 3
 
 
 class Witch(NeutralEvil):

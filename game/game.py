@@ -414,13 +414,10 @@ class GameRoom:
                         isinstance(commander.role, roles.Citizen)
                         or isinstance(commander.role, roles.Survivor)
                     )
+                    and commander.role.ability_opportunity>0
                 ):
                     wearer = commander
                     wearer.wear_vest_today = not wearer.wear_vest_today
-                    if wearer.wear_vest_today:
-                        wearer.role.defense_level = 1
-                    else:
-                        wearer.role.defense_level = 0
                     data = {"type": "wear_vest", "wear_vest": wearer.wear_vest_today}
                     await self.emit_event(sio, data, room=wearer.sid)
                 elif (
@@ -854,20 +851,23 @@ class GameRoom:
 
         # 생존자 방탄 착용
         for p in self.alive_list:
-            if isinstance(p.role, roles.Survivor) and p.wear_vest_today:
+            if isinstance(p.role, roles.Survivor) and p.wear_vest_today and p.role.ability_opportunity>0:
+                p.role.ability_opportunity -= 1
                 p.role.defense_level = 1
                 data = {
-                    "type": "wear_vest_confirmed",
+                    "type": "wear_vest",
                     "wear_vest": p.wear_vest_today,
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
         # 시민 방탄 착용
         for p in self.alive_list:
-            if isinstance(p.role, roles.Citizen) and p.wear_vest_today:
+            if isinstance(p.role, roles.Citizen) and p.wear_vest_today and p.role.ability_opportunity>0:
+                p.role.ability_opportunity -= 1
                 p.role.defense_level = 1
                 data = {
                     "type": "wear_vest",
+                    "wear_vest": p.wear_vest_today,
                 }
                 await self.emit_event(sio, data, room=p.sid)
 
@@ -1920,6 +1920,8 @@ class GameRoom:
         for p in self.players.values():
             if not isinstance(p.role, roles.Mayor) and not isinstance(p.role, roles.Stump):
                 p.votes = 1
+            if (isinstance(p.role, roles.Survivor) or isinstance(p.role, roles.Citizen)) and p.wear_vest_today:
+                p.role.defense_level = 0
             p.has_voted = False
             p.voted_to_whom = None
             p.voted_to_execution_of_jester = False
@@ -2119,9 +2121,9 @@ class GameRoom:
             pass
         elif self.setup == "test":
             roles_to_distribute = [
-                roles.Veteran,
+                roles.Survivor,
+                roles.Citizen,
                 roles.Mafioso,
-                roles.Investigator,
             ]
         random.shuffle(roles_to_distribute)
         self.players = {
