@@ -1011,7 +1011,8 @@ class GameRoom:
 
         # 요술사 능력 적용
         for p in self.alive_list:
-            if isinstance(p.role, roles.WitchDoctor) and p.target1:
+            if isinstance(p.role, roles.WitchDoctor) and p.target1 and p.role.ability_opportunity>0:
+                p.role.ability_opportunity -= 1
                 p.target1.visited_by[self.day].add(p)
                 p.target1.healed_by.append(p)
 
@@ -1796,10 +1797,9 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.night_chat[roles.Cult])
                 else:
                     if (
-                        isinstance(p.target1.role, roles.Witch)
-                        or isinstance(p.target1.role, roles.Doctor)
-                        and roles.WitchDoctor.name
-                        not in {p.role.name for p in self.players}
+                        (isinstance(p.target1.role, roles.Witch)
+                        or isinstance(p.target1.role, roles.Doctor))
+                        and roles.WitchDoctor.name not in {p.role.name for p in self.players}
                     ):
                         await self.convert_role(
                             sio,

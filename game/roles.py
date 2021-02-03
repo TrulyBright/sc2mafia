@@ -478,3 +478,6 @@ class Witch(NeutralEvil):
 
 class WitchDoctor(Cult):
     name = "요술사"
+    def __init__(self):
+        super().__init__()
+        self.ability_opportunity = 3
