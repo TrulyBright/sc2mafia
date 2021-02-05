@@ -21,7 +21,7 @@ function addchat(message, color='orange', hell=false) {
   let chat = document.createElement('li');
   let span = document.createElement("span");
   span.setAttribute("style", "color:"+color);
-  span.innerHTML = message;
+  span.innerText = message;
   chat.appendChild(span);
   chatLog.appendChild(chat);
   blop.play();
