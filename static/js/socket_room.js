@@ -12,6 +12,7 @@ function updateScroll () {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 }
+let blop = new Audio("/static/music/blop.mp3");
 
 setInterval(updateScroll);
 
@@ -23,6 +24,7 @@ function addchat(message, color='orange', hell=false) {
   span.innerHTML = message;
   chat.appendChild(span);
   chatLog.appendChild(chat);
+  blop.play();
 }
 
 function send_message(event) {
