@@ -1836,7 +1836,7 @@ class GameRoom:
                         "who": p.recruit_target.nickname,
                     }
                     await self.emit_event(sio, data, room=self.night_chat[roles.Mafia])
-                elif isinstance(p.recruit_target.role, roles.Escort):
+                elif isinstance(p.recruit_target.role, roles.Escort) and self.setup!="8331":
                     await self.convert_role(
                         sio,
                         convertor=p,
@@ -1869,7 +1869,7 @@ class GameRoom:
                         "who": p.recruit_target.nickname,
                     }
                     await self.emit_event(sio, data, room=self.night_chat[roles.Triad])
-                elif isinstance(p.recruit_target.role, roles.Escort):
+                elif isinstance(p.recruit_target.role, roles.Escort) and self.setup!="8331":
                     await self.convert_role(
                         sio,
                         convertor=p,
