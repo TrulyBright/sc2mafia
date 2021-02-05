@@ -35,12 +35,12 @@ async def connect(sid, environ):
         HTTPsession = None
 
     if HTTPsession is None:
-        raise ConnectionRefusedError("인증필요")
+        raise ConnectionRefusedError("세션이 없음")
     HTTPsession = HTTPsession.decode("ascii")
     HTTPsession = HTTPsession.replace("true", "True")
     HTTPsession = literal_eval(HTTPsession)
     if not HTTPsession.get("logged_in"):
-        raise ConnectionRefusedError("인증필요")
+        raise ConnectionRefusedError("로그인을 안 함")
     await sio.save_session(sid, HTTPsession)
     async with sio.session(sid) as user:
         if user['nickname'] in online_users:
