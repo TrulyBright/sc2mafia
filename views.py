@@ -25,7 +25,6 @@ async def callback(request):
 async def login(request):
     client = request.app.oauth_client
     access_token = request.args.get('access_token').split('.')[1]
-    print(access_token)
     url = 'https://openapi.naver.com/v1/nid/me'
     headers = {
         'Authorization': 'Bearer ' + access_token
