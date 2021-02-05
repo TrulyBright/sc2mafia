@@ -150,7 +150,7 @@ async def create_GameRoom(sid, data):
                                           host=user,
                                           setup=data['setup'])
         await sio.emit('create_GameRoom_success', next_roomID, room=sid)
-        logger.info(f"user {user['nickname']} creates room #{roomID}")
+        logger.info(f"user {user['nickname']} creates room #{next_roomID}")
         next_roomID += 1
         await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
