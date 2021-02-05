@@ -18,11 +18,13 @@
         </a>
         <ul>
           <li><a href="/about" rel="about">소개</a></li>
-          <li><a href="/lobby" rel="lobby">로비</a></li>
+          <li><a href="/game" rel="lobby">로비</a></li>
           <li><a href="/archive" rel="archive">기록실</a></li>
         </ul>
       </nav>
     </header>
+    <img src="/static/images/banner_left.png" alt="" id="left_banner">
+    <img src="/static/images/banner_right.png" alt="" id="right_banner">
     <section class="main" id="main">
       <!-- modal 시작 -->
       <modal v-if="showModal" @close="showModal=false">
