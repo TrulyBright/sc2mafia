@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>SC2 Maifa::archive</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/archive.css">
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/" rel="home">
+          <img src="/static/images/logo.png" alt="logo" id="logo">
+          <h1>SC2 Mafia</h1>
+        </a>
+        <ul>
+          <li><a href="/about" rel="about">소개</a></li>
+          <li><a href="/game" rel="lobby">로비</a></li>
+          <li><a href="/archive" rel="archive">기록실</a></li>
+        </ul>
+      </nav>
+    </header>
+    <table>
+      <td>순번</td>
+      <td>게임 코드</td>
+      {% for index, log in enumerate(logs) %}
+        <tr>
+          <td>{{index}}</td>
+          <td>
+            <a href="/archive/{{log[0]}}">{{log[0]}}</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </body>
+  </html>
