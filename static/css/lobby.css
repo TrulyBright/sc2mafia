@@ -8,3 +8,17 @@
   border: white solid 1px;
   overflow: auto;
 }
+
+#left_banner {
+  width: 15%;
+  left: 0;
+  position: absolute;
+  position: fixed;
+}
+
+#right_banner {
+  width: 15%;
+  right: 0;
+  position: absolute;
+  position: fixed;
+}
