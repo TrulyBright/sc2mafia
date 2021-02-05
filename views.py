@@ -93,3 +93,7 @@ async def archive(request, gamelog_id):
         cursor = await DB.execute(f"SELECT * FROM {gamelog_id};")
         log = await cursor.fetchall();
         return {"log": log}
+
+@template("about.html.j2")
+async def about(request):
+    return {}
