@@ -297,6 +297,32 @@ Socket.on('event', (data)=> {
     case "will_start":
       addchat("게임이 "+data["in"]+"초 후에 시작됩니다...");
       break;
+    case "setup":
+      addchat("설정: "+data["setup"]);
+      addchat("===직업 구성===");
+      switch (data["setup"]) {
+        case "8331":
+          addchat("시민 행정직(시민 제외)", "rgb(0, 158, 37)");
+          addchat("시민 조사직", "rgb(0, 158, 37)");
+          addchat("시민 조사직", "rgb(0, 158, 37)");
+          addchat("시민 방어직", "rgb(0, 158, 37)");
+          addchat("시민 방어직", "rgb(0, 158, 37)");
+          addchat("시민 살인직", "rgb(0, 158, 37)");
+          addchat("시민 능력직", "rgb(0, 158, 37)");
+          addchat("시민 랜덤직(시민 행정직 제외)", "rgb(0, 158, 37)");
+          addchat("대부", "red");
+          addchat("마피아 랜덤직(변장자 제외)", "red");
+          addchat("마피아 랜덤직(변장자 제외)", "red");
+          addchat("중립 살인직", "gray");
+          addchat("중립 랜덤직(중립 살인직 제외)", "gray");
+          addchat("중립 랜덤직(중립 살인직 제외)", "gray");
+          addchat("모든 랜덤직(살인 직업, 마피아 제외)", "white");
+          break;
+        default:
+          addchat("알 수 없는 설정입니다. 운영자에게 문의하세요.");
+      }
+      addchat("===직업 구성 끝===");
+      break;
     case 'message':
       addchat(data['who']+': '+data['message'], 'white');
       break;

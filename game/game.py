@@ -68,7 +68,7 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.members)!=3:
+                    if len(self.members)!=15:
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_enough_members",
@@ -2036,11 +2036,11 @@ class GameRoom:
             self.EVENING_TIME = 10
         if self.setup == "8331":
             self.STATE = "MORNING"  # game's first state when game starts
-            self.DISCUSSION_TIME = 10
-            self.VOTE_TIME = 30
-            self.DEFENSE_TIME = 10
-            self.VOTE_EXECUTION_TIME = 10
-            self.EVENING_TIME = 10
+            self.DISCUSSION_TIME = 30
+            self.VOTE_TIME = 120
+            self.DEFENSE_TIME = 15
+            self.VOTE_EXECUTION_TIME = 20
+            self.EVENING_TIME = 36
             role_pool = {
                 roles.TownGovernment: [roles.Mayor,
                                        roles.Marshall,
@@ -2169,6 +2169,11 @@ class GameRoom:
                              room=p.sid)
                              for p in self.players.values()
                              if isinstance(p.role, roles.Executioner)])
+        data = {
+            "type": "setup",
+            "setup": self.setup,
+        }
+        await self.emit_event(sio, data, room=self.roomID)
         for i in range(10, 0, -1):
             data = {
                 "type": "will_start",
