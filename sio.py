@@ -94,6 +94,7 @@ async def enter_GameRoom(sid, data):
                                room=roomID)
                 await broadcast_room_list()
                 await room.someone_entered(sid, sio)
+                logger.info(f"user {user['nickname']} enters room #{roomID}")
         else:
             await sio.emit('failed_to_enter_GameRoom', {
                 'reason': 'No such room',
@@ -131,6 +132,8 @@ async def leave_GameRoom(sid, data):
             room=roomID,
         )
         await sio.emit("leave_GameRoom_success", {}, room=sid)
+        logger.info(f"user {user['nickname']} leaves room #{roomID}")
+
 
 
 @sio.event
@@ -147,6 +150,7 @@ async def create_GameRoom(sid, data):
                                           host=user,
                                           setup=data['setup'])
         await sio.emit('create_GameRoom_success', next_roomID, room=sid)
+        logger.info(f"user {user['nickname']} creates room #{roomID}")
         next_roomID += 1
         await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
