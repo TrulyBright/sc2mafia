@@ -77,8 +77,8 @@ class GameRoom:
                         await self.emit_event(sio, data, room=sid)
                         return
                     elif len(self.readied)!=len(self.members):
-                        not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied])
-                        not_readied = [session["nickname"] for session in not_readied]
+                        not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied], return_exceptions=True)
+                        not_readied = [session["nickname"] for session in not_readied if not isinstance(session, Exception)]
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_readied",
@@ -711,7 +711,7 @@ class GameRoom:
                 p.win = True
         await asyncio.gather(*[self.emit_event(sio, {"type": "execution_success"}, room=p.sid)
                              for p in self.players.values()
-                             if isinstance(p.role, roles.Executioner) and p.role.target is self.elected])
+                             if isinstance(p.role, roles.Executioner) and p.role.target is self.elected], return_exceptions=True)
         if isinstance(self.elected.role, roles.Jester):
             self.elected.win = True
             for voter in self.alive_list:
@@ -2156,7 +2156,7 @@ class GameRoom:
                     p.night_chat = self.night_chat[night_chatting_role]
 
         self.alive_list = list(self.players.values())
-        await asyncio.gather(*[self.emit_event(sio, {"type": "role", "role": p.role.name}, room=p.sid) for p in self.players.values()])
+        await asyncio.gather(*[self.emit_event(sio, {"type": "role", "role": p.role.name}, room=p.sid) for p in self.players.values()], return_exceptions=True)
         for p in self.players.values():
             if isinstance(p.role, roles.Spy):
                 p.crimes["무단침입"] = True
@@ -2169,7 +2169,7 @@ class GameRoom:
                              {"type": "executioner_target", "target": p.role.target.nickname},
                              room=p.sid)
                              for p in self.players.values()
-                             if isinstance(p.role, roles.Executioner)])
+                             if isinstance(p.role, roles.Executioner)], return_exceptions=True)
         data = {
             "type": "setup",
             "setup": self.setup,
@@ -2481,7 +2481,7 @@ class GameRoom:
                     coros.append(sio.emit("player_list", data, room=p.sid))
             await asyncio.gather(*coros, return_exceptions=True)
         else:
-            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members]))
+            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members], return_exceptions=True))
             readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied], return_exceptions=True)
             readied = {s["nickname"] for s in readied if not isinstance(s, Exception)}
             player_list = [(nickname, nickname in readied) for nickname in player_list]
