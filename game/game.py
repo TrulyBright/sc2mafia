@@ -68,11 +68,11 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.members)!=15:
+                    if len(self.members)<3:
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_enough_members",
-                            "required_members": 15,
+                            "required_members": 3,
                         }
                         await self.emit_event(sio, data, room=sid)
                         return
@@ -793,6 +793,40 @@ class GameRoom:
                 else: # 비조장이 없다. 한 명 비조장으로 승격
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.MasonLeader())
                     await self.emit_player_list(sio)
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Consigliere):
+                for p2 in self.alive_list:
+                    if isinstance(p2.role, roles.Godfather):
+                        break
+                else:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Godfather())
+                    await self.emit_player_list(sio)
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Mafia):
+                for p2 in self.alive_list:
+                    if isinstance(p2.role, roles.MafiaKilling):
+                        break
+                else:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Mafioso())
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Administrator):
+                for p2 in self.alive_list:
+                    if isinstance(p2.role, roles.DragonHead):
+                        break
+                else:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.DragonHead())
+                    await self.emit_player_list(sio)
+                    break
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Triad):
+                for p2 in self.alive_list:
+                    if isinstance(p2.role, roles.TriadKilling):
+                        break
+                else:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Enforcer())
+                    await self.emit_player_list(sio)
+                    break
+
         if not self.die_today: # 사형이 있은 날에는 감금 불가
             for p in self.alive_list:
                 if (
