@@ -2479,11 +2479,11 @@ class GameRoom:
                         "inGame": self.inGame,
                     }
                     coros.append(sio.emit("player_list", data, room=p.sid))
-            await asyncio.gather(*coros)
+            await asyncio.gather(*coros, return_exceptions=True)
         else:
-            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members])) # TODO: 죽었는지 여부도 전송
-            readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied])
-            readied = {s["nickname"] for s in readied}
+            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members]))
+            readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied], return_exceptions=True)
+            readied = {s["nickname"] for s in readied if not isinstance(s, Exception)}
             player_list = [(nickname, nickname in readied) for nickname in player_list]
             data = {
                 "player_list": player_list,
