@@ -20,12 +20,15 @@ function addchat(message, color='orange', background_color=null) {
   let chatLog = document.getElementById('messages');
   let chat = document.createElement('li');
   let span = document.createElement("span");
-  console.log(background_color)
   if (background_color) {
     chat.style.backgroundColor = background_color;
   }
   span.setAttribute("style", `color:${color}`);
-  span.innerText = message;
+  if (color=="orange") {
+    span.innerHTML = message;
+  } else {
+    span.innerText = message;
+  }
   chat.appendChild(span);
   chatLog.appendChild(chat);
   blop.play();
@@ -210,7 +213,7 @@ function colored(role_name) {
       color = "2851cc";
       break;
   }
-  return "<span style='color:#"+color+"'>"+role_name+"</span>";
+  return `<span style='color:#${color}'>${role_name}</span>`;
 };
 
 function swap_audio(audio_name) {
@@ -495,7 +498,7 @@ Socket.on('event', (data)=> {
           break;
         case "변장자":
         case "밀고자":
-          addchat("당신은 조직을 위해 일하는 스파이, 위조에 능통한 "+data["role"]+"입니다.");
+          addchat("당신은 조직을 위해 일하는 스파이, 위조에 능통한 "+colored(data["role"])+"입니다.");
           addchat("당신은 딱 한 번, 밤에 '/방문 닉네임'을 입력하여 사람을 죽이고 그 신분을 훔쳐 자기 것으로 만들 수 있습니다.");
           break;
         case "납치범":
@@ -525,7 +528,7 @@ Socket.on('event', (data)=> {
           break;
         case "조작자":
         case "위조꾼":
-          addchat("당신은 조직을 위해 일하는 숙련된 "+data["role"]+"입니다.");
+          addchat("당신은 조직을 위해 일하는 숙련된 "+colored(data["role"])+"입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 직업을 무작위 마피아/삼합회 또는 중립 악 직업으로 나오게 하고, 무작위 범죄를 하나 영구히 추가합니다.");
           break;
         case "관리인":
@@ -536,7 +539,7 @@ Socket.on('event', (data)=> {
           break;
         case "잠입자":
         case "사기꾼":
-          addchat("당신은 살아남기 위해 숨어서 조작하는 "+data["role"]+"입니다.");
+          addchat("당신은 살아남기 위해 숨어서 조작하는 "+colored(data["role"])+"입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그날밤 당신을 방문하는 사람을 모두 그 사람에게 보낼 수 있습니다.");
           break;
         case "생존자":
@@ -564,8 +567,8 @@ Socket.on('event', (data)=> {
           addchat("승리 조건: 끝까지 살아남아 "+colored("시민")+"세력의 패배를 목격하세요.");
           break;
         case "회계사":
-          addchat("당신은 악을 위해 능력과 지식을 사용하는 부패한 회계사입니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 본인 세력의 최하위권으로 만듭니다.");
+          addchat("당신은 악을 위해 능력과 지식을 사용하는 부패한"+colored("회계사")+"입니다.");
+          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 소속 세력의 최하위권으로 만듭니다.");
           addchat("승리 조건: 끝까지 살아남아 "+colored("시민")+"세력의 패배를 목격하세요.");
           break;
         case "판사":
@@ -817,7 +820,7 @@ Socket.on('event', (data)=> {
     case 'check_result':
       switch (data['role']) {
         case "검시관":
-          addchat("대상의 직업은 "+data["result"]["role"]+"입니다.");
+          addchat("대상의 직업은 "+colored(data["result"]["role"])+"입니다.");
           if (data["result"]["lw"]) {
             addchat("대상은 유언을 남겼습니다:");
             addchat(data["lw"], "yellow");
