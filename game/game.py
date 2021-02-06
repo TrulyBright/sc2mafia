@@ -24,9 +24,9 @@ class GameRoom:
     def __init__(
         self, roomID, title, capacity, host, setup, password=""
     ):
-        assert type(title) is str
-        assert type(capacity) is int
-        assert type(password) is str or password is None
+        assert isinstance(title, str)
+        assert isinstance(capacity, int)
+        assert isinstance(password, str) or password is None
         self.roomID = roomID
         self.title = title
         self.capacity = capacity
@@ -72,6 +72,7 @@ class GameRoom:
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_enough_members",
+                            "required_members": 15,
                         }
                         await self.emit_event(sio, data, room=sid)
                         return
@@ -2426,7 +2427,7 @@ class GameRoom:
             await asyncio.gather(*[insert(DB, record) for record in self.message_record])
             data = {
                 "type": "save_done",
-                "link": gamelog_id, # TODO: link to the archive
+                "link": gamelog_id,
             }
             await sio.emit("event", data, room=self.roomID)
         del self.alive_list
@@ -2435,7 +2436,6 @@ class GameRoom:
 
     async def emit_player_list(self, sio):
         if self.inGame:
-            # TODO: 자기팀 누군지 알 수 있게 하기
             coros = []
             for p in self.players.values():
                 to_send = []
