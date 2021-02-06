@@ -856,12 +856,13 @@ Socket.on('event', (data)=> {
           }
           break;
         case "요원":
-          addchat("대상은 오늘 밤 " + data["result"]["visiting"]+"님을 방문했습니다.");
-          addchat("오늘 밤 " + data["result"]["visited_by"]+"님이 대상을 방문했습니다.");
-          break;
         case "선봉":
           addchat("대상은 오늘 밤 " + data["result"]["visiting"]+"님을 방문했습니다.");
           addchat("오늘 밤 " + data["result"]["visited_by"]+"님이 대상을 방문했습니다.");
+          break;
+        case "조언자":
+        case "백지선":
+          addchat(`대상의 직업은 ${data["result"]}입니다.`);
           break;
       }
       break;
