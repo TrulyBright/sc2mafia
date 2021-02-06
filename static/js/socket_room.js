@@ -16,11 +16,15 @@ let blop = new Audio("/static/music/blop.mp3");
 
 setInterval(updateScroll);
 
-function addchat(message, color='orange', hell=false) {
+function addchat(message, color='orange', background_color=null) {
   let chatLog = document.getElementById('messages');
   let chat = document.createElement('li');
   let span = document.createElement("span");
-  span.setAttribute("style", "color:"+color);
+  console.log(background_color)
+  if (background_color) {
+    chat.style.backgroundColor = background_color;
+  }
+  span.setAttribute("style", `color:${color}`);
   span.innerText = message;
   chat.appendChild(span);
   chatLog.appendChild(chat);
@@ -326,7 +330,11 @@ Socket.on('event', (data)=> {
       addchat("===직업 구성 끝===");
       break;
     case 'message':
-      addchat(data['who']+': '+data['message'], 'white');
+      if (data["hell"]) {
+        addchat(data["who"]+": "+data["message"], "white", "rgba(100, 30, 22, 0.4)")
+      } else {
+        addchat(data['who']+': '+data['message'], 'white');
+      }
       break;
     case "whispering":
       addchat(data["to"]+"님께 귓속말: " + data["message"], "green");
@@ -358,7 +366,7 @@ Socket.on('event', (data)=> {
           addchat(data["not_readied"]+"님 등이 준비하지 않아 시작할 수 없습니다.");
           break;
         case "not_enough_members":
-          addchat("인원이 부족합니다. 15인이어야 시작할 수 있습니다.");
+          addchat("인원이 설정과 맞지 않습니다. "+data["required_members"]+"명이어야만 시작할 수 있습니다.");
           break;
         default:
           addchat("게임 시작 불가: "+data["reason"])
