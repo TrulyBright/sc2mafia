@@ -2535,6 +2535,8 @@ class GameRoom:
                 sio.enter_room(sid, self.hell)
 
     async def someone_left(self, sid, sio):
+        if sid in self.readied:
+            self.readied.remove(sid)
         await self.emit_player_list(sio)
         if self.inGame:
             for p in self.players.values():
