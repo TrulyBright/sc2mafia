@@ -1,6 +1,380 @@
 // TODO: will_execute_the_jailed 이벤트 받기
 'use strict';
-import { app } from "/static/js/main.js"
+document.querySelector("#lw_button").addEventListener("click", (event)=>{
+  Socket.emit("message", "/유언편집");
+  document.querySelector(".lw_modal").style.display = "block";
+});
+document.querySelector("#lw_submit").addEventListener("click", (event)=>{
+  Socket.emit("message", "/유언편집 "+document.querySelector("#lw").value);
+  document.querySelector(".lw_modal").style.display = "none";
+});
+document.querySelector("#setup_button").addEventListener("click", (event)=>{
+  document.querySelector(".setup_modal").style.display = "block";
+});
+document.querySelector("#setup-submit").addEventListener("click", (event)=>{
+  document.querySelector(".setup_modal").style.display = "none";
+  let formation = [];
+  for (let tr of document.querySelector("#setup_list tbody").children) {
+    formation.push(tr.innerText);
+  }
+  Socket.emit("setup", {
+    "formation": formation,
+    "options": {
+      "role_setting": {
+        "시민": {
+          "bulletproof": document.querySelector(".시민 input[name='bulletproof']").checked,
+          "win_1v1": document.querySelector(".시민 input[name='win_1v1']").checked,
+          "recruitable": document.querySelector(".시민 input[name='recruitable']").checked
+        },
+        "보안관": {
+          "detect_mafia_and_triad": document.querySelector(".보안관 input[name='detect_mafia_and_triad']").checked,
+          "detect_SerialKiller": document.querySelector(".보안관 input[name='detect_SerialKiller']").checked,
+          "detect_Arsonist": document.querySelector(".보안관 input[name='detect_Arsonist']").checked,
+          "detect_Cult": document.querySelector(".보안관 input[name=detect_Cult]").checked,
+          "detect_MassMurderer": document.querySelector(".보안관 input[name='detect_MassMurderer']").checked
+        },
+        "탐정": {
+          "detect_exact_role": document.querySelector(".탐정 input[name='detect_exact_role']").checked
+        },
+        "형사": {
+          "ignore_detection_immune": document.querySelector(".형사 input[name='ignore_detection_immune']").checked
+        },
+        "감시자": {
+          "ignore_detection_immune": document.querySelector(".감시자 input[name='ignore_detection_immune']").checked
+        },
+        "의사": {
+          "knows_if_attacked": document.querySelector(".의사 input[name='knows_if_attacked']").checked,
+          "prevents_cult_conversion": document.querySelector(".의사 input[name='prevents_cult_conversion']").checked,
+          "knows_if_culted": document.querySelector(".의사 input[name='knows_if_culted']").checked,
+          "WitchDoctor_when_converted": document.querySelector(".의사 input[name='WitchDoctor_when_converted']").checked
+        },
+        "기생": {
+          "cannot_be_blocked": document.querySelector(".기생 input[name='cannot_be_blocked']").checked,
+          "detects_block_immune_target": document.querySelector(".기생 input[name='detects_block_immune_target']").checked,
+          "recruitable": document.querySelector(".기생 input[name='recruitable']").checked,
+        },
+        "간수": {
+          "execution_chance": Number(document.querySelector(".간수 input[name='execution_chance']:checked").value),
+        },
+        "자경대원": {
+          "kill_chance": Number(document.querySelector(".자경대원 input[name='kill_chance']:checked").value),
+          "suicides_if_shot_town": document.querySelector(".자경대원 input[name='suicides_if_shot_town']").checked
+        },
+        "비밀조합원": {
+          "promoted_if_alone": document.querySelector(".비밀조합원 input[name='promoted_if_alone']").checked
+        },
+        "비밀조합장": {
+          "recruit_chance": Number(document.querySelector(".비밀조합장 input[name='recruit_chance']:checked").value),
+        },
+        "정보원": {},
+        "버스기사": {},
+        "검시관": {
+          "discover_all_targets": document.querySelector(".검시관 input[name='discover_all_targets']").checked,
+          "discover_lw": document.querySelector(".검시관 input[name='discover_lw']").checked,
+          "discover_death_type": document.querySelector(".검시관 input[name='discover_death_type']").checked,
+          "discover_visitor_role": document.querySelector(".검시관 input[name='discover_visitor_role']").checked,
+        },
+        "경호원": {
+          "offense_level": Number(document.querySelector(".경호원 input[name='offense_level_Bodyguard']:checked").value),
+          "unhealable": document.querySelector(".경호원 input[name='unhealable']").checked,
+          "prevents_conversion": document.querySelector(".경호원 input[name='prevents_conversion']").checked,
+        },
+        "퇴역군인": {
+          "alert_chance": Number(document.querySelector(".퇴역군인 input[name='alert_chance']:checked").value),
+          "offense_level": Number(document.querySelector(".퇴역군인 input[name='offense_level_Veteran']:checked").value),
+        },
+        "시장": {
+          "lose_extra_votes": document.querySelector(".시장 input[name='lose_extra_votes']").checked,
+          "extra_votes": Number(document.querySelector(".시장 input[name='extra_votes_Mayor']:checked").value),
+          "unhealable": document.querySelector(".시장 input[name='unhealable']").checked,
+        },
+        "원수": {
+          "lynch_chance": Number(document.querySelector(".원수 input[name='lynch_chance']:checked").value),
+          "executions_per_group": Number(document.querySelector(".원수 input[name='executions_per_group']:checked").value),
+          "unhealable": document.querySelector(".원수 input[name='unhealable']").checked,
+        },
+        "포고꾼": {},
+        "마피아 일원": {},
+        "조언자": {
+          "promoted_if_no_Godfather": document.querySelector(".조언자 input[name='promoted_if_no_Godfather']").checked,
+          "detect_exact_role": document.querySelector(".조언자 input[name='detect_exact_role']").checked,
+          "becomes_mafioso": document.querySelector(".조언자 input[name='becomes_mafioso']").checked,
+        },
+        "대부": {
+          "defense_level": Number(document.querySelector(".대부 input[name='defense_level_Godfather']:checked").value),
+          "cannot_be_blocked": document.querySelector(".대부 input[name='cannot_be_blocked']").checked,
+          "detection_immune": document.querySelector(".대부 input[name='detection_immune']").checked,
+          "killable_without_mafioso": document.querySelector(".대부 input[name='killable_without_mafioso']").checked,
+          // "becomes_mafioso": document.querySelector(".대부 input[name='becomes_mafioso']").checked,
+        },
+        // "변장자": {
+        //   "hide_target_role": document.querySelector(".변장자 input[name='hide_target_role']").checked,
+        //   "becomes_mafioso": document.querySelector(".변장자 input[name='becomes_mafioso']").checked,
+        // }
+        "매춘부": {
+          "cannot_be_blocked": document.querySelector(".매춘부 input[name='cannot_be_blocked']").checked,
+          "detects_block_immune_target": document.querySelector(".매춘부 input[name='detects_block_immune_target']").checked,
+          "becomes_mafioso": document.querySelector(".매춘부 input[name='becomes_mafioso']").checked,
+        },
+        "조작자": {
+          "detection_immune": document.querySelector(".조작자 input[name='detection_immune']").checked,
+          "becomes_mafioso": document.querySelector(".조작자 input[name='becomes_mafioso']").checked,
+        },
+        "관리인": {
+          "sanitize_chance": Number(document.querySelector(".관리인 input[name='sanitize_chance_Janitor']:checked").value),
+          "becomes_mafioso": document.querySelector(".관리인 input[name='becomes_mafioso']").checked,
+        },
+        "협박자": {
+          "can_talk_during_trial": document.querySelector(".협박자 input[name='can_talk_during_trial']").checked,
+          "becomes_mafioso": document.querySelector(".협박자 input[name='becomes_mafioso']").checked,
+        },
+        "납치범": {
+          "can_jail_members": document.querySelector(".납치범 input[name='can_jail_members']").checked,
+          "becomes_mafioso": document.querySelector(".납치범 input[name='becomes_mafioso']").checked,
+        },
+        "요원": {
+          "nights_between_shadowings": Number(document.querySelector(".요원 input[name='nights_between_shadowings_Agent']:checked").value),
+          "becomes_mafioso": document.querySelector(".요원 input[name='becomes_mafioso']").checked,
+        },
+        "잠입자": {
+          "hide_chance": Number(document.querySelector(".잠입자 input[name='hide_chance_Beguiler']:checked").value),
+          "target_is_notified": document.querySelector(".잠입자 input[name='target_is_notified']").checked,
+          "can_hide_behind_member": document.querySelector(".잠입자 input[name='can_hide_behind_member']").checked,
+          "becomes_mafioso": document.querySelector(".잠입자 input[name='becomes_mafioso']").checked,
+        },
+        "홍곤": {},
+        "백지선": {
+          "promoted_if_no_Dragonhead": document.querySelector(".백지선 input[name='promoted_if_no_Dragonhead']").checked,
+          "detect_exact_role": document.querySelector(".백지선 input[name='detect_exact_role']").checked,
+          "becomes_enforcer": document.querySelector(".백지선 input[name='becomes_enforcer']").checked,
+        },
+        "용두": {
+          "defense_level": Number(document.querySelector(".용두 input[name='defense_level_Dragonhead']:checked").value),
+          "cannot_be_blocked": document.querySelector(".용두 input[name='cannot_be_blocked']").checked,
+          "detection_immune": document.querySelector(".용두 input[name='detection_immune']").checked,
+          "killable_without_enforcer": document.querySelector(".용두 input[name='killable_without_enforcer']").checked,
+        },
+        // "밀고자": {},
+        "간통범": {
+          "cannot_be_blocked": document.querySelector(".간통범 input[name='cannot_be_blocked']").checked,
+          "detects_block_immune_target": document.querySelector(".간통범 input[name='detects_block_immune_target']").checked,
+          "becomes_enforcer": document.querySelector(".간통범 input[name='becomes_enforcer']").checked,
+        },
+        "위조꾼": {
+          "detection_immune": document.querySelector(".위조꾼 input[name='detection_immune']").checked,
+          "becomes_enforcer": document.querySelector(".위조꾼 input[name='becomes_enforcer']").checked,
+        },
+        "향주": {
+          "sanitize_chance": Number(document.querySelector(".향주 input[name='sanitize_chance']:checked").value),
+          "becomes_enforcer": document.querySelector(".향주 input[name='becomes_enforcer']").checked,
+        },
+        "침묵자": {
+          "can_talk_during_trial": document.querySelector(".침묵자 input[name='can_talk_during_trial']").checked,
+          "becomes_enforcer": document.querySelector(".침묵자 input[name='becomes_enforcer']").checked,
+        },
+        "심문자": {
+          "can_jail_members": document.querySelector(".심문자 input[name='can_jail_members']").checked,
+          "becomes_enforcer": document.querySelector(".심문자 input[name='becomes_enforcer']").checked,
+        },
+        "선봉": {
+          "nights_between_shadowings": Number(document.querySelector(".선봉 input[name='nights_between_shadowings']:checked").value),
+          "becomes_enforcer": document.querySelector(".선봉 input[name='becomes_enforcer']").checked,
+        },
+        "사기꾼": {
+          "hide_chance": Number(document.querySelector(".사기꾼 input[name='hide_chance']:checked").value),
+          "target_is_notified": document.querySelector(".사기꾼 input[name='target_is_notified']").checked,
+          "can_hide_behind_member": document.querySelector(".사기꾼 input[name='can_hide_behind_member']").checked,
+          "becomes_enforcer": document.querySelector(".사기꾼 input[name='becomes_enforcer']").checked,
+        },
+        "생존자": {
+          "bulletproof_chance": Number(document.querySelector(".생존자 input[name='bulletproof_chance']:checked").value),
+        },
+        "기억상실자": {
+          "revealed": document.querySelector(".기억상실자 input[name='revealed']").checked,
+          "cannot_remember_town": document.querySelector(".기억상실자 input[name='cannot_remember_town']").checked,
+          "cannot_remember_mafia_and_triad": document.querySelector(".기억상실자 input[name='cannot_remember_mafia_and_triad']").checked,
+          "cannot_remember_killing_role": document.querySelector(".기억상실자 input[name='cannot_remember_killing_role']").checked,
+        },
+        "어릿광대": {
+          "randomly_suicide": document.querySelector(".어릿광대 input[name='randomly_suicide']").checked,
+        },
+        "처형자": {
+          "becomes_Jester": document.querySelector(".처형자 input[name='becomes_Jester']").checked,
+          "target_is_town": document.querySelector(".처형자 input[name='target_is_town']").checked,
+          "win_if_survived": document.querySelector(".처형자 input[name='win_if_survived']").checked,
+          "defense_level": Number(document.querySelector(".처형자 input[name='defense_level_Executioner']:checked").value),
+        },
+        "마녀": {
+          "can_control_self": document.querySelector(".마녀 input[name='can_control_self']").checked,
+          "target_is_notified": document.querySelector(".마녀 input[name='target_is_notified']").checked,
+          "WitchDoctor_when_converted": document.querySelector(".마녀 input[name='WitchDoctor_when_converted']").checked,
+        },
+        "회계사": {
+          "can_audit_mafia": document.querySelector(".회계사 input[name='can_audit_mafia']").checked,
+          "can_audit_triad": document.querySelector(".회계사 input[name='can_audit_triad']").checked,
+          "can_audit_night_immune": document.querySelector(".회계사 input[name='can_audit_night_immune']").checked,
+          "audit_chance": Number(document.querySelector(".회계사 input[name='audit_chance']:checked").value),
+        },
+        "판사": {
+          "court_chance": Number(document.querySelector(".판사 input[name='court_chance']:checked").value),
+          "nights_between_court": Number(document.querySelector(".판사 input[name='nights_between_court']:checked").value),
+          "extra_votes": Number(document.querySelector(".판사 input[name='extra_votes']:checked").value),
+        },
+        "이교도": {
+          "can_convert_night_immune": document.querySelector(".이교도 input[name='can_convert_night_immune']").checked,
+          "nights_between_conversion": Number(document.querySelector(".이교도 input[name='nights_between_conversion']:checked").value),
+        },
+        "요술사": {
+          "save_chance": Number(document.querySelector(".요술사 input[name='save_chance']:checked").value),
+          "night_between_save": Number(document.querySelector(".요술사 input[name='night_between_save']:checked").value),
+          "detection_immune": document.querySelector(".요술사 input[name='detection_immune']").checked,
+        },
+        "연쇄살인마": {
+          "defense_level": Number(document.querySelector(".연쇄살인마 input[name='defense_level_SerialKiller']:checked").value),
+          "kill_blocker": document.querySelector(".연쇄살인마 input[name='kill_blocker']").checked,
+          "win_if_1v1_with_Arsonist": document.querySelector(".연쇄살인마 input[name='win_if_1v1_with_Arsonist']").checked,
+          "detection_immune": document.querySelector(".연쇄살인마 input[name='detection_immune']").checked,
+        },
+        "대량학살자": {
+          "defense_level": Number(document.querySelector(".대량학살자 input[name='defense_level_MassMurderer']:checked").value),
+          "can_visit_self": document.querySelector(".대량학살자 input[name='can_visit_self']").checked,
+          "nights_between_murder": Number(document.querySelector(".대량학살자 input[name='nights_between_murder']:checked").value),
+          "detection_immune": document.querySelector(".대량학살자 input[name='detection_immune']").checked,
+        },
+        "방화범": {
+          "offense_level": Number(document.querySelector(".방화범 input[name='offense_level']:checked").value),
+          "defense_level": Number(document.querySelector(".방화범 input[name='defense_level']:checked").value),
+          "fire_spreads": document.querySelector(".방화범 input[name='fire_spreads']").checked,
+          "target_is_notified": document.querySelector(".방화범 input[name='target_is_notified']").checked,
+          "douse_blocker": document.querySelector(".방화범 input[name='douse_blocker']").checked,
+        },
+        "모든 무작위직": {
+          "excludes_killing_role": document.querySelector(".모든무작위직 input[name='excludes_killing_role']").checked,
+          "excludes_mafia": document.querySelector(".모든무작위직 input[name='excludes_mafia']").checked,
+          "excludes_triad": document.querySelector(".모든무작위직 input[name='excludes_triad']").checked,
+          "excludes_neutral": document.querySelector(".모든무작위직 input[name='excludes_neutral']").checked,
+          "excludes_town": document.querySelector(".모든무작위직 input[name='excludes_town']").checked,
+        },
+        "시민 무작위직": {
+          "excludes_killing_role": document.querySelector(".시민무작위직 input[name='excludes_killing_role']").checked,
+          "excludes_government": document.querySelector(".시민무작위직 input[name='excludes_government']").checked,
+          "excludes_investigative": document.querySelector(".시민무작위직 input[name='excludes_investigative']").checked,
+          "excludes_protective": document.querySelector(".시민무작위직 input[name='excludes_protective']").checked,
+          "excludes_power": document.querySelector(".시민무작위직 input[name='excludes_power']").checked,
+        },
+        "시민 행정직": {
+          "excludes_citizen": document.querySelector(".시민행정직 input[name='excludes_citizen']").checked,
+          "excludes_mason": document.querySelector(".시민행정직 input[name='excludes_mason']").checked,
+          "excludes_mayor_and_marshall": document.querySelector(".시민행정직 input[name='excludes_mayor_and_marshall']").checked,
+          "excludes_masonleader": document.querySelector(".시민행정직 input[name='excludes_masonleader']").checked,
+          "excludes_crier": document.querySelector(".시민행정직 input[name='excludes_crier']").checked,
+        },
+        "시민 조사직": {
+          "excludes_coroner": document.querySelector(".시민조사직 input[name='excludes_coroner']").checked,
+          "excludes_sheriff": document.querySelector(".시민조사직 input[name='excludes_sheriff']").checked,
+          "excludes_investigator": document.querySelector(".시민조사직 input[name='excludes_investigator']").checked,
+          "excludes_detective": document.querySelector(".시민조사직 input[name='excludes_detective']").checked,
+          "excludes_lookout": document.querySelector(".시민조사직 input[name='excludes_lookout']").checked,
+        },
+        "시민 방어직": {
+          "excludes_bodyguard": document.querySelector(".시민방어직 input[name='excludes_bodyguard']").checked,
+          "excludes_doctor": document.querySelector(".시민방어직 input[name='excludes_doctor']").checked,
+          "excludes_escort": document.querySelector(".시민방어직 input[name='excludes_escort']").checked,
+        },
+        "시민 살인직": {
+          "excludes_veteran": document.querySelector(".시민살인직 input[name='excludes_veteran']").checked,
+          "excludes_jailor": document.querySelector(".시민살인직 input[name='excludes_jailor']").checked,
+          "excludes_bodyguard": document.querySelector(".시민살인직 input[name='excludes_bodyguard']").checked,
+          "excludes_vigilante": document.querySelector(".시민살인직 input[name='excludes_vigilante']").checked,
+        },
+        "시민 능력직": {
+          "excludes_veteran": document.querySelector(".시민능력직 input[name='excludes_veteran']").checked,
+          "excludes_spy": document.querySelector(".시민능력직 input[name='excludes_spy']").checked,
+          "excludes_jailor": document.querySelector(".시민능력직 input[name='excludes_jailor']").checked,
+        },
+        "마피아 무작위직": {
+          "excludes_killing_role": document.querySelector(".마피아무작위직 input[name='excludes_killing_role']").checked,
+        },
+        "마피아 살인직": {
+          "excludes_kidnapper": document.querySelector(".마피아살인직 input[name='excludes_kidnapper']").checked,
+          "excludes_mafioso": document.querySelector(".마피아살인직 input[name='excludes_mafioso']").checked,
+          "excludes_godfather": document.querySelector(".마피아살인직 input[name='excludes_godfather']").checked,
+        },
+        "마피아 지원직": {
+          "excludes_blackmailer": document.querySelector(".마피아지원직 input[name='excludes_blackmailer']").checked,
+          "excludes_kidnapper": document.querySelector(".마피아지원직 input[name='excludes_kidnapper']").checked,
+          "excludes_consort": document.querySelector(".마피아지원직 input[name='excludes_consort']").checked,
+          "excludes_consigliere": document.querySelector(".마피아지원직 input[name='excludes_consigliere']").checked,
+          "excludes_agent": document.querySelector(".마피아지원직 input[name='excludes_agent']").checked,
+        },
+        "마피아 속임수직": {
+          "excludes_framer": document.querySelector(".마피아속임수직 input[name='excludes_framer']").checked,
+          "excludes_janitor": document.querySelector(".마피아속임수직 input[name='excludes_janitor']").checked,
+          "excludes_beguiler": document.querySelector(".마피아속임수직 input[name='excludes_beguiler']").checked,
+        },
+        "삼합회 무작위직": {
+          "excludes_killing_role": document.querySelector(".삼합회무작위직 input[name='excludes_killing_role']").checked,
+        },
+        "삼합회 살인직": {
+          "excludes_interrogator": document.querySelector(".삼합회살인직 input[name='excludes_interrogator']").checked,
+          "excludes_enforcer": document.querySelector(".삼합회살인직 input[name='excludes_enforcer']").checked,
+          "excludes_dragonhead": document.querySelector(".삼합회살인직 input[name='excludes_dragonhead']").checked,
+        },
+        "삼합회 지원직": {
+          "excludes_silencer": document.querySelector(".삼합회지원직 input[name='excludes_silencer']").checked,
+          "excludes_interrogator": document.querySelector(".삼합회지원직 input[name='excludes_interrogator']").checked,
+          "excludes_liaison": document.querySelector(".삼합회지원직 input[name='excludes_liaison']").checked,
+          "excludes_administrator": document.querySelector(".삼합회지원직 input[name='excludes_administrator']").checked,
+          "excludes_vanguard": document.querySelector(".삼합회지원직 input[name='excludes_vanguard']").checked,
+        },
+        "삼합회 속임수직": {
+          "excludes_forger": document.querySelector(".삼합회속임수직 input[name='excludes_forger']").checked,
+          "excludes_incensemaster": document.querySelector(".삼합회속임수직 input[name='excludes_incensemaster']").checked,
+          "excludes_deceiver": document.querySelector(".삼합회속임수직 input[name='excludes_deceiver']").checked,
+        },
+        "중립 무작위직": {
+          "excludes_killing_role": document.querySelector(".중립무작위직 input[name='excludes_killing_role']").checked,
+          "excludes_evil": document.querySelector(".중립무작위직 input[name='excludes_evil']").checked,
+          "excludes_benign": document.querySelector(".중립무작위직 input[name='excludes_benign']").checked,
+        },
+        "중립 살인직": {
+          "excludes_serialkiller": document.querySelector(".중립살인직 input[name='excludes_serialkiller']").checked,
+          "excludes_arsonist": document.querySelector(".중립살인직 input[name='excludes_arsonist']").checked,
+          "excludes_massmurderer": document.querySelector(".중립살인직 input[name='excludes_massmurderer']").checked,
+        },
+        "중립 악": {
+          "excludes_killing_role": document.querySelector(".중립악 input[name='excludes_killing_role']").checked,
+          "excludes_cults": document.querySelector(".중립악 input[name='excludes_cults']").checked,
+          "excludes_witch": document.querySelector(".중립악 input[name='excludes_witch']").checked,
+          "excludes_judge": document.querySelector(".중립악 input[name='excludes_judge']").checked,
+          "excludes_auditor": document.querySelector(".중립악 input[name='excludes_auditor']").checked,
+        },
+        "중립 선": {
+          "excludes_survivor": document.querySelector(".중립선 input[name='excludes_survivor']").checked,
+          "excludes_jester": document.querySelector(".중립선 input[name='excludes_jester']").checked,
+          "excludes_executioner": document.querySelector(".중립선 input[name='excludes_executioner']").checked,
+          "excludes_amnesiac": document.querySelector(".중립선 input[name='excludes_amnesiac']").checked,
+        }
+      },
+      "time_setup": {
+        "day_time": Number(document.querySelector(".day_time_slider").value),
+        "night_time": Number(document.querySelector(".night_time_slider").value),
+        "discussion_time": Number(document.querySelector(".discussion_time_slider").value),
+        "court_time": Number(document.querySelector(".court_time_slider").value),
+      },
+      "select_setup": {
+        "initial_state": document.querySelector(".select_setup select[name='initial_state']").value,
+        "night_type": document.querySelector(".select_setup select[name='night_type']").value,
+      },
+      "checkbox_setup": {
+        "whisper_allowed": document.querySelector(".checkbox_setup input[name='whisper_allowed']").checked,
+        "use_discussion_time": document.querySelector(".checkbox_setup input[name='use_discussion_time']").checked,
+        "pause_daytime": document.querySelector(".checkbox_setup input[name='pause_daytime']").checked,
+        "use_defense_time": document.querySelector(".checkbox_setup input[name='use_defense_time']").checked,
+      }
+    }
+  });
+});
 
 document.querySelector(".message_input_form").addEventListener("submit", send_message)
 let now_playing = null;
@@ -306,31 +680,22 @@ Socket.on('event', (data)=> {
     case "will_start":
       addchat("게임이 "+data["in"]+"초 후에 시작됩니다...");
       break;
-    case "setup":
-      addchat("설정: "+data["setup"]);
-      addchat("===직업 구성===");
-      switch (data["setup"]) {
-        case "8331":
-          addchat("시민 행정직(시민 제외)", "rgb(0, 158, 37)");
-          addchat("시민 조사직", "rgb(0, 158, 37)");
-          addchat("시민 조사직", "rgb(0, 158, 37)");
-          addchat("시민 방어직", "rgb(0, 158, 37)");
-          addchat("시민 방어직", "rgb(0, 158, 37)");
-          addchat("시민 살인직", "rgb(0, 158, 37)");
-          addchat("시민 능력직", "rgb(0, 158, 37)");
-          addchat("시민 랜덤직(시민 행정직 제외)", "rgb(0, 158, 37)");
-          addchat("대부", "red");
-          addchat("마피아 랜덤직(변장자 제외)", "red");
-          addchat("마피아 랜덤직(변장자 제외)", "red");
-          addchat("중립 살인직", "gray");
-          addchat("중립 랜덤직(중립 살인직 제외)", "gray");
-          addchat("중립 랜덤직(중립 살인직 제외)", "gray");
-          addchat("모든 랜덤직(살인 직업, 마피아 제외)", "white");
-          break;
-        default:
-          addchat("알 수 없는 설정입니다. 운영자에게 문의하세요.");
+    case "simulation":
+      for (let line of data["result"]) {
+        let slot = line[0];
+        let role = line[1];
+        addchat(`${slot}번 칸: ${colored(role)}`);
       }
-      addchat("===직업 구성 끝===");
+      break;
+    case "applying_setup_success":
+      addchat("설정이 적용되었습니다. '/시행'을 입력하여 설정을 시험해볼 수 있습니다.");
+      addchat("설정이 바뀌어 준비가 해제되었습니다.");
+      break;
+    case "applying_setup_failed":
+      addchat("설정에 문제가 있어 적용에 실패했습니다.", "red");
+      break;
+    case "warning":
+      addchat("설정에 문제가 있습니다.", "red");
       break;
     case 'message':
       if (data["hell"]) {
@@ -371,6 +736,9 @@ Socket.on('event', (data)=> {
         case "not_enough_members":
           addchat("인원이 설정과 맞지 않습니다. "+data["required_members"]+"명이어야만 시작할 수 있습니다.");
           break;
+        case "invalid_setup":
+          addchat("설정에 문제가 있어 시작할 수 없습니다.");
+          break;
         default:
           addchat("게임 시작 불가: "+data["reason"])
         }
@@ -394,6 +762,7 @@ Socket.on('event', (data)=> {
       swap_audio(data["music"]);
       break;
     case 'role':
+      document.querySelector("#messages").innerHTML = "";
       addchat('당신의 직업은 '+colored(data["role"])+'입니다.');
       switch (data["role"]) {
         case "시장":
@@ -962,7 +1331,7 @@ Socket.on('event', (data)=> {
       }
       break;
     case "lw_edit":
-      app.showLwModal = true;
+      document.querySelector(".lw_modal").style.display = "block";
       document.querySelector("#lw").value = data["lw"];
       break;
     case "will_remember":

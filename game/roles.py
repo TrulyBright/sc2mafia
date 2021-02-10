@@ -116,12 +116,12 @@ class Bodyguard(TownProtective, TownKilling):
         super().__init__()
         self.offense_level = 2
 
-
-class BusDriver(TownProtective, TownPower):
-    name = "버스기사"
-    def __init__(self):
-        super().__init__()
-        self.visitable_himself = True
+#
+# class BusDriver(TownProtective, TownPower): # NeutralEvil
+#     name = "버스기사"
+#     def __init__(self):
+#         super().__init__()
+#         self.visitable_himself = True
 
 
 class Citizen(TownGovernment):
@@ -263,13 +263,13 @@ class Consigliere(MafiaSupport):
 class Consort(MafiaSupport):
     name = "매춘부"
 
-
-class Disguiser(MafiaDeception, MafiaKilling):
-    name = "변장자"
-
-    def __init__(self):
-        super().__init__()
-        self.offense_level = 1
+#
+# class Disguiser(MafiaDeception, MafiaKilling):
+#     name = "변장자"
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.offense_level = 1
 
 
 class Framer(MafiaDeception):
@@ -358,13 +358,13 @@ class IncenseMaster(TriadDeception):
         super().__init__()
         self.ability_opportunity = 2
 
-
-class Informant(TriadDeception, TriadKilling):
-    name = "밀고자"
-
-    def __init__(self):
-        super().__init__()
-        self.offense_level = 1
+#
+# class Informant(TriadDeception, TriadKilling):
+#     name = "밀고자"
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.offense_level = 1
 
 
 class Interrogator(TriadKilling, TriadSupport):

@@ -4,6 +4,7 @@ import aiosqlite
 import random
 import string
 import json
+import inspect
 import sqlite3
 from sanic.log import logger
 from datetime import datetime, timedelta
@@ -20,6 +21,269 @@ from . import roles
 # TODO: 사인 공개되도록 수정
 # TODO: 정보원은 마피아/삼합회가 존재해야만 등장할 수 있도록 수정
 
+def validate_setup(setup):
+    # type and range check
+    role_setting = setup["options"]["role_setting"]
+    assert isinstance(role_setting[roles.Citizen.name]["bulletproof"], bool)
+    assert isinstance(role_setting[roles.Citizen.name]["win_1v1"], bool)
+    assert isinstance(role_setting[roles.Citizen.name]["recruitable"], bool)
+    assert isinstance(role_setting[roles.Sheriff.name]["detect_mafia_and_triad"], bool)
+    assert isinstance(role_setting[roles.Sheriff.name]['detect_SerialKiller'], bool)
+    assert isinstance(role_setting[roles.Sheriff.name]["detect_Arsonist"], bool)
+    assert isinstance(role_setting[roles.Sheriff.name]["detect_Cult"], bool)
+    assert isinstance(role_setting[roles.Sheriff.name]["detect_MassMurderer"], bool)
+    assert isinstance(role_setting[roles.Investigator.name]["detect_exact_role"], bool)
+    assert isinstance(role_setting[roles.Detective.name]["ignore_detection_immune"], bool)
+    assert isinstance(role_setting[roles.Lookout.name]["ignore_detection_immune"], bool)
+    assert isinstance(role_setting[roles.Doctor.name]["knows_if_attacked"], bool)
+    assert isinstance(role_setting[roles.Doctor.name]["prevents_cult_conversion"], bool)
+    assert isinstance(role_setting[roles.Doctor.name]["knows_if_culted"], bool)
+    assert isinstance(role_setting[roles.Doctor.name]["WitchDoctor_when_converted"], bool)
+    assert isinstance(role_setting[roles.Escort.name]["cannot_be_blocked"], bool)
+    assert isinstance(role_setting[roles.Escort.name]["detects_block_immune_target"], bool)
+    assert isinstance(role_setting[roles.Escort.name]["recruitable"], bool)
+    assert role_setting[roles.Jailor.name]["execution_chance"] in {1, 2, 3, 999}
+    assert role_setting[roles.Vigilante.name]["kill_chance"] in {1, 2, 3, 4, 999}
+    assert isinstance(role_setting[roles.Vigilante.name]["suicides_if_shot_town"], bool)
+    assert isinstance(role_setting[roles.Mason.name]["promoted_if_alone"], bool)
+    assert role_setting[roles.MasonLeader.name]["recruit_chance"] in {2, 3, 4, 999}
+    assert isinstance(role_setting[roles.Coroner.name]["discover_all_targets"], bool)
+    assert isinstance(role_setting[roles.Coroner.name]["discover_lw"], bool)
+    assert isinstance(role_setting[roles.Coroner.name]["discover_death_type"], bool)
+    assert isinstance(role_setting[roles.Coroner.name]["discover_visitor_role"], bool)
+    assert role_setting[roles.Bodyguard.name]["offense_level"] in {1, 2}
+    assert isinstance(role_setting[roles.Bodyguard.name]["unhealable"], bool)
+    assert isinstance(role_setting[roles.Bodyguard.name]["prevents_conversion"], bool)
+    assert role_setting[roles.Veteran.name]["alert_chance"] in {2, 3, 999}
+    assert role_setting[roles.Veteran.name]["offense_level"] in {1, 2}
+    assert isinstance(role_setting[roles.Mayor.name]["lose_extra_votes"], bool)
+    assert role_setting[roles.Mayor.name]["extra_votes"] in {2, 3, 4}
+    assert isinstance(role_setting[roles.Mayor.name]["unhealable"], bool)
+    assert role_setting[roles.Marshall.name]["lynch_chance"] in {1, 2}
+    assert role_setting[roles.Marshall.name]["executions_per_group"] in {2, 3, 4}
+    assert isinstance(role_setting[roles.Marshall.name]["unhealable"], bool)
+    assert isinstance(role_setting[roles.Consigliere.name]["promoted_if_no_Godfather"], bool)
+    assert isinstance(role_setting[roles.Consigliere.name]["detect_exact_role"], bool)
+    assert isinstance(role_setting[roles.Consigliere.name]["becomes_mafioso"], bool)
+    assert role_setting[roles.Godfather.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.Godfather.name]["cannot_be_blocked"], bool)
+    assert isinstance(role_setting[roles.Godfather.name]["detection_immune"], bool)
+    assert isinstance(role_setting[roles.Godfather.name]["killable_without_mafioso"], bool)
+    assert isinstance(role_setting[roles.Consort.name]["cannot_be_blocked"], bool)
+    assert isinstance(role_setting[roles.Consort.name]["detects_block_immune_target"], bool)
+    assert isinstance(role_setting[roles.Consort.name]["becomes_mafioso"], bool)
+    assert isinstance(role_setting[roles.Framer.name]["detection_immune"], bool)
+    assert isinstance(role_setting[roles.Framer.name]["becomes_mafioso"], bool)
+    assert role_setting[roles.Janitor.name]["sanitize_chance"] in {1, 2, 3, 999}
+    assert isinstance(role_setting[roles.Janitor.name]["becomes_mafioso"], bool)
+    assert isinstance(role_setting[roles.Blackmailer.name]["can_talk_during_trial"], bool)
+    assert isinstance(role_setting[roles.Blackmailer.name]["becomes_mafioso"], bool)
+    assert isinstance(role_setting[roles.Kidnapper.name]["can_jail_members"], bool)
+    assert isinstance(role_setting[roles.Kidnapper.name]["becomes_mafioso"], bool)
+    assert role_setting[roles.Agent.name]["nights_between_shadowings"] in {0, 1, 2}
+    assert isinstance(role_setting[roles.Agent.name]["becomes_mafioso"], bool)
+    assert role_setting[roles.Beguiler.name]["hide_chance"] in {2, 3, 4}
+    assert isinstance(role_setting[roles.Beguiler.name]["target_is_notified"], bool)
+    assert isinstance(role_setting[roles.Beguiler.name]["can_hide_behind_member"], bool)
+    assert isinstance(role_setting[roles.Beguiler.name]["becomes_mafioso"], bool)
+    assert isinstance(role_setting[roles.Administrator.name]["promoted_if_no_Dragonhead"], bool)
+    assert isinstance(role_setting[roles.Administrator.name]["detect_exact_role"], bool)
+    assert isinstance(role_setting[roles.Administrator.name]["becomes_enforcer"], bool)
+    assert role_setting[roles.DragonHead.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.DragonHead.name]["cannot_be_blocked"], bool)
+    assert isinstance(role_setting[roles.DragonHead.name]["detection_immune"], bool)
+    assert isinstance(role_setting[roles.DragonHead.name]["killable_without_enforcer"], bool)
+    assert isinstance(role_setting[roles.Liaison.name]["cannot_be_blocked"], bool)
+    assert isinstance(role_setting[roles.Liaison.name]["detects_block_immune_target"], bool)
+    assert isinstance(role_setting[roles.Liaison.name]["becomes_enforcer"], bool)
+    assert isinstance(role_setting[roles.Forger.name]["detection_immune"], bool)
+    assert isinstance(role_setting[roles.Forger.name]["becomes_enforcer"], bool)
+    assert role_setting[roles.IncenseMaster.name]["sanitize_chance"] in {1, 2, 3, 999}
+    assert isinstance(role_setting[roles.IncenseMaster.name]["becomes_enforcer"], bool)
+    assert isinstance(role_setting[roles.Silencer.name]["can_talk_during_trial"], bool)
+    assert isinstance(role_setting[roles.Silencer.name]["becomes_enforcer"], bool)
+    assert isinstance(role_setting[roles.Interrogator.name]["can_jail_members"], bool)
+    assert isinstance(role_setting[roles.Interrogator.name]["becomes_enforcer"], bool)
+    assert role_setting[roles.Vanguard.name]["nights_between_shadowings"] in {0, 1, 2}
+    assert isinstance(role_setting[roles.Vanguard.name]["becomes_enforcer"], bool)
+    assert role_setting[roles.Deceiver.name]["hide_chance"] in {2, 3, 4}
+    assert isinstance(role_setting[roles.Deceiver.name]["target_is_notified"], bool)
+    assert isinstance(role_setting[roles.Deceiver.name]["can_hide_behind_member"], bool)
+    assert isinstance(role_setting[roles.Deceiver.name]["becomes_enforcer"], bool)
+    assert role_setting[roles.Survivor.name]["bulletproof_chance"] in {0, 1, 2, 3, 4}
+    assert isinstance(role_setting[roles.Amnesiac.name]["revealed"], bool)
+    assert isinstance(role_setting[roles.Amnesiac.name]["cannot_remember_town"], bool)
+    assert isinstance(role_setting[roles.Amnesiac.name]["cannot_remember_mafia_and_triad"], bool)
+    assert isinstance(role_setting[roles.Amnesiac.name]["cannot_remember_killing_role"], bool)
+    assert isinstance(role_setting[roles.Jester.name]["randomly_suicide"], bool)
+    assert isinstance(role_setting[roles.Executioner.name]["becomes_Jester"], bool)
+    assert isinstance(role_setting[roles.Executioner.name]["target_is_town"], bool)
+    assert isinstance(role_setting[roles.Executioner.name]["win_if_survived"], bool)
+    assert role_setting[roles.Executioner.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.Witch.name]["can_control_self"], bool)
+    assert isinstance(role_setting[roles.Witch.name]["target_is_notified"], bool)
+    assert isinstance(role_setting[roles.Witch.name]["WitchDoctor_when_converted"], bool)
+    assert isinstance(role_setting[roles.Auditor.name]["can_audit_mafia"], bool)
+    assert isinstance(role_setting[roles.Auditor.name]["can_audit_triad"], bool)
+    assert isinstance(role_setting[roles.Auditor.name]["can_audit_night_immune"], bool)
+    assert role_setting[roles.Auditor.name]["audit_chance"] in {2, 3, 4}
+    assert role_setting[roles.Judge.name]["court_chance"] in {1, 2}
+    assert role_setting[roles.Judge.name]["nights_between_court"] in {0, 1}
+    assert role_setting[roles.Judge.name]["extra_votes"] in {2, 3, 4}
+    assert isinstance(role_setting[roles.Cultist.name]["can_convert_night_immune"], bool)
+    assert role_setting[roles.Cultist.name]["nights_between_conversion"] in {0, 1}
+    assert role_setting[roles.WitchDoctor.name]["save_chance"] in {1, 2, 3, 999}
+    assert role_setting[roles.WitchDoctor.name]["night_between_save"] in {0, 1}
+    assert isinstance(role_setting[roles.WitchDoctor.name]["detection_immune"], bool)
+    assert role_setting[roles.SerialKiller.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.SerialKiller.name]["kill_blocker"], bool)
+    assert isinstance(role_setting[roles.SerialKiller.name]["win_if_1v1_with_Arsonist"], bool)
+    assert isinstance(role_setting[roles.SerialKiller.name]["detection_immune"], bool)
+    assert role_setting[roles.MassMurderer.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.MassMurderer.name]["can_visit_self"], bool)
+    assert role_setting[roles.MassMurderer.name]["nights_between_murder"] in {0, 1, 2}
+    assert isinstance(role_setting[roles.MassMurderer.name]["detection_immune"], bool)
+    assert role_setting[roles.Arsonist.name]["offense_level"] in {1, 3}
+    assert role_setting[roles.Arsonist.name]["defense_level"] in {0, 1}
+    assert isinstance(role_setting[roles.Arsonist.name]["fire_spreads"], bool)
+    assert isinstance(role_setting[roles.Arsonist.name]["target_is_notified"], bool)
+    assert isinstance(role_setting[roles.Arsonist.name]["douse_blocker"], bool)
+    assert isinstance(role_setting["모든 무작위직"]["excludes_killing_role"], bool)
+    assert isinstance(role_setting["모든 무작위직"]["excludes_mafia"], bool)
+    assert isinstance(role_setting["모든 무작위직"]["excludes_triad"], bool)
+    assert isinstance(role_setting["모든 무작위직"]["excludes_neutral"], bool)
+    assert isinstance(role_setting["모든 무작위직"]["excludes_town"], bool)
+    assert isinstance(role_setting['시민 무작위직']["excludes_killing_role"], bool)
+    assert isinstance(role_setting["시민 무작위직"]["excludes_government"], bool)
+    assert isinstance(role_setting["시민 무작위직"]["excludes_investigative"], bool)
+    assert isinstance(role_setting["시민 무작위직"]["excludes_protective"], bool)
+    assert isinstance(role_setting["시민 무작위직"]["excludes_power"], bool)
+    assert isinstance(role_setting["시민 행정직"]["excludes_citizen"], bool)
+    assert isinstance(role_setting["시민 행정직"]["excludes_mason"], bool)
+    assert isinstance(role_setting["시민 행정직"]["excludes_mayor_and_marshall"], bool)
+    assert isinstance(role_setting["시민 행정직"]["excludes_masonleader"], bool)
+    assert isinstance(role_setting["시민 행정직"]["excludes_crier"], bool)
+    assert isinstance(role_setting["시민 조사직"]["excludes_coroner"], bool)
+    assert isinstance(role_setting["시민 조사직"]["excludes_sheriff"], bool)
+    assert isinstance(role_setting["시민 조사직"]["excludes_investigator"], bool)
+    assert isinstance(role_setting["시민 조사직"]["excludes_detective"], bool)
+    assert isinstance(role_setting["시민 조사직"]["excludes_lookout"], bool)
+    assert isinstance(role_setting["시민 방어직"]["excludes_bodyguard"], bool)
+    assert isinstance(role_setting["시민 방어직"]["excludes_doctor"], bool)
+    assert isinstance(role_setting["시민 방어직"]["excludes_escort"], bool)
+    assert isinstance(role_setting["시민 살인직"]["excludes_veteran"], bool)
+    assert isinstance(role_setting["시민 살인직"]["excludes_jailor"], bool)
+    assert isinstance(role_setting["시민 살인직"]["excludes_bodyguard"], bool)
+    assert isinstance(role_setting["시민 살인직"]["excludes_vigilante"], bool)
+    assert isinstance(role_setting["시민 능력직"]["excludes_veteran"], bool)
+    assert isinstance(role_setting["시민 능력직"]["excludes_spy"], bool)
+    assert isinstance(role_setting["시민 능력직"]["excludes_jailor"], bool)
+    assert isinstance(role_setting["마피아 무작위직"]["excludes_killing_role"], bool)
+    assert isinstance(role_setting["마피아 살인직"]["excludes_kidnapper"], bool)
+    assert isinstance(role_setting["마피아 살인직"]["excludes_mafioso"], bool)
+    assert isinstance(role_setting["마피아 살인직"]["excludes_godfather"], bool)
+    assert isinstance(role_setting["마피아 지원직"]["excludes_blackmailer"], bool)
+    assert isinstance(role_setting["마피아 지원직"]["excludes_kidnapper"], bool)
+    assert isinstance(role_setting["마피아 지원직"]["excludes_consort"], bool)
+    assert isinstance(role_setting['마피아 지원직']["excludes_consigliere"], bool)
+    assert isinstance(role_setting["마피아 지원직"]["excludes_agent"], bool)
+    assert isinstance(role_setting["마피아 속임수직"]["excludes_framer"], bool)
+    assert isinstance(role_setting["마피아 속임수직"]["excludes_janitor"], bool)
+    assert isinstance(role_setting["마피아 속임수직"]["excludes_beguiler"], bool)
+    assert isinstance(role_setting["삼합회 무작위직"]["excludes_killing_role"], bool)
+    assert isinstance(role_setting["삼합회 살인직"]["excludes_interrogator"], bool)
+    assert isinstance(role_setting["삼합회 살인직"]["excludes_enforcer"], bool)
+    assert isinstance(role_setting["삼합회 살인직"]["excludes_dragonhead"], bool)
+    assert isinstance(role_setting["삼합회 지원직"]["excludes_silencer"], bool)
+    assert isinstance(role_setting["삼합회 지원직"]["excludes_interrogator"], bool)
+    assert isinstance(role_setting["삼합회 지원직"]["excludes_liaison"], bool)
+    assert isinstance(role_setting['삼합회 지원직']["excludes_administrator"], bool)
+    assert isinstance(role_setting["삼합회 지원직"]["excludes_vanguard"], bool)
+    assert isinstance(role_setting["삼합회 속임수직"]["excludes_forger"], bool)
+    assert isinstance(role_setting["삼합회 속임수직"]["excludes_incensemaster"], bool)
+    assert isinstance(role_setting["삼합회 속임수직"]["excludes_deceiver"], bool)
+    assert isinstance(role_setting["중립 무작위직"]["excludes_killing_role"], bool)
+    assert isinstance(role_setting["중립 무작위직"]["excludes_evil"], bool)
+    assert isinstance(role_setting["중립 무작위직"]["excludes_benign"], bool)
+    assert isinstance(role_setting["중립 살인직"]["excludes_serialkiller"], bool)
+    assert isinstance(role_setting["중립 살인직"]["excludes_arsonist"], bool)
+    assert isinstance(role_setting["중립 살인직"]["excludes_massmurderer"], bool)
+    assert isinstance(role_setting["중립 악"]["excludes_killing_role"], bool)
+    assert isinstance(role_setting["중립 악"]["excludes_cults"], bool)
+    assert isinstance(role_setting["중립 악"]["excludes_witch"], bool)
+    assert isinstance(role_setting["중립 악"]["excludes_judge"], bool)
+    assert isinstance(role_setting["중립 악"]["excludes_auditor"], bool)
+    assert isinstance(role_setting["중립 선"]["excludes_survivor"], bool)
+    assert isinstance(role_setting["중립 선"]["excludes_jester"], bool)
+    assert isinstance(role_setting["중립 선"]["excludes_executioner"], bool)
+    assert isinstance(role_setting["중립 선"]["excludes_amnesiac"], bool)
+    time_setup = setup["options"]["time_setup"]
+    assert 1.0<=time_setup["day_time"]<=6.0
+    assert 0.5<=time_setup["night_time"]<=2.0
+    assert 0.5<=time_setup["discussion_time"]<=3.0
+    assert 0.5<=time_setup["court_time"]<=2.0
+    select_setup = setup["options"]["select_setup"]
+    assert select_setup["initial_state"] in {"MORNING", "MORNING_WITHOUT_COURT", "NIGHT"}
+    assert select_setup["night_type"] in {"normal", "reason", "classic"}
+    checkbox_setup = setup["options"]["checkbox_setup"]
+    assert isinstance(checkbox_setup["whisper_allowed"], bool)
+    assert isinstance(checkbox_setup["use_discussion_time"], bool)
+    assert isinstance(checkbox_setup["pause_daytime"], bool)
+    assert isinstance(checkbox_setup["use_defense_time"], bool)
+    # logic check
+    sheriff_can = role_setting["보안관"]
+    assert sheriff_can["detect_mafia_and_triad"] or sheriff_can["detect_SerialKiller"] or sheriff_can["detect_Arsonist"] or sheriff_can["detect_Cult"] or sheriff_can["detect_MassMurderer"]
+    formation = setup["formation"]
+    assert formation.count("시장")<2
+    assert formation.count("원수")<2
+    assert formation.count("포고꾼")<2
+    assert formation.count("비밀조합장")<2
+    assert formation.count("대부")<2
+    assert formation.count("용두")<2
+    assert formation.count("판사")<2
+    assert formation.count("요술사")<2
+
+def remove_roles_from_pool(pool, category):
+    if isinstance(category, list):
+        for constructor in pool:
+            for role in category:
+                remove_roles_from_pool(pool, role)
+    else:
+        if category is roles.Mason: # roles.MasonLeader가 roles.Mason을 상속하기 때문에 Mason만 지우고 MasonLeader를 지우지 않으려면 이렇게 해야 함
+            for constructor in pool:
+                pool[:] = [constructor for constructor in pool if not issubclass(constructor, roles.Mason) or issubclass(constructor, roles.MasonLeader)]
+        else:
+            for constructor in pool:
+                pool[:] = [constructor for constructor in pool if not issubclass(constructor, category)]
+
+def distribute_roles(formation)->list:
+    distributed = []
+    fixed = [constructor for constructor in formation if inspect.isclass(constructor)]
+    pools = [pool for pool in formation if isinstance(pool, list)]
+    pools = sorted(pools, key=lambda pool: bool([role for role in pool if issubclass(role, roles.Mafia) or issubclass(role, roles.Triad)]), reverse=True)
+    pools = sorted(pools, key=lambda pool: roles.Cult in pool or roles.WitchDoctor in pool or roles.Auditor in pool, reverse=True)
+    distributed = fixed
+    for pool in pools:
+        while True:
+            picked = random.choice(pool)
+            if picked in (roles.Mayor, roles.Marshall,
+                          roles.Crier, roles.MasonLeader,
+                          roles.Godfather, roles.DragonHead,
+                          roles.Judge, roles.WitchDoctor) and picked in distributed:
+                continue
+            elif picked in (roles.Mason, roles.MasonLeader) and not (roles.Cultist in distributed or roles.WitchDoctor in distributed or roles.Auditor in distributed):
+                continue
+            elif picked is roles.Spy and not [role for role in distributed if issubclass(role, roles.Mafia) or issubclass(role, roles.Triad)]:
+                continue
+            elif picked is roles.Mayor and roles.Marshall in [role for role in distributed if role not in fixed]:
+                continue
+            elif picked is roles.Marshall and roles.Mayor in [role for role in distributed if role not in fixed]:
+                continue
+            else:
+                break
+        distributed.append(picked)
+    return distributed
+
 class GameRoom:
     def __init__(
         self, roomID, title, capacity, host, setup, password=""
@@ -34,11 +298,257 @@ class GameRoom:
         self.readied = set()
         self.host = host
         self.setup = setup
+        self.formation = []
+        self.options = dict()
         self.password = password
         self.private = password!=""
         self.inGame = False
         self.justCreated = True
         self.message_record = []
+        # self.apply_setup(setup)
+
+    async def apply_setup(self, sio, setup):
+        try:
+            validate_setup(setup)
+        except Exception as e:
+            logger.warning(f"Applying setup failed in {self.roomID}. reason: {e}")
+            data = {
+                "type": "applying_setup_failed",
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+        else:
+            self.formation = [] # 초기화
+            self.options = dict() # 초기화
+            role_pool = dict()
+            category_pool = {
+                "all_random": [],
+                roles.Town: [],
+                roles.TownGovernment: [],
+                roles.TownProtective: [],
+                roles.TownInvestigative: [],
+                roles.TownKilling: [],
+                roles.TownPower: [],
+                roles.Mafia: [],
+                roles.MafiaKilling: [],
+                roles.MafiaDeception: [],
+                roles.MafiaSupport: [],
+                roles.Triad: [],
+                roles.TriadKilling: [],
+                roles.TriadDeception: [],
+                roles.TriadSupport: [],
+                roles.Neutral: [],
+                roles.NeutralBenign: [],
+                roles.NeutralEvil: [],
+                roles.NeutralKilling: [],
+            }
+            for name, obj in inspect.getmembers(roles):
+                if inspect.isclass(obj) and hasattr(obj, "name") and obj not in (roles.Scumbag, roles.Stump):
+                    role_pool[obj.name]=obj
+                    category_pool["all_random"].append(obj)
+                    for category, pool in category_pool.items():
+                        if category != "all_random" and issubclass(obj, category):
+                            pool.append(obj)
+
+            role_setting = setup["options"]["role_setting"]
+            if role_setting["모든 무작위직"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool["all_random"], [roles.TownKilling, roles.MafiaKilling, roles.TriadKilling, roles.NeutralKilling])
+            if role_setting["모든 무작위직"]["excludes_mafia"]:
+                remove_roles_from_pool(category_pool["all_random"], roles.Mafia)
+            if role_setting["모든 무작위직"]["excludes_triad"]:
+                remove_roles_from_pool(category_pool["all_random"], roles.Triad)
+            if role_setting["모든 무작위직"]["excludes_neutral"]:
+                remove_roles_from_pool(category_pool["all_random"], roles.Neutral)
+            if role_setting["모든 무작위직"]["excludes_town"]:
+                remove_roles_from_pool(category_pool["all_random"], roles.Town)
+            if role_setting["시민 무작위직"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool[roles.Town], roles.TownKilling)
+            if role_setting["시민 무작위직"]["excludes_government"]:
+                remove_roles_from_pool(category_pool[roles.Town], roles.TownGovernment)
+            if role_setting["시민 무작위직"]["excludes_investigative"]:
+                remove_roles_from_pool(category_pool[roles.Town], roles.TownInvestigative)
+            if role_setting["시민 무작위직"]["excludes_protective"]:
+                remove_roles_from_pool(category_pool[roles.Town], roles.TownProtective)
+            if role_setting["시민 무작위직"]["excludes_power"]:
+                remove_roles_from_pool(category_pool[roles.Town], roles.TownPower)
+            if role_setting["시민 행정직"]["excludes_citizen"]:
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.Citizen)
+            if role_setting["시민 행정직"]["excludes_mason"]:
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.Mason)
+            if role_setting["시민 행정직"]["excludes_mayor_and_marshall"]:
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.Mayor)
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.Marshall)
+            if role_setting["시민 행정직"]["excludes_masonleader"]:
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.MasonLeader)
+            if role_setting["시민 행정직"]["excludes_crier"]:
+                remove_roles_from_pool(category_pool[roles.TownGovernment], roles.Crier)
+            if role_setting["시민 조사직"]["excludes_coroner"]:
+                remove_roles_from_pool(category_pool[roles.TownInvestigative], roles.Coroner)
+            if role_setting["시민 조사직"]["excludes_sheriff"]:
+                remove_roles_from_pool(category_pool[roles.TownInvestigative], roles.Sheriff)
+            if role_setting["시민 조사직"]["excludes_investigator"]:
+                remove_roles_from_pool(category_pool[roles.TownInvestigative], roles.Investigator)
+            if role_setting["시민 조사직"]["excludes_detective"]:
+                remove_roles_from_pool(category_pool[roles.TownInvestigative], roles.Detective)
+            if role_setting["시민 조사직"]["excludes_lookout"]:
+                remove_roles_from_pool(category_pool[roles.TownInvestigative], roles.Lookout)
+            if role_setting["시민 방어직"]["excludes_bodyguard"]:
+                remove_roles_from_pool(category_pool[roles.TownProtective], roles.Bodyguard)
+            if role_setting["시민 방어직"]["excludes_doctor"]:
+                remove_roles_from_pool(category_pool[roles.TownProtective], roles.Doctor)
+            if role_setting["시민 방어직"]["excludes_escort"]:
+                remove_roles_from_pool(category_pool[roles.TownProtective], roles.Escort)
+            if role_setting["시민 살인직"]["excludes_veteran"]:
+                remove_roles_from_pool(category_pool[roles.TownKilling], roles.Veteran)
+            if role_setting["시민 살인직"]["excludes_jailor"]:
+                remove_roles_from_pool(category_pool[roles.TownKilling], roles.Jailor)
+            if role_setting["시민 살인직"]["excludes_bodyguard"]:
+                remove_roles_from_pool(category_pool[roles.TownKilling], roles.Bodyguard)
+            if role_setting["시민 살인직"]["excludes_vigilante"]:
+                remove_roles_from_pool(category_pool[roles.TownKilling], roles.Vigilante)
+            if role_setting["시민 능력직"]["excludes_veteran"]:
+                remove_roles_from_pool(category_pool[roles.TownPower], roles.Veteran)
+            if role_setting["시민 능력직"]["excludes_spy"]:
+                remove_roles_from_pool(category_pool[roles.TownPower], roles.Spy)
+            if role_setting["시민 능력직"]["excludes_jailor"]:
+                remove_roles_from_pool(category_pool[roles.TownPower], roles.Jailor)
+            if role_setting["마피아 무작위직"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool[roles.Mafia], roles.MafiaKilling)
+            if role_setting["마피아 살인직"]["excludes_kidnapper"]:
+                remove_roles_from_pool(category_pool[roles.MafiaKilling], roles.Kidnapper)
+            if role_setting["마피아 살인직"]["excludes_mafioso"]:
+                remove_roles_from_pool(category_pool[roles.MafiaKilling], roles.Mafioso)
+            if role_setting["마피아 살인직"]["excludes_godfather"]:
+                remove_roles_from_pool(category_pool[roles.MafiaKilling], roles.Godfather)
+            if role_setting["마피아 지원직"]["excludes_blackmailer"]:
+                remove_roles_from_pool(category_pool[roles.MafiaSupport], roles.Blackmailer)
+            if role_setting["마피아 지원직"]["excludes_kidnapper"]:
+                remove_roles_from_pool(category_pool[roles.MafiaSupport], roles.Kidnapper)
+            if role_setting["마피아 지원직"]["excludes_consort"]:
+                remove_roles_from_pool(category_pool[roles.MafiaSupport], roles.Consort)
+            if role_setting["마피아 지원직"]["excludes_consigliere"]:
+                remove_roles_from_pool(category_pool[roles.MafiaSupport], roles.Consigliere)
+            if role_setting["마피아 지원직"]["excludes_agent"]:
+                remove_roles_from_pool(category_pool[roles.MafiaSupport], roles.Agent)
+            if role_setting["마피아 속임수직"]["excludes_framer"]:
+                remove_roles_from_pool(category_pool[roles.MafiaDeception], roles.Framer)
+            if role_setting["마피아 속임수직"]["excludes_janitor"]:
+                remove_roles_from_pool(category_pool[roles.MafiaDeception], roles.Janitor)
+            if role_setting["마피아 속임수직"]["excludes_beguiler"]:
+                remove_roles_from_pool(category_pool[roles.MafiaDeception], roles.Beguiler)
+            if role_setting["삼합회 무작위직"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool[roles.Triad], roles.TriadKilling)
+            if role_setting["삼합회 살인직"]["excludes_interrogator"]:
+                remove_roles_from_pool(category_pool[roles.TriadKilling], roles.Interrogator)
+            if role_setting["삼합회 살인직"]["excludes_enforcer"]:
+                remove_roles_from_pool(category_pool[roles.TriadKilling], roles.Enforcer)
+            if role_setting["삼합회 살인직"]["excludes_dragonhead"]:
+                remove_roles_from_pool(category_pool[roles.TriadKilling], roles.Dragonhead)
+            if role_setting["삼합회 지원직"]["excludes_silencer"]:
+                remove_roles_from_pool(category_pool[roles.TriadSupport], roles.Silencer)
+            if role_setting["삼합회 지원직"]["excludes_interrogator"]:
+                remove_roles_from_pool(category_pool[roles.TriadSupport], roles.Interrogator)
+            if role_setting["삼합회 지원직"]["excludes_liaison"]:
+                remove_roles_from_pool(category_pool[roles.TriadSupport], roles.Liaison)
+            if role_setting["삼합회 지원직"]["excludes_administrator"]:
+                remove_roles_from_pool(category_pool[roles.TriadSupport], roles.Administrator)
+            if role_setting["삼합회 지원직"]["excludes_vanguard"]:
+                remove_roles_from_pool(category_pool[roles.TriadSupport], roles.Vanguard)
+            if role_setting["삼합회 속임수직"]["excludes_forger"]:
+                remove_roles_from_pool(category_pool[roles.TriadDeception], roles.Forger)
+            if role_setting["삼합회 속임수직"]["excludes_incensemaster"]:
+                remove_roles_from_pool(category_pool[roles.TriadDeception], roles.IncenseMaster)
+            if role_setting["삼합회 속임수직"]["excludes_deceiver"]:
+                remove_roles_from_pool(category_pool[roles.TriadDeception], roles.Deceiver)
+            if role_setting["중립 무작위직"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool[roles.Neutral], roles.NeutralKilling)
+            if role_setting["중립 무작위직"]["excludes_evil"]:
+                remove_roles_from_pool(category_pool[roles.Neutral], roles.NeutralEvil)
+            if role_setting["중립 무작위직"]["excludes_benign"]:
+                remove_roles_from_pool(category_pool[roles.Neutral], roles.NeutralBenign)
+            if role_setting["중립 살인직"]["excludes_serialkiller"]:
+                remove_roles_from_pool(category_pool[roles.NeutralKilling], roles.SerialKiller)
+            if role_setting["중립 살인직"]["excludes_arsonist"]:
+                remove_roles_from_pool(category_pool[roles.NeutralKilling], roles.Arsonist)
+            if role_setting["중립 살인직"]["excludes_massmurderer"]:
+                remove_roles_from_pool(category_pool[roles.NeutralKilling], roles.MassMurderer)
+            if role_setting["중립 악"]["excludes_killing_role"]:
+                remove_roles_from_pool(category_pool[roles.NeutralEvil], roles.NeutralKilling)
+            if role_setting["중립 악"]["excludes_cults"]:
+                remove_roles_from_pool(category_pool[roles.NeutralEvil], roles.Cult)
+            if role_setting["중립 악"]["excludes_witch"]:
+                remove_roles_from_pool(category_pool[roles.NeutralEvil], roles.Witch)
+            if role_setting["중립 악"]["excludes_judge"]:
+                remove_roles_from_pool(category_pool[roles.NeutralEvil], roles.Judge)
+            if role_setting["중립 악"]["excludes_auditor"]:
+                remove_roles_from_pool(category_pool[roles.NeutralEvil], roles.Auditor)
+            if role_setting["중립 선"]["excludes_survivor"]:
+                remove_roles_from_pool(category_pool[roles.NeutralBenign], roles.Survivor)
+            if role_setting["중립 선"]["excludes_jester"]:
+                remove_roles_from_pool(category_pool[roles.NeutralBenign], roles.Jester)
+            if role_setting["중립 선"]["excludes_executioner"]:
+                remove_roles_from_pool(category_pool[roles.NeutralBenign], roles.Executioner)
+            if role_setting["중립 선"]["excludes_amnesiac"]:
+                remove_roles_from_pool(category_pool[roles.NeutralBenign], roles.Amnesiac)
+
+            for role_name in setup["formation"]:
+                if role_name in role_pool:
+                    self.formation.append(role_pool[role_name])
+                elif " " in role_name: # 무작위 직업
+                    if role_name == "모든 무작위직":
+                        self.formation.append(category_pool["all_random"])
+                    elif role_name == "시민 무작위직":
+                        self.formation.append(category_pool[roles.Town])
+                    elif role_name == "시민 행정직":
+                        self.formation.append(category_pool[roles.TownGovernment])
+                    elif role_name == "시민 조사직":
+                        self.formation.append(category_pool[roles.TownInvestigative])
+                    elif role_name == "시민 방어직":
+                        self.formation.append(category_pool[roles.TownProtective])
+                    elif role_name == "시민 살인직":
+                        self.formation.append(category_pool[roles.TownKilling])
+                    elif role_name == "시민 능력직":
+                        self.formation.append(category_pool[roles.TownPower])
+                    elif role_name == "마피아 무작위직":
+                        self.formation.append(category_pool[roles.Mafia])
+                    elif role_name == "마피아 살인직":
+                        self.formation.append(category_pool[roles.MafiaKilling])
+                    elif role_name == "마피아 지원직":
+                        self.formation.append(category_pool[roles.MafiaSupport])
+                    elif role_name == "마피아 속임수직":
+                        self.formation.append(category_pool[roles.MafiaDeception])
+                    elif role_name == "삼합회 무작위직":
+                        self.formation.append(category_pool[roles.Triad])
+                    elif role_name == "삼합회 살인직":
+                        self.formation.append(category_pool[roles.TriadKilling])
+                    elif role_name == "삼합회 지원직":
+                        self.formation.append(category_pool[roles.TriadSupport])
+                    elif role_name == "삼합회 속임수직":
+                        self.formation.append(category_pool[roles.TriadDeception])
+                    elif role_name == "중립 무작위직":
+                        self.formation.append(category_pool[roles.Neutral])
+                    elif role_name == "중립 살인직":
+                        self.formation.append(category_pool[roles.NeutralKilling])
+                    elif role_name == "중립 악":
+                        self.formation.append(category_pool[roles.NeutralEvil])
+                    elif role_name == "중립 선":
+                        self.formation.append(category_pool[roles.NeutralBenign])
+
+            for index, slot in enumerate(self.formation):
+                if slot == []:
+                    self.formation[index] = [roles.Citizen]
+                    logger.warning(f"role cannot be spawned due to the invalid formation in room #{self.roomID}")
+                    data = {
+                        "type": "warning",
+                        "reason": "invalid_formation",
+                        "slot_with_problem": index+1,
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+            data = {
+                "type": "applying_setup_success",
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            self.readied = set() # 설정이 바뀌면 준비 자동으로 풀림
+            await self.emit_player_list(sio)
 
     def is_full(self):
         return len(self.members) >= self.capacity
@@ -57,6 +567,15 @@ class GameRoom:
             if msg == "": return
             msg = msg[:206] # 최대 글자수
             logger.info(f"[room #{self.roomID}] {user['nickname']}: {msg}")
+            if msg == "/시행":
+                distributed = distribute_roles(self.formation)
+                result = [(index+1, role.name) for index, role in enumerate(distributed)]
+                data = {
+                    "type": "simulation",
+                    "result": result,
+                }
+                await self.emit_event(sio, data, room=sid)
+                return
             if not self.inGame:
                 if msg.startswith("/유언편집"):
                     return
@@ -372,7 +891,7 @@ class GameRoom:
                         visitor.target1 = visited
                     if target2 and (
                         isinstance(visitor.role, roles.Witch)
-                        or isinstance(visitor.role, roles.BusDriver)
+                        # or isinstance(visitor.role, roles.BusDriver)
                     ):
                         visitor.target2 = self.players[target2]
                     data = {
@@ -792,7 +1311,6 @@ class GameRoom:
                         break
                 else: # 비조장이 없다. 한 명 비조장으로 승격
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.MasonLeader())
-                    await self.emit_player_list(sio)
         for p in self.alive_list:
             if isinstance(p.role, roles.Consigliere):
                 for p2 in self.alive_list:
@@ -800,7 +1318,6 @@ class GameRoom:
                         break
                 else:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.Godfather())
-                    await self.emit_player_list(sio)
         for p in self.alive_list:
             if isinstance(p.role, roles.Mafia):
                 for p2 in self.alive_list:
@@ -808,6 +1325,7 @@ class GameRoom:
                         break
                 else:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.Mafioso())
+                    break
         for p in self.alive_list:
             if isinstance(p.role, roles.Administrator):
                 for p2 in self.alive_list:
@@ -815,7 +1333,6 @@ class GameRoom:
                         break
                 else:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.DragonHead())
-                    await self.emit_player_list(sio)
                     break
         for p in self.alive_list:
             if isinstance(p.role, roles.Triad):
@@ -824,7 +1341,6 @@ class GameRoom:
                         break
                 else:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.Enforcer())
-                    await self.emit_player_list(sio)
                     break
 
         if not self.die_today: # 사형이 있은 날에는 감금 불가
@@ -2062,6 +2578,15 @@ class GameRoom:
         self.mafia_target = None
         self.triad_target = None
         self.cult_target = None
+        try:
+            validate_setup(self.setup)
+        except Exception as e:
+            data = {
+                "type": "unable_to_start",
+                "reason": "invalid_setup",
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            return
         if self.setup=="test":
             self.STATE = "MORNING"  # game's first state when game starts
             self.DISCUSSION_TIME = 10
@@ -2076,53 +2601,6 @@ class GameRoom:
             self.DEFENSE_TIME = 15
             self.VOTE_EXECUTION_TIME = 20
             self.EVENING_TIME = 36
-            role_pool = {
-                roles.TownGovernment: [roles.Mayor,
-                                       roles.Marshall,
-                                       roles.Crier,
-                                       # NOTE: the pool, in initial state, does not contain roles.MasonLeader.
-                                       ],
-                roles.TownInvestigative: [roles.Sheriff,
-                                          roles.Coroner,
-                                          roles.Investigator,
-                                          roles.Detective,
-                                          roles.Lookout,],
-                roles.TownPower: [roles.Jailor,
-                                  # roles.BusDriver,
-                                  roles.Spy,
-                                  roles.Veteran,],
-                roles.TownProtective: [roles.Bodyguard,
-                                       roles.Doctor,
-                                       roles.Escort,],
-                roles.TownKilling: [roles.Bodyguard,
-                                    roles.Jailor,
-                                    # roles.BusDriver,
-                                    roles.Veteran,
-                                    roles.Vigilante,],
-                roles.MafiaKilling: [#roles.Disguiser,
-                                     roles.Kidnapper,
-                                    ],
-                roles.MafiaSupport: [roles.Agent,
-                                     roles.Blackmailer,
-                                     roles.Consigliere,
-                                     roles.Consort,
-                                     roles.Kidnapper,],
-                roles.MafiaDeception: [roles.Beguiler,
-                                       roles.Framer,
-                                       #roles.Disguiser,
-                                       roles.Janitor,],
-                roles.Neutral: [roles.Amnesiac,
-                                roles.Auditor,
-                                roles.Cultist,
-                                roles.Executioner,
-                                roles.Jester,
-                                roles.Judge,
-                                roles.Survivor,
-                                roles.Witch,],
-                roles.NeutralKilling: [roles.SerialKiller,
-                                       roles.Arsonist,
-                                       roles.MassMurderer],
-            }
             mafia_random = role_pool[roles.MafiaKilling]+role_pool[roles.MafiaDeception]+role_pool[roles.MafiaSupport]
             town_random = role_pool[roles.TownKilling]+role_pool[roles.TownPower]+role_pool[roles.TownProtective]+role_pool[roles.TownInvestigative]
             all_random = town_random+role_pool[roles.Neutral]
@@ -2355,6 +2833,7 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
+            await self.emit_player_list(sio)
             await asyncio.sleep(self.EVENING_TIME)
             for p in self.alive_list:
                 p.blackmailed = False
@@ -2366,6 +2845,7 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
+            await self.emit_player_list(sio)
             await self.clear_up()
             await asyncio.sleep(5)
 

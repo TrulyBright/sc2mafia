@@ -48,7 +48,7 @@ async def connect(sid, environ):
             await sio.disconnect(online_users[user["nickname"]])
             online_users[user["nickname"]]=sid
         online_users[user["nickname"]]=sid
-        logger.info("user connected: "+user["nickname"])
+        logger.info(f"user connected: {user['nickname']}")
 
 
 @sio.event
@@ -149,9 +149,9 @@ async def create_GameRoom(sid, data):
                                           capacity=data['capacity'],
                                           host=user,
                                           setup=data['setup'])
-        await sio.emit('create_GameRoom_success', next_roomID, room=sid)
-        logger.info(f"user {user['nickname']} creates room #{next_roomID}")
         next_roomID += 1
+        await sio.emit('create_GameRoom_success', next_roomID-1, room=sid)
+        logger.info(f"user {user['nickname']} creates room #{next_roomID-1}")
         await enter_GameRoom(sid, {"roomID": next_roomID-1})
 
 
@@ -207,3 +207,9 @@ async def message(sid, msg):
             await kick(sid, msg.split()[1])
         else:
             await room_list[user["room"]].handle_message(sio, sid, msg)
+
+@sio.event
+async def setup(sid, data):
+    async with sio.session(sid) as user:
+        if room_list[user["room"]].host == sid:
+            await room_list[user["room"]].apply_setup(sio, data)
