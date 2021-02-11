@@ -1642,10 +1642,10 @@ Socket.on('event', (data)=> {
       addchat("대상은 오늘 밤 공격받았습니다!");
       break;
     case "dead_announced":
-      addchat(data["dead"]+"님이 사망헀습니다.");
+      addchat(data["dead"]+"님이 사망했습니다.");
       break;
     case "dead_reason":
-      addchat(data["dead_reason"]);
+      addchat(`대상은 ${data["reason"]}에게 죽었습니다.`);
       break;
     case "role_announced":
       addchat(data["who"]+"님의 직업은 "+colored(data["role"])+"입니다.");
