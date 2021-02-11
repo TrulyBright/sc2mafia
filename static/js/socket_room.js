@@ -9,7 +9,11 @@ document.querySelector("#lw_submit").addEventListener("click", (event)=>{
   document.querySelector(".lw_modal").style.display = "none";
 });
 document.querySelector("#setup_button").addEventListener("click", (event)=>{
+  Socket.emit("message", "/설정요청");
   document.querySelector(".setup_modal").style.display = "block";
+});
+document.querySelector("#setup-cancel").addEventListener("click", (event)=>{
+  document.querySelector(".setup_modal").style.display = "none";
 });
 document.querySelector("#setup-submit").addEventListener("click", (event)=>{
   document.querySelector(".setup_modal").style.display = "none";
@@ -687,6 +691,229 @@ Socket.on('event', (data)=> {
         addchat(`${slot}번 칸: ${colored(role)}`);
       }
       break;
+    case "formation":
+      addchat("===직업 구성 시작===");
+      for (let line of data["formation"]) {
+        if (line.includes(" ") && line!="마피아 일원") {
+          addchat(`${colored(line.split(" ")[0])} ${line.split(" ")[1]}`);
+        } else {
+          addchat(`${colored(line)}`);
+        }
+      }
+      addchat("===직업 구성 끝 ===");
+      break;
+    case "setup":
+      if (!data["setup"]) {
+        break;
+      }
+      document.querySelector("#setup_list tbody").innerHTML = "";
+      for (let role_name of data["setup"]["formation"]) {
+        if (role_name.includes(" ") && role_name!="마피아 일원") {
+          if (role_name.includes("시민")) {
+            role_name = role_name.replace("시민", colored("시민"));
+          } else if (role_name.includes("마피아")) {
+            role_name = role_name.replace("마피아", colored("마피아"));
+          } else if (role_name.includes("삼합회")) {
+            role_name = role_name.replace("삼합회", colored("삼합회"));
+          } else if (role_name.includes("중립")) {
+            role_name = role_name.replace("중립", colored("중립"));
+          }
+        } else {
+          role_name = colored(role_name)
+        }
+        let tr = document.createElement("tr");
+        tr.innerHTML = role_name;
+        document.querySelector("#setup_list tbody").appendChild(tr);
+      }
+      document.querySelector(".시민 input[name='bulletproof']").checked=data["setup"]["options"]["role_setting"]["시민"]["bulletproof"];
+      document.querySelector(".시민 input[name='win_1v1']").checked=data["setup"]["options"]["role_setting"]["시민"]["win_1v1"];
+      document.querySelector(".보안관 input[name='detect_mafia_and_triad']").checked=data["setup"]["options"]["role_setting"]["보안관"]["detect_mafia_and_triad"];
+      document.querySelector(".보안관 input[name='detect_SerialKiller']").checked=data["setup"]["options"]["role_setting"]["보안관"]["detect_SerialKiller"];
+      document.querySelector(".보안관 input[name='detect_Arsonist']").checked=data["setup"]["options"]["role_setting"]["보안관"]["detect_Arsonist"];
+      document.querySelector(".보안관 input[name=detect_Cult]").checked=data["setup"]["options"]["role_setting"]["보안관"]["detect_Cult"];
+      document.querySelector(".의사 input[name='knows_if_attacked']").checked=data["setup"]["options"]["role_setting"]["의사"]["knows_if_attacked"];
+      document.querySelector(".의사 input[name='prevents_cult_conversion']").checked=data["setup"]["options"]["role_setting"]["의사"]["prevents_cult_conversion"];
+      document.querySelector(".의사 input[name='knows_if_culted']").checked=data["setup"]["options"]["role_setting"]["의사"]["knows_if_culted"];
+      document.querySelector(".기생 input[name='cannot_be_blocked']").checked=data["setup"]["options"]["role_setting"]["기생"]["cannot_be_blocked"];
+      document.querySelector(".기생 input[name='detects_block_immune_target']").checked=data["setup"]["options"]["role_setting"]["기생"]["detects_block_immune_target"];
+      document.querySelector(".기생 input[name='recruitable']").checked=data["setup"]["options"]["role_setting"]["기생"]["recruitable"];
+      document.querySelector(`.간수 input[name='execution_chance'][value="${data['setup']['options']['role_setting']['간수']['execution_chance']}"`).checked = true;
+      document.querySelector(`.자경대원 input[name='kill_chance'][value="${data['setup']['options']['role_setting']['자경대원']['kill_chance']}"`).checked = true;
+      document.querySelector(`.비밀조합장 input[name='recruit_chance'][value="${data['setup']['options']['role_setting']['비밀조합장']['recruit_chance']}"`).checked = true;
+      document.querySelector(".검시관 input[name='discover_all_targets']").checked=data["setup"]["options"]["role_setting"]["검시관"]["discover_all_targets"];
+      document.querySelector(".검시관 input[name='discover_lw']").checked=data["setup"]["options"]["role_setting"]["검시관"]["discover_lw"];
+      document.querySelector(".검시관 input[name='discover_death_type']").checked=data["setup"]["options"]["role_setting"]["검시관"]["discover_death_type"];
+      document.querySelector(".검시관 input[name='discover_visitor_role']").checked=data["setup"]["options"]["role_setting"]["검시관"]["discover_visitor_role"];
+      document.querySelector(`.경호원 input[name='offense_level_Bodyguard'][value="${data['setup']['options']['role_setting']['경호원']['offense_level']}"`).checked = true;
+      document.querySelector(".경호원 input[name='unhealable']").checked=data["setup"]["options"]["role_setting"]['경호원']["unhealable"];
+      document.querySelector(".경호원 input[name='prevents_conversion']").checked=data["setup"]["options"]["role_setting"]['경호원']["prevents_conversion"];
+      document.querySelector(`.퇴역군인 input[name='alert_chance'][value="${data['setup']['options']['role_setting']['퇴역군인']['alert_chance']}"`).checked = true;
+      document.querySelector(`.퇴역군인 input[name='offense_level_Veteran'][value="${data['setup']['options']['role_setting']['퇴역군인']['offense_level']}"`).checked = true;
+      document.querySelector(".시장 input[name='lose_extra_votes']").checked=data["setup"]["options"]["role_setting"]["시장"]["lose_extra_votes"];
+      document.querySelector(`.시장 input[name='extra_votes_Mayor'][value="${data['setup']['options']['role_setting']['시장']['extra_votes']}"`).checked = true;
+      document.querySelector(".시장 input[name='unhealable']").checked=data["setup"]["options"]["role_setting"]['시장']["unhealable"];
+      document.querySelector(`.원수 input[name='lynch_chance'][value="${data['setup']['options']['role_setting']['원수']['lynch_chance']}"`).checked = true;
+      document.querySelector(`.원수 input[name='executions_per_group'][value="${data['setup']['options']['role_setting']['원수']['executions_per_group']}"`).checked = true;
+      document.querySelector(".원수 input[name='unhealable']").checked=data["setup"]["options"]["role_setting"]['원수']["unhealable"];
+      document.querySelector(".조언자 input[name='promoted_if_no_Godfather']").checked=data["setup"]["options"]["role_setting"]["조언자"]["promoted_if_no_Godfather"];
+      document.querySelector(".조언자 input[name='detect_exact_role']").checked=data["setup"]["options"]["role_setting"]["조언자"]["detect_exact_role"];
+      document.querySelector(".조언자 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["조언자"]["becomes_mafioso"];
+      document.querySelector(`.대부 input[name='defense_level_Godfather'][value="${data['setup']['options']['role_setting']['대부']['defense_level']}"`).checked = true;
+      document.querySelector(".대부 input[name='cannot_be_blocked']").checked=data["setup"]["options"]["role_setting"]['대부']["cannot_be_blocked"];
+      document.querySelector(".대부 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]['대부']["detection_immune"];
+      document.querySelector(".대부 input[name='killable_without_mafioso']").checked=data["setup"]["options"]["role_setting"]['대부']["killable_without_mafioso"];
+      // document.querySelector(".대부 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]['대부']["becomes_mafioso"];
+      // document.querySelector(".변장자 input[name='hide_target_role']").checked=data["setup"]["options"]["role_setting"]["변장자"]["hide_target_role"];
+      // document.querySelector(".변장자 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["변장자"]["becomes_mafioso"];
+      document.querySelector(".매춘부 input[name='cannot_be_blocked']").checked=data["setup"]["options"]["role_setting"]["매춘부"]["cannot_be_blocked"];
+      document.querySelector(".매춘부 input[name='detects_block_immune_target']").checked=data["setup"]["options"]["role_setting"]["매춘부"]["detects_block_immune_target"];
+      document.querySelector(".매춘부 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["매춘부"]["becomes_mafioso"];
+      document.querySelector(".조작자 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]["조작자"]["detection_immune"];
+      document.querySelector(".조작자 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["조작자"]["becomes_mafioso"];
+      document.querySelector(`.관리인 input[name='sanitize_chance_Janitor'][value="${data['setup']['options']['role_setting']['관리인']['sanitize_chance']}"`).checked = true;
+      document.querySelector(".관리인 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]['관리인']["becomes_mafioso"];
+      document.querySelector(".협박자 input[name='can_talk_during_trial']").checked=data["setup"]["options"]["role_setting"]["협박자"]["can_talk_during_trial"];
+      document.querySelector(".협박자 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["협박자"]["becomes_mafioso"];
+      document.querySelector(".납치범 input[name='can_jail_members']").checked=data["setup"]["options"]["role_setting"]["납치범"]["can_jail_members"];
+      document.querySelector(".납치범 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]["납치범"]["becomes_mafioso"];
+      document.querySelector(`.요원 input[name='nights_between_shadowings_Agent'][value="${data['setup']['options']['role_setting']['요원']['nights_between_shadowings']}"`).checked = true;
+      document.querySelector(".요원 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]['요원']["becomes_mafioso"];
+      document.querySelector(`.잠입자 input[name='hide_chance_Beguiler'][value="${data['setup']['options']['role_setting']['잠입자']['hide_chance']}"`).checked = true;
+      document.querySelector(".잠입자 input[name='target_is_notified']").checked=data["setup"]["options"]["role_setting"]['잠입자']["target_is_notified"];
+      document.querySelector(".잠입자 input[name='can_hide_behind_member']").checked=data["setup"]["options"]["role_setting"]['잠입자']["can_hide_behind_member"];
+      document.querySelector(".잠입자 input[name='becomes_mafioso']").checked=data["setup"]["options"]["role_setting"]['잠입자']["becomes_mafioso"];
+      document.querySelector(".백지선 input[name='promoted_if_no_Dragonhead']").checked=data["setup"]["options"]["role_setting"]["백지선"]["promoted_if_no_Dragonhead"];
+      document.querySelector(".백지선 input[name='detect_exact_role']").checked=data["setup"]["options"]["role_setting"]["백지선"]["detect_exact_role"];
+      document.querySelector(".백지선 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]["백지선"]["becomes_enforcer"];
+      document.querySelector(`.용두 input[name='defense_level_Dragonhead'][value="${data['setup']['options']['role_setting']['용두']['defense_level']}"`).checked = true;
+      document.querySelector(".용두 input[name='cannot_be_blocked']").checked=data["setup"]["options"]["role_setting"]['용두']["cannot_be_blocked"];
+      document.querySelector(".용두 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]['용두']["detection_immune"];
+      document.querySelector(".용두 input[name='killable_without_enforcer']").checked=data["setup"]["options"]["role_setting"]['용두']["killable_without_enforcer"];
+      document.querySelector(".간통범 input[name='cannot_be_blocked']").checked=data["setup"]["options"]["role_setting"]["간통범"]["cannot_be_blocked"];
+      document.querySelector(".간통범 input[name='detects_block_immune_target']").checked=data["setup"]["options"]["role_setting"]["간통범"]["detects_block_immune_target"];
+      document.querySelector(".간통범 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]["간통범"]["becomes_enforcer"];
+      document.querySelector(".위조꾼 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]["위조꾼"]["detection_immune"];
+      document.querySelector(".위조꾼 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]["위조꾼"]["becomes_enforcer"];
+      document.querySelector(`.향주 input[name='sanitize_chance'][value="${data['setup']['options']['role_setting']['향주']['sanitize_chance']}"`).checked = true;
+      document.querySelector(".향주 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]['향주']["becomes_enforcer"];
+      document.querySelector(".침묵자 input[name='can_talk_during_trial']").checked=data["setup"]["options"]["role_setting"]["침묵자"]["can_talk_during_trial"];
+      document.querySelector(".침묵자 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]["침묵자"]["becomes_enforcer"];
+      document.querySelector(".심문자 input[name='can_jail_members']").checked=data["setup"]["options"]["role_setting"]["심문자"]["can_jail_members"];
+      document.querySelector(".심문자 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]["심문자"]["becomes_enforcer"];
+      document.querySelector(`.선봉 input[name='nights_between_shadowings'][value="${data['setup']['options']['role_setting']['선봉']['nights_between_shadowings']}"`).checked = true;
+      document.querySelector(".선봉 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]['선봉']["becomes_enforcer"];
+      document.querySelector(`.사기꾼 input[name='hide_chance'][value="${data['setup']['options']['role_setting']['사기꾼']['hide_chance']}"`).checked = true;
+      document.querySelector(".사기꾼 input[name='target_is_notified']").checked=data["setup"]["options"]["role_setting"]['사기꾼']["target_is_notified"];
+      document.querySelector(".사기꾼 input[name='can_hide_behind_member']").checked=data["setup"]["options"]["role_setting"]['사기꾼']["can_hide_behind_member"];
+      document.querySelector(".사기꾼 input[name='becomes_enforcer']").checked=data["setup"]["options"]["role_setting"]['사기꾼']["becomes_enforcer"];
+      document.querySelector(`.생존자 input[name='bulletproof_chance'][value="${data['setup']['options']['role_setting']['생존자']['bulletproof_chance']}"`).checked = true;
+      document.querySelector(".기억상실자 input[name='revealed']").checked=data["setup"]["options"]["role_setting"]["기억상실자"]["revealed"];
+      document.querySelector(".기억상실자 input[name='cannot_remember_town']").checked=data["setup"]["options"]["role_setting"]["기억상실자"]["cannot_remember_town"];
+      document.querySelector(".기억상실자 input[name='cannot_remember_mafia_and_triad']").checked=data["setup"]["options"]["role_setting"]["기억상실자"]["cannot_remember_mafia_and_triad"];
+      document.querySelector(".기억상실자 input[name='cannot_remember_killing_role']").checked=data["setup"]["options"]["role_setting"]["기억상실자"]["cannot_remember_killing_role"];
+      document.querySelector(".어릿광대 input[name='randomly_suicide']").checked=data["setup"]["options"]["role_setting"]["어릿광대"]["randomly_suicide"];
+      document.querySelector(".처형자 input[name='becomes_Jester']").checked=data["setup"]["options"]["role_setting"]["처형자"]["becomes_Jester"];
+      document.querySelector(".처형자 input[name='target_is_town']").checked=data["setup"]["options"]["role_setting"]["처형자"]["target_is_town"];
+      document.querySelector(".처형자 input[name='win_if_survived']").checked=data["setup"]["options"]["role_setting"]["처형자"]["win_if_survived"];
+      document.querySelector(`.처형자 input[name='defense_level_Executioner'][value="${data['setup']['options']['role_setting']['처형자']['defense_level']}"`).checked = true;
+      document.querySelector(".마녀 input[name='can_control_self']").checked=data["setup"]["options"]["role_setting"]["마녀"]["can_control_self"];
+      document.querySelector(".마녀 input[name='target_is_notified']").checked=data["setup"]["options"]["role_setting"]["마녀"]["target_is_notified"];
+      document.querySelector(".마녀 input[name='WitchDoctor_when_converted']").checked=data["setup"]["options"]["role_setting"]["마녀"]["WitchDoctor_when_converted"];
+      document.querySelector(".회계사 input[name='can_audit_mafia']").checked=data["setup"]["options"]["role_setting"]["회계사"]["can_audit_mafia"];
+      document.querySelector(".회계사 input[name='can_audit_triad']").checked=data["setup"]["options"]["role_setting"]["회계사"]["can_audit_triad"];
+      document.querySelector(".회계사 input[name='can_audit_night_immune']").checked=data["setup"]["options"]["role_setting"]["회계사"]["can_audit_night_immune"];
+      document.querySelector(`.회계사 input[name='audit_chance'][value="${data['setup']['options']['role_setting']['회계사']['audit_chance']}"`).checked = true;
+      document.querySelector(`.판사 input[name='court_chance'][value="${data['setup']['options']['role_setting']['판사']['court_chance']}"`).checked = true;
+      document.querySelector(`.판사 input[name='nights_between_court'][value="${data['setup']['options']['role_setting']['판사']['nights_between_court']}"`).checked = true;
+      document.querySelector(`.판사 input[name='extra_votes'][value="${data['setup']['options']['role_setting']['판사']['extra_votes']}"`).checked = true;
+      document.querySelector(".이교도 input[name='can_convert_night_immune']").checked=data["setup"]["options"]["role_setting"]["이교도"]["can_convert_night_immune"];
+      document.querySelector(`.이교도 input[name='nights_between_conversion'][value="${data['setup']['options']['role_setting']['이교도']['nights_between_conversion']}"`).checked = true;
+      document.querySelector(`.요술사 input[name='save_chance'][value="${data['setup']['options']['role_setting']['요술사']['save_chance']}"`).checked = true;
+      document.querySelector(`.요술사 input[name='night_between_save'][value="${data['setup']['options']['role_setting']['요술사']['night_between_save']}"`).checked = true;
+      document.querySelector(".요술사 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]['요술사']["detection_immune"];
+      document.querySelector(`.연쇄살인마 input[name='defense_level_SerialKiller'][value="${data['setup']['options']['role_setting']['연쇄살인마']['defense_level']}"`).checked = true;
+      document.querySelector(".연쇄살인마 input[name='kill_blocker']").checked=data["setup"]["options"]["role_setting"]['연쇄살인마']["kill_blocker"];
+      document.querySelector(".연쇄살인마 input[name='win_if_1v1_with_Arsonist']").checked=data["setup"]["options"]["role_setting"]['연쇄살인마']["win_if_1v1_with_Arsonist"];
+      document.querySelector(".연쇄살인마 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]['연쇄살인마']["detection_immune"];
+      document.querySelector(`.대량학살자 input[name='defense_level_MassMurderer'][value="${data['setup']['options']['role_setting']['대량학살자']['defense_level']}"`).checked = true;
+      document.querySelector(".대량학살자 input[name='can_visit_self']").checked=data["setup"]["options"]["role_setting"]['대량학살자']["can_visit_self"];
+      document.querySelector(`.대량학살자 input[name='nights_between_murder'][value="${data['setup']['options']['role_setting']['대량학살자']['nights_between_murder']}"`).checked = true;
+      document.querySelector(".대량학살자 input[name='detection_immune']").checked=data["setup"]["options"]["role_setting"]['대량학살자']["detection_immune"];
+      document.querySelector(`.방화범 input[name='offense_level'][value="${data['setup']['options']['role_setting']['방화범']['offense_level']}"`).checked = true;
+      document.querySelector(`.방화범 input[name='defense_level'][value="${data['setup']['options']['role_setting']['방화범']['defense_level']}"`).checked = true;
+      document.querySelector(".방화범 input[name='fire_spreads']").checked=data["setup"]["options"]["role_setting"]['방화범']["fire_spreads"];
+      document.querySelector(".방화범 input[name='target_is_notified']").checked=data["setup"]["options"]["role_setting"]['방화범']["target_is_notified"];
+      document.querySelector(".방화범 input[name='douse_blocker']").checked=data["setup"]["options"]["role_setting"]['방화범']["douse_blocker"];
+      document.querySelector(".모든무작위직 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["모든 무작위직"]["excludes_killing_role"];
+      document.querySelector(".모든무작위직 input[name='excludes_mafia']").checked=data["setup"]["options"]["role_setting"]["모든 무작위직"]["excludes_mafia"];
+      document.querySelector(".모든무작위직 input[name='excludes_triad']").checked=data["setup"]["options"]["role_setting"]["모든 무작위직"]["excludes_triad"];
+      document.querySelector(".모든무작위직 input[name='excludes_neutral']").checked=data["setup"]["options"]["role_setting"]["모든 무작위직"]["excludes_neutral"];
+      document.querySelector(".모든무작위직 input[name='excludes_town']").checked=data["setup"]["options"]["role_setting"]["모든 무작위직"]["excludes_town"];
+      document.querySelector(".시민무작위직 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["시민 무작위직"]["excludes_killing_role"];
+      document.querySelector(".시민무작위직 input[name='excludes_government']").checked=data["setup"]["options"]["role_setting"]["시민 무작위직"]["excludes_government"];
+      document.querySelector(".시민무작위직 input[name='excludes_investigative']").checked=data["setup"]["options"]["role_setting"]["시민 무작위직"]["excludes_investigative"];
+      document.querySelector(".시민무작위직 input[name='excludes_protective']").checked=data["setup"]["options"]["role_setting"]["시민 무작위직"]["excludes_protective"];
+      document.querySelector(".시민무작위직 input[name='excludes_power']").checked=data["setup"]["options"]["role_setting"]["시민 무작위직"]["excludes_power"];
+      document.querySelector(".시민행정직 input[name='excludes_citizen']").checked=data["setup"]["options"]["role_setting"]["시민 행정직"]["excludes_citizen"];
+      document.querySelector(".시민행정직 input[name='excludes_mason']").checked=data["setup"]["options"]["role_setting"]["시민 행정직"]["excludes_mason"];
+      document.querySelector(".시민행정직 input[name='excludes_mayor_and_marshall']").checked=data["setup"]["options"]["role_setting"]["시민 행정직"]["excludes_mayor_and_marshall"];
+      document.querySelector(".시민행정직 input[name='excludes_masonleader']").checked=data["setup"]["options"]["role_setting"]["시민 행정직"]["excludes_masonleader"];
+      document.querySelector(".시민행정직 input[name='excludes_crier']").checked=data["setup"]["options"]["role_setting"]["시민 행정직"]["excludes_crier"];
+      document.querySelector(".시민조사직 input[name='excludes_coroner']").checked=data["setup"]["options"]["role_setting"]["시민 조사직"]["excludes_coroner"];
+      document.querySelector(".시민조사직 input[name='excludes_sheriff']").checked=data["setup"]["options"]["role_setting"]["시민 조사직"]["excludes_sheriff"];
+      document.querySelector(".시민조사직 input[name='excludes_investigator']").checked=data["setup"]["options"]["role_setting"]["시민 조사직"]["excludes_investigator"];
+      document.querySelector(".시민조사직 input[name='excludes_detective']").checked=data["setup"]["options"]["role_setting"]["시민 조사직"]["excludes_detective"];
+      document.querySelector(".시민조사직 input[name='excludes_lookout']").checked=data["setup"]["options"]["role_setting"]["시민 조사직"]["excludes_lookout"];
+      document.querySelector(".시민방어직 input[name='excludes_bodyguard']").checked=data["setup"]["options"]["role_setting"]["시민 방어직"]["excludes_bodyguard"];
+      document.querySelector(".시민방어직 input[name='excludes_doctor']").checked=data["setup"]["options"]["role_setting"]["시민 방어직"]["excludes_doctor"];
+      document.querySelector(".시민방어직 input[name='excludes_escort']").checked=data["setup"]["options"]["role_setting"]["시민 방어직"]["excludes_escort"];
+      document.querySelector(".시민살인직 input[name='excludes_veteran']").checked=data["setup"]["options"]["role_setting"]["시민 살인직"]["excludes_veteran"];
+      document.querySelector(".시민살인직 input[name='excludes_jailor']").checked=data["setup"]["options"]["role_setting"]["시민 살인직"]["excludes_jailor"];
+      document.querySelector(".시민살인직 input[name='excludes_bodyguard']").checked=data["setup"]["options"]["role_setting"]["시민 살인직"]["excludes_bodyguard"];
+      document.querySelector(".시민살인직 input[name='excludes_vigilante']").checked=data["setup"]["options"]["role_setting"]["시민 살인직"]["excludes_vigilante"];
+      document.querySelector(".시민능력직 input[name='excludes_veteran']").checked=data["setup"]["options"]["role_setting"]["시민 능력직"]["excludes_veteran"];
+      document.querySelector(".시민능력직 input[name='excludes_spy']").checked=data["setup"]["options"]["role_setting"]["시민 능력직"]["excludes_spy"];
+      document.querySelector(".시민능력직 input[name='excludes_jailor']").checked=data["setup"]["options"]["role_setting"]["시민 능력직"]["excludes_jailor"];
+      document.querySelector(".마피아무작위직 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["마피아 무작위직"]["excludes_killing_role"];
+      document.querySelector(".마피아살인직 input[name='excludes_kidnapper']").checked=data["setup"]["options"]["role_setting"]["마피아 살인직"]["excludes_kidnapper"];
+      document.querySelector(".마피아살인직 input[name='excludes_mafioso']").checked=data["setup"]["options"]["role_setting"]["마피아 살인직"]["excludes_mafioso"];
+      document.querySelector(".마피아살인직 input[name='excludes_godfather']").checked=data["setup"]["options"]["role_setting"]["마피아 살인직"]["excludes_godfather"];
+      document.querySelector(".마피아지원직 input[name='excludes_blackmailer']").checked=data["setup"]["options"]["role_setting"]["마피아 지원직"]["excludes_blackmailer"];
+      document.querySelector(".마피아지원직 input[name='excludes_kidnapper']").checked=data["setup"]["options"]["role_setting"]["마피아 지원직"]["excludes_kidnapper"];
+      document.querySelector(".마피아지원직 input[name='excludes_consort']").checked=data["setup"]["options"]["role_setting"]["마피아 지원직"]["excludes_consort"];
+      document.querySelector(".마피아지원직 input[name='excludes_consigliere']").checked=data["setup"]["options"]["role_setting"]["마피아 지원직"]["excludes_consigliere"];
+      document.querySelector(".마피아지원직 input[name='excludes_agent']").checked=data["setup"]["options"]["role_setting"]["마피아 지원직"]["excludes_agent"];
+      document.querySelector(".마피아속임수직 input[name='excludes_framer']").checked=data["setup"]["options"]["role_setting"]["마피아 속임수직"]["excludes_framer"];
+      document.querySelector(".마피아속임수직 input[name='excludes_janitor']").checked=data["setup"]["options"]["role_setting"]["마피아 속임수직"]["excludes_janitor"];
+      document.querySelector(".마피아속임수직 input[name='excludes_beguiler']").checked=data["setup"]["options"]["role_setting"]["마피아 속임수직"]["excludes_beguiler"];
+      document.querySelector(".삼합회무작위직 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["삼합회 무작위직"]["excludes_killing_role"];
+      document.querySelector(".삼합회살인직 input[name='excludes_interrogator']").checked=data["setup"]["options"]["role_setting"]["삼합회 살인직"]["excludes_interrogator"];
+      document.querySelector(".삼합회살인직 input[name='excludes_enforcer']").checked=data["setup"]["options"]["role_setting"]["삼합회 살인직"]["excludes_enforcer"];
+      document.querySelector(".삼합회살인직 input[name='excludes_dragonhead']").checked=data["setup"]["options"]["role_setting"]["삼합회 살인직"]["excludes_dragonhead"];
+      document.querySelector(".삼합회지원직 input[name='excludes_silencer']").checked=data["setup"]["options"]["role_setting"]["삼합회 지원직"]["excludes_silencer"];
+      document.querySelector(".삼합회지원직 input[name='excludes_interrogator']").checked=data["setup"]["options"]["role_setting"]["삼합회 지원직"]["excludes_interrogator"];
+      document.querySelector(".삼합회지원직 input[name='excludes_liaison']").checked=data["setup"]["options"]["role_setting"]["삼합회 지원직"]["excludes_liaison"];
+      document.querySelector(".삼합회지원직 input[name='excludes_administrator']").checked=data["setup"]["options"]["role_setting"]["삼합회 지원직"]["excludes_administrator"];
+      document.querySelector(".삼합회지원직 input[name='excludes_vanguard']").checked=data["setup"]["options"]["role_setting"]["삼합회 지원직"]["excludes_vanguard"];
+      document.querySelector(".삼합회속임수직 input[name='excludes_forger']").checked=data["setup"]["options"]["role_setting"]["삼합회 속임수직"]["excludes_forger"];
+      document.querySelector(".삼합회속임수직 input[name='excludes_incensemaster']").checked=data["setup"]["options"]["role_setting"]["삼합회 속임수직"]["excludes_incensemaster"];
+      document.querySelector(".삼합회속임수직 input[name='excludes_deceiver']").checked=data["setup"]["options"]["role_setting"]["삼합회 속임수직"]["excludes_deceiver"];
+      document.querySelector(".중립무작위직 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["중립 무작위직"]["excludes_killing_role"];
+      document.querySelector(".중립무작위직 input[name='excludes_evil']").checked=data["setup"]["options"]["role_setting"]["중립 무작위직"]["excludes_evil"];
+      document.querySelector(".중립무작위직 input[name='excludes_benign']").checked=data["setup"]["options"]["role_setting"]["중립 무작위직"]["excludes_benign"];
+      document.querySelector(".중립살인직 input[name='excludes_serialkiller']").checked=data["setup"]["options"]["role_setting"]["중립 살인직"]["excludes_serialkiller"];
+      document.querySelector(".중립살인직 input[name='excludes_arsonist']").checked=data["setup"]["options"]["role_setting"]["중립 살인직"]["excludes_arsonist"];
+      document.querySelector(".중립살인직 input[name='excludes_massmurderer']").checked=data["setup"]["options"]["role_setting"]["중립 살인직"]["excludes_massmurderer"];
+      document.querySelector(".중립악 input[name='excludes_killing_role']").checked=data["setup"]["options"]["role_setting"]["중립 악"]["excludes_killing_role"];
+      document.querySelector(".중립악 input[name='excludes_cults']").checked=data["setup"]["options"]["role_setting"]["중립 악"]["excludes_cults"];
+      document.querySelector(".중립악 input[name='excludes_witch']").checked=data["setup"]["options"]["role_setting"]["중립 악"]["excludes_witch"];
+      document.querySelector(".중립악 input[name='excludes_judge']").checked=data["setup"]["options"]["role_setting"]["중립 악"]["excludes_judge"];
+      document.querySelector(".중립악 input[name='excludes_auditor']").checked=data["setup"]["options"]["role_setting"]["중립 악"]["excludes_auditor"];
+      document.querySelector(".중립선 input[name='excludes_survivor']").checked=data["setup"]["options"]["role_setting"]["중립 선"]["excludes_survivor"];
+      document.querySelector(".중립선 input[name='excludes_jester']").checked=data["setup"]["options"]["role_setting"]["중립 선"]["excludes_jester"];
+      document.querySelector(".중립선 input[name='excludes_executioner']").checked=data["setup"]["options"]["role_setting"]["중립 선"]["excludes_executioner"];
+      document.querySelector(".중립선 input[name='excludes_amnesiac']").checked=data["setup"]["options"]["role_setting"]["중립 선"]["excludes_amnesiac"];
+      break;
     case "applying_setup_success":
       addchat("설정이 적용되었습니다. '/시행'을 입력하여 설정을 시험해볼 수 있습니다.");
       addchat("설정이 바뀌어 준비가 해제되었습니다.");
@@ -758,8 +985,17 @@ Socket.on('event', (data)=> {
     case "save_done":
       addchat("게임이 저장되었습니다. 게임 기록을 <a target='_blank' href='archive/"+data["link"]+"'>http://localhost:8080/archive/"+data["link"]+"</a>에서 열람하실 수 있습니다.");
       break;
+    case "save_slot_success":
+      addchat("게임 설정을 저장했습니다. '/불러오기'를 입력해 해당 설정을 불러올 수 있습니다.");
+      break;
+    case "load_slot_success":
+      addchat("게임 설정을 불러왔습니다.");
+      break;
     case "music":
       swap_audio(data["music"]);
+      break;
+    case "Error":
+      addchat(`게임에 오류가 발생했습니다. 오류 메시지: ${data["error_code"]}`, "red")
       break;
     case 'role':
       document.querySelector("#messages").innerHTML = "";
@@ -767,16 +1003,19 @@ Socket.on('event', (data)=> {
       switch (data["role"]) {
         case "시장":
           addchat("당신은 마을의 시장입니다.");
-          addchat("당신은 낮에 '/발동'을 입력하여 투표권을 4표로 반영구히 늘릴 수 있습니다.")
+          addchat(`당신은 낮에 '/발동'을 입력하여 투표권을 ${data["options"]["extra_votes"]}표로 반영구히 늘릴 수 있습니다.`)
           break;
         case "원수":
           addchat("당신은 마을 민병대의 지도자입니다.");
           addchat("당신은 낮에 '/개시'를 입력하여 집단 사형을 개시할 수 있습니다.");
-          addchat("능력은 단 2번 사용할 수 있습니다.");
+          addchat(`능력은 단 ${data["options"]["lynch_chance"]}번 사용할 수 있습니다.`);
           break;
         case "시민":
           addchat("당신은 진실과 정의를 믿는 일반적인 시민입니다.");
-          addchat("당신은 특별한 능력은 따로 없고, 단 한 번, 방탄조끼를 착용하여 밤에 공격에서 보호받을 수 있습니다.");
+          addchat("당신은 특별한 능력은 따로 없습니다.");
+          if (data["options"]["bulletproof"]) {
+            addchat("단 한 번, 방탄조끼를 착용('/착용')하여 밤에 공격에서 보호받을 수 있습니다.");
+          }
           break;
         case "비밀조합장":
           addchat("당신은 비밀조합의 지도자입니다.");
@@ -800,21 +1039,25 @@ Socket.on('event', (data)=> {
           break;
         case "탐정":
           addchat("당신은 이 마을의 비밀 탐정으로서, 음지에서 시민들을 도와줍니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람이 저지른 범죄를 알아낼 수 있습니다.");
+          addchat(`매일 밤 '/방문 닉네임'을 입력하여 그 사람${data["options"]["detect_exact_role"] ? "의 직업을":"이 저지른 범죄를"} 알아낼 수 있습니다.`);
           break;
         case "검시관":
           addchat("당신은 부검에 박식한 검시관입니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 직업, 유언, 그 사람에게 방문한 직업들을 알 수 있습니다.");
+          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 사망 정보를 알 수 있습니다.");
           break;
         case "형사":
           addchat("당신은 숙련된 추적자입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람이 누구를 방문하는지 알아낼 수 있습니다.");
-          addchat("당신은 검출 면역인 사람도 발견할 수 있습니다.");
+          if (data["options"]["ignore_detection_immune"]) {
+            addchat("당신은 검출 면역인 사람도 발견할 수 있습니다.");
+          }
           break;
         case "감시자":
           addchat("당신은 은밀하게 정보를 얻기 위해 목표대상 집 밖에서 잠복하는 관찰자입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람에게 누가 방문하는지 알아낼 수 있습니다.");
-          addchat("당신은 검출 면역인 사람을 발견할 수 없습니다.");
+          if (data["options"]["ignore_detection_immune"]) {
+            addchat("당신은 검출 면역인 사람도 발견할 수 있습니다.");
+          }
           break;
         case "의사":
           addchat("당신은 응급처치에 능통한 외과의사입니다.");
@@ -836,7 +1079,10 @@ Socket.on('event', (data)=> {
         case "자경대원":
           addchat("당신은 정의를 바로잡기 위하여 법을 무시하는 자경대원입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 죽일 수 있습니다.");
-          //addchat("대상이 시민이면 남은 총알을 모두 잃습니다."); // 구현 안됨
+          addchat(`당신은 총을 단 ${data["options"]["kill_chance"]}번 쏠 수 있습니다.`);
+          if (data["options"]["suicides_if_shot_town"]) {
+            addchat("쏜 대상이 시민이면 남은 총알을 모두 잃습니다.");
+          }
           break;
         case "간수":
           addchat("당신은 비밀리에 용의자를 감옥에 구금하는 간수입니다.");
@@ -845,7 +1091,7 @@ Socket.on('event', (data)=> {
         case "퇴역군인":
           addchat("당신은 편집증으로 퇴역한 사람으로, 자기를 괴롭히면 그 사람이 누구든지 죽입니다.");
           addchat("밤에 '/경계'를 입력하여 그날 밤 경계를 설 수 있습니다. 경계한 날 밤 누군가 당신을 방문하면 당신은 그 사람을 죽입니다.");
-          addchat("당신은 총 3회 경계할 수 있습니다.");
+          addchat(`당신은 총 ${data["options"]["alert_chance"]}회 경계할 수 있습니다.`);
           break;
         case "정보원":
           addchat("당신은 비밀스러운 대화를 몰래 도청할 수 있는 정보원입니다.");
@@ -883,7 +1129,7 @@ Socket.on('event', (data)=> {
         case "조언자":
         case "백지선":
           addchat("당신은 조직 우두머리의 부관입니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 직업을 알아낼 수 있습니다.");
+          addchat(`매일 밤 '/방문 닉네임'을 입력하여 그 사람${data["options"]["detect_exact_role"] ? "의 직업을":"이 저지른 범죄를"} 알아낼 수 있습니다.`);
           break;
         case "협박자":
         case "침묵자":
@@ -894,31 +1140,48 @@ Socket.on('event', (data)=> {
         case "선봉":
           addchat("당신은 부패한 정보요원으로 집을 도청하거나 정보를 수집하고 대상을 스토킹합니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람이 방문한 사람과 그 사람에게 방문하는 사람을 알 수 있습니다.");
+          if (data["options"]["nights_between_shadowings"]>0) {
+            addchat(`한번 누군가를 방문하면 ${data["options"]["nights_between_shadowings"]}일 동안 능력을 사용할 수 없습니다.`);
+          }
           break;
         case "조작자":
         case "위조꾼":
           addchat("당신은 조직을 위해 일하는 숙련된 "+colored(data["role"])+"입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 직업을 무작위 마피아/삼합회 또는 중립 악 직업으로 나오게 하고, 무작위 범죄를 하나 영구히 추가합니다.");
+          if (data["options"]["detection_immune"]) {
+            addchat("당신은 검출에 면역입니다.");
+          }
           break;
         case "관리인":
         case "향주":
           addchat("당신은 조직을 위해 일하는 부검 전문가입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 누군가를 방문할 수 있습니다. 그 사람이 그날밤 죽으면 그 사람의 직업과 유언을 다음날 드러나지 않게 숨깁니다.");
-          addchat("능력은 총 2번 사용할 수 있습니다.");
+          addchat(`능력은 총 ${data["options"]["sanitize_chance"]}번 사용할 수 있습니다.`);
           break;
         case "잠입자":
         case "사기꾼":
           addchat("당신은 살아남기 위해 숨어서 조작하는 "+colored(data["role"])+"입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그날밤 당신을 방문하는 사람을 모두 그 사람에게 보낼 수 있습니다.");
+          addchat(`능력은 총 ${data["options"]["hide_chance"]}번 사용할 수 있습니다.`);
           break;
         case "생존자":
           addchat("무관심하고 개인적인 당신은 단지 살아남기를 원합니다.");
           addchat("매일 밤 '/착용'을 입력하여 방탄조끼를 착용할 수 있습니다.");
+          addchat(`당신은 방탄조끼를 총 ${data["options"]["bulletproof_chance"]}벌 보유합니다.`);
           addchat("승리 조건: 끝까지 살아남으세요.");
           break;
         case "기억상실자":
           addchat("당신은 머리에 큰 상처를 입고 최근에 깨어났지만, 자신이 누구인지 전혀 기억이 나지 않는 사람입니다.");
           addchat("당신은 단 한 번, 밤에 '/기억 닉네임'을 입력하여 그 사람의 직업으로 변할 수 있습니다.");
+          if (data["options"]["cannot_remember_town"]) {
+            addchat(`당신은 ${colored("시민")} 직업을 기억할 수 없습니다.`);
+          }
+          if (data["options"]["cannot_remember_mafia_and_triad"]) {
+            addchat(`당신은 ${colored("마피아")}와 ${colored("삼합회")} 직업을 기억할 수 없습니다.`);
+          }
+          if (data["options"]["cannot_remember_killing_role"]) {
+            addchat("당신은 살인 직업을 기억할 수 없습니다.");
+          }
           addchat("승리 조건: 변한 직업의 승리 조건과 같습니다. 만약 기억상실자인 상태로 남는다면 끝까지 살아남는 게 승리 조건이 됩니다.");
           break;
         case "어릿광대":
@@ -927,22 +1190,30 @@ Socket.on('event', (data)=> {
           break;
         case "처형자":
           addchat("집착적인 당신의 목표는 목표 대상이 사형당하는 것을 보는 것입니다.");
+          if (data["options"]["target_is_town"]) {
+            addchat(`당신의 목표는 ${colored("시민")} 세력입니다.`);
+          }
           addchat("승리 조건: 목표가 낮에 사형당하는 것을 살아서 목도하세요.");
           break;
         case "마녀":
           addchat("당신은 악하고 신비로운 능력을 보유한 마녀로, 다른 이를 조종하여 그의 능력을 악하게 사용합니다.");
-          addchat("매일 밤 '/방문 닉네임 닉네임'을 입력하여 첫 번째 대상이 두 번째 대상에게 능력을 사용하도록 합니다.");
+          addchat("매일 밤 '/방문 닉네임 닉네임'을 입력하여 첫 번째 대상이 두 번째 대상에게 능력을 사용하도록 할 수 있습니다.");
           addchat("다섯 번째 밤이 되면 단 한 번 사용할 수 있는 저주 능력을 얻습니다. '/저주 닉네임'을 입력하면 대상은 그날밤 무조건 죽습니다.");
           addchat("승리 조건: 끝까지 살아남아 "+colored("시민")+"세력의 패배를 목격하세요.");
           break;
         case "회계사":
           addchat("당신은 악을 위해 능력과 지식을 사용하는 부패한"+colored("회계사")+"입니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 소속 세력의 최하위권으로 만듭니다.");
+          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 소속 세력의 최하위권으로 만들 수 있습니다.");
+          addchat(`당신은 총 ${data["options"]["audit_chance"]}번 회계할 수 있습니다.`);
           addchat("승리 조건: 끝까지 살아남아 "+colored("시민")+"세력의 패배를 목격하세요.");
           break;
         case "판사":
           addchat("당신은 재판을 조종하기 위해 능력을 사용하는 부패한 판사입니다.");
-          addchat("낮에 '/개정'을 입력하여 부패한 재판을 열 수 있습니다. 재판 동안 당신은 4표를 얻습니다.");
+          addchat(`낮에 '/개정'을 입력하여 부패한 재판을 열 수 있습니다. 재판 동안 당신은 ${data["options"]["extra_votes"]}표를 얻습니다.`);
+          addchat(`당신은 재판을 총 ${data["options"]["court_chance"]}번 열 수 있습니다.`);
+          if (data["options"]["nights_between_court"]>0) {
+            addchat(`재판을 한번 열었다면 ${data["options"]["nights_between_court"]}일이 지나야 재판을 다시 열 수 있습니다.`);
+          }
           addchat("승리 조건: 끝까지 살아남아 "+colored("시민")+"세력의 패배를 목격하세요.");
           break;
         case "인간쓰레기":
@@ -957,7 +1228,11 @@ Socket.on('event', (data)=> {
           break;
         case "요술사":
           addchat("당신이 속한 이교도 교단은 비밀리에 마을 전체를 자기네 종교로 개종시키는 것이 목표입니다.");
-          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 살릴 수 있습니다. 대상이 "+colored("시민")+"세력이라면 이교도로 개종됩니다.");
+          addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람을 살릴 수 있습니다. 대상이 공격받았고 개종가능한 직업이라면 이교도로 개종됩니다.");
+          addchat(`당신은 총 ${data["options"]["save_chance"]}번 구원할 수 있습니다.`);
+          if (data["options"]["night_between_save"]>0) {
+            addchat(`한번 사람을 살리면 ${data["options"]["night_between_save"]}일을 기다려야 또 구원할 수 있습니다.`);
+          }
           addchat(colored("마피아")+"/"+colored("삼합회")+"/"+colored("비밀조합")+" 세력을 살리면 이들에게 당신의 정체가 드러납니다.");
           addchat("승리 조건: 모든 생존한 시민을 "+colored("이교도")+"로 만들고, 모든 범죄 조직을 죽이세요.");
           break;
@@ -969,7 +1244,9 @@ Socket.on('event', (data)=> {
         case "대량학살자":
           addchat("당신은 내장을 조각내는 것을 예술 행위라고 생각하는 미친 살인자입니다.");
           addchat("매일 밤 '/방문 닉네임'을 입력하여 그 사람의 집에 있는 사람들을 전부 죽일 수 있습니다.");
-          addchat("한번에 2명 이상을 죽일 경우 그 다음 날은 사람을 죽일 수 없습니다.");
+          if (data["options"]["nights_between_murder"]) {
+            addchat(`한번에 2명 이상을 죽일 경우 ${data["options"]["nights_between_murder"]}일 동안은 사람을 죽일 수 없습니다.`);
+          }
           addchat("승리 조건: 마지막으로 살아남은 사람이 되십시오.");
           break;
         case "방화범":
@@ -1125,6 +1402,9 @@ Socket.on('event', (data)=> {
     case "audit_success":
       addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+colored(data["role"])+"입니다.");
       break;
+    case "unable_to":
+
+      break;
     case "will_burn_today":
       addchat("오늘밤 불을 피우기로 합니다.");
       break;
@@ -1139,6 +1419,12 @@ Socket.on('event', (data)=> {
       break;
     case "has_jailed_someone":
       addchat("당신은 그 사람을 감옥에 가두었습니다. '/처형' 명령어를 입력하면 수감자를 죽일 수 있습니다. 명령어를 다시 입력하면 취소됩니다.")
+      break;
+    case "recruited_by_cult":
+      addchat(`이교도 ${data["who"]}님이 당신을 개종하려 시도했습니다.`);
+      break;
+    case "tried_to_recruit_Mason":
+      addchat(`당신이 개종을 시도한 ${data["who"]}님은 ${colored("비밀조합원")}이었습니다!!! 당신은 ${data["who"]}님께 정체를 들키고 말았습니다.`);
       break;
     case "will_recruit":
       addchat("대부/용두가 영입할 대상: "+data["recruited"]);
@@ -1158,6 +1444,15 @@ Socket.on('event', (data)=> {
     case 'blocked':
       addchat('아리따운 누군가가 당신을 찾아왔습니다. 당신은 그녀와 황홀한 밤을 보냈습니다. 능력이 차단되었습니다.', 'magenta');
       break;
+    case "kill_blocker":
+      addchat("아리따운 누군가가 당신을 찾아와 같이 밤을 보내려 하지만, 당신은 다른 생각을 품고 있습니다.");
+      break;
+    case "target_is_immune_to_block":
+      addchat("대상이 같이 밤을 보내려는 당신을 돌려보냈습니다. 대상은 능력 차단에 면역입니다!", "limegreen");
+      break;
+    case "someone_hides_behind_you":
+      addchat("누군가 당신 뒤에 숨었습니다!");
+      break;
     case "blackmailed":
       addchat("누군가 찾아와 내일 입을 열었다가는 해코지를 당할 것이라 협박했습니다. 당신은 내일 하루종일 입을 꾹 닫기로 했습니다.", "red");
       break;
@@ -1166,6 +1461,12 @@ Socket.on('event', (data)=> {
       break;
     case 'oiling_success':
       addchat('당신은 '+data['target1']+'님에게 기름을 묻혔습니다.', "#ffaa00");
+      break;
+    case "oiled":
+      addchat("누군가가 당신 집에 휘발유를 잔뜩 뿌렸습니다. 당신은 기름에 흠뻑 젖었습니다!", '#ffaa00');
+      break;
+    case "visited_cult":
+      addchat(`당신이 방문한 사람은 ${colored("이교도")}였습니다. 당신은 그를 죽였습니다.`);
       break;
     case 'someone_visited_to_Veteran':
       addchat('누군가가 경계 중인 당신을 찾아왔습니다. 당신은 그와 유익한 거래를 하기 위해 총을 꺼냅니다.');
@@ -1194,11 +1495,30 @@ Socket.on('event', (data)=> {
             addchat("대상은 유언을 남겼습니다:");
             addchat(data["lw"], "yellow");
           } else {
-            addchat("대상은 유언을 남기지 않았습니다.");
+            addchat("대상이 유언을 남기지 않았거나, 유언이 수거되어 발견할 수 없습니다.");
           }
-          for (const [index, visitors] of data["result"]["visitors"].entries()) {
-            let night = index + 1;
-            addchat(night+"번째 밤, 대상을 " + visitors + " 등이 방문했습니다.");
+          switch (data["result_type"]) {
+            case 3:
+              for (const [index, visitors] of data["result"]["visitors"].entries()) {
+                let night = index + 1;
+                addchat(`${night}번째 밤, 대상을 ${visitors} 등이 방문했습니다.`);
+              }
+              break;
+            case 2:
+              for (const [index, visitors] of data["result"]["visitors"].entries()) {
+                let night = index + 1;
+                addchat(`${night}번째 밤, 대상을 ${visitors} 등이 방문했습니다.`);
+              }
+              break;
+            case 1:
+              for (const [index, visitors] of data["result"]["visitors"].entries()) {
+                let night = index + 1;
+                addchat(`${night}번째 밤, 대상을 ${visitors} 등이 방문했습니다.`);
+              }
+              break;
+            case 0:
+              addchat("대상의 사망 정보가 인멸되어 아무것도 발견할 수 없었습니다.");
+              break;
           }
           break;
         case '탐정':
@@ -1222,7 +1542,7 @@ Socket.on('event', (data)=> {
           break;
         case '보안관':
           if (data['result']) {
-            addchat('대상은 ' + data['result'] + '입니다!!!');
+            addchat('대상은 ' + colored(data['result']) + '입니다!!!');
           } else {
             addchat('대상은 수상하지 않습니다.');
           }
@@ -1234,7 +1554,17 @@ Socket.on('event', (data)=> {
           break;
         case "조언자":
         case "백지선":
-          addchat(`대상의 직업은 ${data["result"]}입니다.`);
+          if (typeof data['result'] === 'object') {
+            let crimeList = [];
+            for (const [crime, did] of Object.entries(data['result'])) {
+              if (did) {
+                crimeList.push(crime);
+              }
+            }
+            addchat('대상이 저지른 범죄: ' + crimeList);
+          } else { // 정확한 직업을 알 수 있는 경우
+            addchat('대상의 직업은' + data['result'] + '입니다.');
+          }
           break;
       }
       break;
@@ -1301,6 +1631,9 @@ Socket.on('event', (data)=> {
           addchat("당신은 사기꾼에게 조종되어 자살당했습니다.", "red");
           break;
       }
+      break;
+    case "target_is_attacked":
+      addchat("대상은 오늘 밤 공격받았습니다!");
       break;
     case "dead_announced":
       addchat(data["dead"]+"님이 사망헀습니다.");

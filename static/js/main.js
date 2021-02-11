@@ -9,8 +9,7 @@ document.querySelector(".modal-default-button").addEventListener("click", (event
   let title = document.querySelector("#GameRoom_title").value;
   let capacity = Number(document.querySelector("#GameRoom_capacity").value);
   let password = document.querySelector("#GameRoom_password").value;
-  let setup = document.querySelector("#GameRoom_setup").value;
-  create_GameRoom(title, capacity, password, setup);
+  create_GameRoom(title, capacity, password);
 });
 
 document.querySelector("#leave_GameRoom_button").addEventListener("click", confirm_leave_GameRoom);
@@ -38,12 +37,11 @@ function leave_GameRoom (){
   Socket.emit('leave_GameRoom', {});
 }
 
-function create_GameRoom (title, capacity, password, setup) {
+function create_GameRoom (title, capacity, password) {
   Socket.emit('create_GameRoom', {
     'title': title,
     'password': password,
     'capacity': capacity,
-    'setup': setup,
   });
 };
 
