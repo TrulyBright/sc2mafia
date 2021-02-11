@@ -1,36 +1,17 @@
 "use strict";
 
-Vue.component("modal", {
-  template: "#modal-template"
+document.querySelector("#show-modal").addEventListener("click", (event)=>{
+  document.querySelector(".room_create_modal").style.display = "block";
 });
 
-Vue.component("lw-modal", {
-  template: "#lw-modal-template"
+document.querySelector(".modal-default-button").addEventListener("click", (event)=>{
+  document.querySelector(".room_create_modal").style.display = "none";
+  let title = document.querySelector("#GameRoom_title").value;
+  let capacity = Number(document.querySelector("#GameRoom_capacity").value);
+  let password = document.querySelector("#GameRoom_password").value;
+  let setup = document.querySelector("#GameRoom_setup").value;
+  create_GameRoom(title, capacity, password, setup);
 });
-
-let app = new Vue({
-  el: "#main",
-  data: {
-    showModal: false,
-    showLwModal: false,
-    showSetupModal: false,
-    showPlayerMenuModal: false,
-    inLobby: true,
-  }
-});
-
-let show_modal_button = document.querySelector('#show-modal');
-
-show_modal_button.onclick = (event) => {
-  let create_GameRoom_button = document.querySelector('.modal-default-button');
-  create_GameRoom_button.onclick = (event) => {
-    let title = document.querySelector('#GameRoom_title').value;
-    let capacity = Number(document.querySelector('#GameRoom_capacity').value);
-    let password = document.querySelector('#GameRoom_password').value;
-    let setup = document.querySelector('#GameRoom_setup').value;
-    create_GameRoom(title, capacity, password, setup);
-  };
-};
 
 document.querySelector("#leave_GameRoom_button").addEventListener("click", confirm_leave_GameRoom);
 document.querySelector("#start_button").addEventListener("click", (event)=>{
@@ -38,12 +19,6 @@ document.querySelector("#start_button").addEventListener("click", (event)=>{
 });
 document.querySelector("#ready_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/준비");
-});
-document.querySelector("#lw_button").addEventListener("click", (event)=>{
-  Socket.emit("message", "/유언편집");
-});
-document.querySelector("#lw_submit").addEventListener("click", (event)=>{
-  Socket.emit("message", "/유언편집 "+document.querySelector("#lw").value);
 });
 
 
@@ -73,13 +48,17 @@ function create_GameRoom (title, capacity, password, setup) {
 };
 
 Socket.on('enter_GameRoom_success', (roomID)=> {
-  app.inLobby = false;
+  document.querySelector(".lobby-menu").style.display = "none";
+  document.querySelector(".room_list_section").style.display = "none";
+  document.querySelector(".room_section").style.display = "block";
 });
 
 Socket.on('leave_GameRoom_success', (data)=>{
-  app.inLobby = true;
-  let ul = document.querySelector("#messages");
-  ul.innerHTML = "";
+  let chatLog = document.querySelector("#messages");
+  chatLog.innerHTML = "";
+  document.querySelector(".lobby-menu").style.display = "block";
+  document.querySelector(".room_list_section").style.display = "block";
+  document.querySelector(".room_section").style.display = "none";
 });
 
 Socket.on('failed_to_enter_GameRoom', (data)=>{
@@ -115,5 +94,3 @@ Socket.on("multiple_login", (data)=>{
 Socket.on("disconnect", (data)=>{
   alert("서버와의 연결이 종료되었습니다.");
 });
-
-export { app };

@@ -9,6 +9,10 @@
   overflow: auto;
 }
 
+.room_section {
+  display: none;
+}
+
 #left_banner {
   width: 15%;
   left: 0;

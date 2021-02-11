@@ -1,3 +1,15 @@
+.room_create_modal {
+  display: none;
+}
+
+.lw_modal {
+  display: none;
+}
+
+.setup_modal {
+  display: none;
+}
+
 .modal-mask {
   position: fixed;
   z-index: 9998;
@@ -51,6 +63,81 @@
 }
 
 #lw_submit {
+  display: inline-block;
+}
+
+#setup-modal-container {
+  width: 70%;
+  margin: 0px auto;
+  padding: 20px 30px;
+  background-color: black;
+  border: 1px solid white;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+  transition: all .3s ease;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+#setup-modal-header h3 {
+  margin-top: 0;
+  color: white;
+  display: inline-block;
+}
+
+.setup-modal-help {
+  display: inline-block;
+}
+
+.setup_modal_list {
+  width: 13%;
+  height: 50vh;
+  overflow: auto;
+  border: white 1px solid;
+  display: inline-block;
+}
+
+.setup_modal_list tbody tr:hover {
+  background-color: blue;
+}
+
+.role_setting {
+  width: 18%;
+  right: 0;
+  overflow: auto;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.role_setting div {
+  display: none;
+  margin-top: 0;
+}
+
+.other_setup {
+  display: inline-block;
+}
+
+.time_setup {
+  width: auto;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.time_setup input {
+  float: right;
+}
+
+.time_setup input:disabled {
+  visibility: hidden;
+}
+
+.select_setup {
+  width: auto;
+  display: inline-block;
+}
+
+.checkbox_setup {
+  width: auto;
   display: inline-block;
 }
 
