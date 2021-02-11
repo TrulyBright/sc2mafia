@@ -148,6 +148,9 @@ class Coroner(TownInvestigative):
 class Crier(TownGovernment):
     name = "포고꾼"
 
+    def __init__(self, setup):
+        super().__init__()
+
 
 class Detective(TownInvestigative):
     name = "형사"
@@ -178,6 +181,7 @@ class Escort(TownProtective):
 class Investigator(TownInvestigative):
     name = "탐정"
     def __init__(self, setup):
+        super().__init__()
         self.detect_exact_role = setup["options"]["role_setting"][self.name]["detect_exact_role"]
 
 
@@ -244,10 +248,14 @@ class Sheriff(TownInvestigative):
 
 class Spy(TownPower):
     name = "정보원"
+    def __init__(self, setup):
+        super().__init__()
 
 
 class Stump(Town):
     name = "나무 그루터기"
+    def __init__(self, setup):
+        super().__init__()
 
 
 class Veteran(TownKilling, TownPower):
@@ -441,7 +449,7 @@ class IncenseMaster(TriadDeception):
 # class Informant(TriadDeception, TriadKilling):
 #     name = "밀고자"
 #
-#     def __init__(self):
+#     def __init__(self, setup):
 #         super().__init__()
 #         self.offense_level = 1
 
@@ -461,6 +469,7 @@ class Liaison(TriadSupport):
     name = "간통범"
 
     def __init__(self, setup):
+        super().__init__()
         self.cannot_be_blocked = setup["options"]["role_setting"][self.name]["cannot_be_blocked"]
         self.detects_block_immune_target = setup["options"]["role_setting"][self.name]["detects_block_immune_target"]
         self.becomes_enforcer = setup["options"]["role_setting"]["becomes_enforcer"]
@@ -470,6 +479,7 @@ class Silencer(TriadSupport):
     name = "침묵자"
 
     def __init__(self, setup):
+        super().__init__()
         self.can_talk_during_trial = setup["options"]["role_setting"][self.name]["can_talk_during_trial"]
         self.becomes_enforcer = steup["options"]["role_setting"][self.name]["becomes_enforcer"]
 
@@ -478,6 +488,7 @@ class Vanguard(TriadSupport):
     name = "선봉"
 
     def __init__(self, setup):
+        super().__init__()
         self.nights_between_shadowings = setup["options"]["role_setting"]["nights_between_shadowings"]
         self.becomes_enforcer = setup["options"]["role_setting"]["becomes_enforcer"]
 
@@ -488,6 +499,7 @@ class Amnesiac(NeutralBenign):
     name = "기억상실자"
 
     def __init__(self, setup):
+        super().__init__()
         self.revealed = setup["options"]["role_setting"][self.name]["revealed"]
         self.cannot_remember_town = setup["options"]["role_setting"][self.name]["cannot_remember_town"]
         self.cannot_remember_killing_role = setup["option"]["role_setting"][self.name]["cannot_remember_killing_role"]
@@ -532,6 +544,7 @@ class Executioner(NeutralBenign):
     name = "처형자"
 
     def __init__(self, setup):
+        super().__init__()
         self.becomes_Jester = setup["options"]["role_setting"][self.name]["becomes_Jester"]
         self.target_is_town = setup["options"]["role_setting"][self.name]["target_is_town"]
         self.win_if_survived = setup["options"]["role_setting"][self.name]["win_if_survived"]
@@ -548,6 +561,7 @@ class Jester(NeutralBenign):
     name = "어릿광대"
 
     def __init__(self, setup):
+        super().__init__()
         self.randomly_suicide = setup["options"]["role_setting"][self.name]["randomly_suicide"]
 
 
@@ -578,6 +592,9 @@ class MassMurderer(NeutralKilling):
 class Scumbag(NeutralEvil):
     team = "인간쓰레기"
     name = "인간쓰레기"
+    
+    def __init__(self, setup):
+        super().__init__()
 
 
 class SerialKiller(NeutralKilling):
