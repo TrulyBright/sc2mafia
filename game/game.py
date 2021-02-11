@@ -639,8 +639,8 @@ class GameRoom:
                             "type": "Error",
                             "error_code": traceback.format_exc()
                         }
-                        await self.emit_event(sio, data, room=self.roomID)
                         self.inGame = False
+                        await sio.emit("event", data, room=self.roomID)
                 else:
                     data = {
                         "type": "message",
