@@ -722,7 +722,10 @@ Socket.on('event', (data)=> {
           role_name = colored(role_name)
         }
         let tr = document.createElement("tr");
-        tr.innerHTML = role_name;
+        tr.innerHTML = "<a href='#'>"+role_name+"</a>";
+        tr.addEventListener("click", function () {
+          document.querySelector("#setup_list tbody").removeChild(this);
+        });
         document.querySelector("#setup_list tbody").appendChild(tr);
       }
       document.querySelector(".시민 input[name='bulletproof']").checked=data["setup"]["options"]["role_setting"]["시민"]["bulletproof"];
