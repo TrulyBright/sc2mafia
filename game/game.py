@@ -1374,7 +1374,7 @@ class GameRoom:
         return attacker.role.offense_level > attacked.role.defense_level
 
     async def emit_sound(self, sio, sound, dead=True, number_of_murdered=1):
-        if self.NIGHT_TYPE =="nomal":
+        if self.NIGHT_TYPE == "normal":
             data = {
                 "type": "sound",
                 "sound": sound,
