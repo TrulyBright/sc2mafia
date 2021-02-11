@@ -3379,7 +3379,7 @@ class Player:
             data = {
                 "type": "target_is_attacked",
             }
-            await room.emit_event(sio, data, room=healer.sid)
+            await room.emit_event(self.sio, data, room=healer.sid)
         await asyncio.sleep(5)
 
     async def bodyguarded(self, room, attacker):
