@@ -3089,7 +3089,7 @@ class GameRoom:
         remaining_roles = {role.__class__ for role in remaining if not issubclass(role.__class__, roles.NeutralBenign)}
         if len(remaining) == 0:
             pass
-        elif self.setup["options"][roles.Citizen.name]["win_1v1"]\
+        elif self.setup["options"]["role_setting"][roles.Citizen.name]["win_1v1"]\
         and len(remaining_roles) == 2\
         and roles.Citizen in remaining_roles\
         and (issubclass(remaining_roles.difference({roles.Citizen}).pop(), roles.Mafia)
