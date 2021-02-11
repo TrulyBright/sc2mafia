@@ -639,8 +639,8 @@ class GameRoom:
                             "type": "Error",
                             "error_code": traceback.format_exc()
                         }
-                        await self.emit_event(sio, data, room=self.roomID)
                         self.inGame = False
+                        await sio.emit("event", data, room=self.roomID)
                 else:
                     data = {
                         "type": "message",
@@ -1374,7 +1374,7 @@ class GameRoom:
         return attacker.role.offense_level > attacked.role.defense_level
 
     async def emit_sound(self, sio, sound, dead=True, number_of_murdered=1):
-        if self.NIGHT_TYPE =="nomal":
+        if self.NIGHT_TYPE == "normal":
             data = {
                 "type": "sound",
                 "sound": sound,
@@ -2908,6 +2908,62 @@ class GameRoom:
 
     async def run_game(self, sio):
         logger.info(f"Game starts in room #{self.roomID}")
+        self.day += 1
+        if self.STATE == "MORNING_WITHOUT_COURT":
+            self.STATE = "MORNING"
+            await self.emit_event(sio, data, room=self.roomID)
+            self.STATE = "DISCUSSION"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(self.DISCUSSION_TIME)
+            self.STATE = "EVENING"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await self.trigger_evening_events(sio)
+            await self.emit_player_list(sio)
+            await asyncio.sleep(self.EVENING_TIME)
+            for p in self.alive_list:
+                p.blackmailed = False
+            # NIGHT
+            self.STATE = "NIGHT"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await self.trigger_night_events(sio)
+            await self.clear_up()
+            await asyncio.sleep(5)
+        elif self.STATE == "MORNING":
+            pass
+        elif self.STATE == "NIGHT":
+            self.STATE = "EVENING"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await self.trigger_evening_events(sio)
+            await self.emit_player_list(sio)
+            await asyncio.sleep(self.EVENING_TIME)
+            for p in self.alive_list:
+                p.blackmailed = False
+            # NIGHT
+            self.STATE = "NIGHT"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await self.trigger_night_events(sio)
+            await self.clear_up()
+            await asyncio.sleep(5)
         while True:
             self.day += 1
             # MORNING
@@ -2961,104 +3017,101 @@ class GameRoom:
                 await self.emit_event(sio, data, room=self.roomID)
                 await asyncio.sleep(self.DISCUSSION_TIME)
             # VOTE
-            if self.day == 1: # 첫날에는 토론만 하고 바로 저녁이 되도록.
-                pass
-            else:
-                self.STATE = "VOTE"
-                data = {
-                    "type": "state",
-                    "state": self.STATE,
-                }
-                await self.emit_event(sio, data, room=self.roomID)
-                self.VOTE_STARTED_AT = datetime.now()
-                self.VOTE_TIME_REMAINING = self.VOTE_TIME
-                self.die_today = [] # 선거사망자 목록 초기화
-                while self.VOTE_TIME_REMAINING >= 0:
-                    try:
-                        await asyncio.wait_for(
-                            self.election.wait(), timeout=self.VOTE_TIME_REMAINING
-                        )
-                    except asyncio.TimeoutError:  # nobody has been elected today
-                        break
-                    else:  # someone has been elected
-                        self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
-                        if self.in_court and self.in_lynch:
-                            await self.execute_the_elected(sio)
-                            await asyncio.sleep(3)
-                            self.VOTE_STARTED_AT = datetime.now()
-                            self.clear_vote()
-                            for p in self.players.values():
-                                if isinstance(p.role, roles.Marshall):
-                                    marshall = p
-                                    break
-                            if len(self.die_today)==marshall.role.executions_per_group:
+            self.STATE = "VOTE"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            self.VOTE_STARTED_AT = datetime.now()
+            self.VOTE_TIME_REMAINING = self.VOTE_TIME
+            self.die_today = [] # 선거사망자 목록 초기화
+            while self.VOTE_TIME_REMAINING >= 0:
+                try:
+                    await asyncio.wait_for(
+                        self.election.wait(), timeout=self.VOTE_TIME_REMAINING
+                    )
+                except asyncio.TimeoutError:  # nobody has been elected today
+                    break
+                else:  # someone has been elected
+                    self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
+                    if self.in_court and self.in_lynch:
+                        await self.execute_the_elected(sio)
+                        await asyncio.sleep(3)
+                        self.VOTE_STARTED_AT = datetime.now()
+                        self.clear_vote()
+                        for p in self.players.values():
+                            if isinstance(p.role, roles.Marshall):
+                                marshall = p
                                 break
-                            self.STATE = "VOTE"
-                            data = {
-                                "type": "state",
-                            }
-                            await self.emit_event(sio, data, room=self.roomID)
-                        elif self.in_court:
-                            await self.execute_the_elected(sio)
-                            await asyncio.sleep(3)
+                        if len(self.die_today)==marshall.role.executions_per_group:
                             break
-                        elif self.in_lynch:
-                            await self.execute_the_elected(sio)
-                            await asyncio.sleep(3)
-                            self.clear_vote()
-                            for p in self.players.values():
-                                if isinstance(p.role, roles.Marshall):
-                                    marshall = p
-                                    break
-                            if len(self.die_today)==marshall.role.executions_per_group:
+                        self.STATE = "VOTE"
+                        data = {
+                            "type": "state",
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                    elif self.in_court:
+                        await self.execute_the_elected(sio)
+                        await asyncio.sleep(3)
+                        break
+                    elif self.in_lynch:
+                        await self.execute_the_elected(sio)
+                        await asyncio.sleep(3)
+                        self.clear_vote()
+                        for p in self.players.values():
+                            if isinstance(p.role, roles.Marshall):
+                                marshall = p
                                 break
-                            self.VOTE_STARTED_AT = datetime.now()
-                            self.STATE = "VOTE"
-                            data = {
-                                "type": "state",
-                                "state": self.STATE,
-                            }
-                            await self.emit_event(sio, data, room=self.roomID)
-                        else:
-                            self.clear_vote()
-                            if self.USE_DEFENSE_TIME:
-                                self.STATE = "DEFENSE"
-                                data = {
-                                    "type": "state",
-                                    "state": self.STATE,
-                                    "who": self.elected.nickname,
-                                }
-                                await self.emit_event(sio, data, room=self.roomID)
-                                await asyncio.sleep(self.VOTE_EXECUTION_TIME/2)
-                            self.STATE = "VOTE_EXECUTION"
+                        if len(self.die_today)==marshall.role.executions_per_group:
+                            break
+                        self.VOTE_STARTED_AT = datetime.now()
+                        self.STATE = "VOTE"
+                        data = {
+                            "type": "state",
+                            "state": self.STATE,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                    else:
+                        self.clear_vote()
+                        if self.USE_DEFENSE_TIME:
+                            self.STATE = "DEFENSE"
                             data = {
                                 "type": "state",
                                 "state": self.STATE,
                                 "who": self.elected.nickname,
                             }
                             await self.emit_event(sio, data, room=self.roomID)
-                            await asyncio.sleep(self.VOTE_EXECUTION_TIME/2 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME)
-                            if self.elected.voted_guilty > self.elected.voted_innocent:
-                                await self.execute_the_elected(sio)
-                                await asyncio.sleep(3)
-                                break
-                            else:
-                                self.clear_vote()
-                                self.VOTE_STARTED_AT = datetime.now()
-                                self.STATE = "VOTE"
-                                data = {
-                                    "type": "state",
-                                    "state": self.STATE,
-                                }
-                                await self.emit_event(sio, data, room=self.roomID)
-                    finally:
-                        self.clear_vote()
-                        self.election.clear()
-                        self.elected = None
-                await self.announce_role_and_lw_of(self.die_today, sio)
+                            await asyncio.sleep(self.VOTE_EXECUTION_TIME/2)
+                        self.STATE = "VOTE_EXECUTION"
+                        data = {
+                            "type": "state",
+                            "state": self.STATE,
+                            "who": self.elected.nickname,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(self.VOTE_EXECUTION_TIME/2 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME)
+                        if self.elected.voted_guilty > self.elected.voted_innocent:
+                            await self.execute_the_elected(sio)
+                            await asyncio.sleep(3)
+                            break
+                        else:
+                            self.clear_vote()
+                            self.VOTE_STARTED_AT = datetime.now()
+                            self.STATE = "VOTE"
+                            data = {
+                                "type": "state",
+                                "state": self.STATE,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                finally:
+                    self.clear_vote()
+                    self.election.clear()
+                    self.elected = None
+            await self.announce_role_and_lw_of(self.die_today, sio)
 
-                if self.game_over():
-                    return
+            if self.game_over():
+                return
             # EVENING
             self.STATE = "EVENING"
             data = {
@@ -3079,7 +3132,6 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
-            await self.emit_player_list(sio)
             await self.clear_up()
             await asyncio.sleep(5)
 
@@ -3089,7 +3141,7 @@ class GameRoom:
         remaining_roles = {role.__class__ for role in remaining if not issubclass(role.__class__, roles.NeutralBenign)}
         if len(remaining) == 0:
             pass
-        elif setup["options"][roles.Citizen.name]["win_1v1"]\
+        elif self.setup["options"]["role_setting"][roles.Citizen.name]["win_1v1"]\
         and len(remaining_roles) == 2\
         and roles.Citizen in remaining_roles\
         and (issubclass(remaining_roles.difference({roles.Citizen}).pop(), roles.Mafia)
@@ -3381,7 +3433,7 @@ class Player:
             data = {
                 "type": "target_is_attacked",
             }
-            await room.emit_event(sio, data, room=healer.sid)
+            await room.emit_event(self.sio, data, room=healer.sid)
         await asyncio.sleep(5)
 
     async def bodyguarded(self, room, attacker):
