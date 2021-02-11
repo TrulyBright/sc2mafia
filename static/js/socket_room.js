@@ -966,6 +966,9 @@ Socket.on('event', (data)=> {
         case "invalid_setup":
           addchat("설정에 문제가 있어 시작할 수 없습니다.");
           break;
+        case "no setup":
+          addchat("설정이 없어 시작할 수 없습니다. '/불러오기'를 입력하면 계정에 저장된 설정을 불러올 수 있습니다.");
+          break;
         default:
           addchat("게임 시작 불가: "+data["reason"])
         }
