@@ -298,6 +298,7 @@ class GameRoom:
         self.members = []
         self.readied = set()
         self.host = host
+        self.setup = None
         self.password = password
         self.private = password!=""
         self.inGame = False
@@ -611,11 +612,11 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.members)<3:
+                    if len(self.members)<len(self.setup["formation"]):
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_enough_members",
-                            "required_members": 3,
+                            "required_members": len(self.setup["formation"]),
                         }
                         await self.emit_event(sio, data, room=sid)
                         return
@@ -639,6 +640,7 @@ class GameRoom:
                             "error_code": traceback.format_exc()
                         }
                         await self.emit_event(sio, data, room=self.roomID)
+                        self.inGame = False
                 else:
                     data = {
                         "type": "message",
@@ -2804,6 +2806,13 @@ class GameRoom:
     async def init_game(self, sio):
         # init game
         logger.info(f"Game initiated in room #{self.roomID}")
+        if self.setup is None:
+            data = {
+                "type": "unable_to_start",
+                "reason": "no setup",
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            return
         self.inGame = True
         self.readied = set()
         self.election = asyncio.Event()
