@@ -144,8 +144,7 @@ async def create_GameRoom(sid, data):
         room_list[next_roomID] = GameRoom(roomID=next_roomID,
                                           title=data['title'],
                                           capacity=data['capacity'],
-                                          host=user,
-                                          setup=data['setup'])
+                                          host=user,)
         next_roomID += 1
         await sio.emit('create_GameRoom_success', next_roomID-1, room=sid)
         logger.info(f"user {user['nickname']} creates room #{next_roomID-1}")
@@ -208,5 +207,5 @@ async def message(sid, msg):
 @sio.event
 async def setup(sid, data):
     async with sio.session(sid) as user:
-        if room_list[user["room"]].host == sid:
+        if room_list[user["room"]].host == sid and not room_list[user["room"]].inGame:
             await room_list[user["room"]].apply_setup(sio, data)

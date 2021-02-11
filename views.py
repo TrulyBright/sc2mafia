@@ -97,7 +97,7 @@ async def archive(request, gamelog_id):
     if not gamelog_id.isalnum(): return
     async with aiosqlite.connect("sql/records.db") as DB:
         cursor = await DB.execute(f"SELECT * FROM {gamelog_id};")
-        log = await cursor.fetchall();
+        log = await cursor.fetchall()
         return {"log": log}
 
 @template("about.html.j2")

@@ -4,5 +4,6 @@ CREATE TABLE users (
   naverId string not null unique,
   nickname string not null unique,
   is_superuser boolean not null default false,
-  disabled boolean not null default false
+  disabled boolean not null default false,
+  save_slot string default null
 );

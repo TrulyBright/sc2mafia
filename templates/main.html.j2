@@ -45,16 +45,6 @@
                       <option selected value="15">15</option>
                     </select>
                   </p>
-                  <p>설정:
-                    <select id="GameRoom_setup">
-                      <optgroup label="기본 제공 설정">
-                        <option value="8331">8331</option>
-                        <option value="test">시험용</option>
-                      </optgroup>
-                      <optgroup label="사용자 설정">
-                      </optgroup>
-                    </select>
-                  </p>
                 </slot>
               </div>
               <div class="modal-footer">
@@ -1012,7 +1002,7 @@
                           <input type="checkbox" name="becomes_Jester" checked>
                         </li>
                         <li>
-                          <label for="target_is_town">목표 대상은 무조건 시민</label>
+                          <label for="target_is_town">목표 대상은 무조건 시민 세력</label>
                           <input type="checkbox" name="target_is_town" checked>
                         </li>
                         <li>
@@ -1630,6 +1620,7 @@
                     </div>
                   </div>
                   <button type="submit" id="setup-submit" name="button">확인</button>
+                  <button type="submit" id="setup-cancel" name="button">취소</button>
                 </slot>
               </div>
             </div>
