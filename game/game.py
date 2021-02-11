@@ -2938,7 +2938,6 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
-            await self.emit_player_list(sio)
             await self.clear_up()
             await asyncio.sleep(5)
         elif self.STATE == "MORNING":
@@ -2963,7 +2962,6 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
-            await self.emit_player_list(sio)
             await self.clear_up()
             await asyncio.sleep(5)
         while True:
@@ -3134,7 +3132,6 @@ class GameRoom:
             }
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_night_events(sio)
-            await self.emit_player_list(sio)
             await self.clear_up()
             await asyncio.sleep(5)
 
