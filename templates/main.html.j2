@@ -23,81 +23,1624 @@
         </ul>
       </nav>
     </header>
-    <img src="/static/images/banner_left.png" alt="" id="left_banner">
-    <img src="/static/images/banner_right.png" alt="" id="right_banner">
+    <img src="/static/images/banner_left.png" alt="왼쪽 배너" id="left_banner">
+    <img src="/static/images/banner_right.png" alt="오른쪽 배너" id="right_banner">
     <section class="main" id="main">
       <!-- modal 시작 -->
-      <modal v-if="showModal" @close="showModal=false">
-      </modal>
-        <script type="text/x-template" id="modal-template">
-        <transition name="modal">
-          <div class="modal-mask">
-            <div class="modal-wrapper">
-              <div class="modal-container">
-                <div class="modal-header">
-                  <slot name="header">
-                    방 파기
-                  </slot>
-                </div>
-                <div class="modal-body">
-                  <slot name="body">
-                    <p>방제: <input type="text" name="title" id="GameRoom_title" placeholder="방제"/></p>
-                    <p>비밀번호: <input type="password" name="password" id="GameRoom_password" placeholder="비밀번호"/></p>
-                    <p>정원:
-                      <select id="GameRoom_capacity">
-                        <option selected value="15">15</option>
-                      </select>
-                    </p>
-                    <p>설정:
-                      <select id="GameRoom_setup">
-                        <optgroup label="기본 제공 설정">
-                          <option value="8331">8331</option>
-                        </optgroup>
-                        <optgroup label="사용자 설정">
-                        </optgroup>
-                      </select>
-                    </p>
-                  </slot>
-                </div>
-                <div class="modal-footer">
-                  <slot name="footer">
-                    <button class="modal-default-button" @click="$emit('close')">파기</button>
-                  </slot>
-                </div>
+      <div class="room_create_modal">
+        <div class="modal-mask">
+          <div class="modal-wrapper">
+            <div class="modal-container">
+              <div class="modal-header">
+                <slot name="header">
+                  방 파기
+                </slot>
+              </div>
+              <div class="modal-body">
+                <slot name="body">
+                  <p>방제: <input type="text" name="title" id="GameRoom_title" placeholder="방제"/></p>
+                  <p>비밀번호: <input type="password" name="password" id="GameRoom_password" placeholder="비밀번호"/></p>
+                  <p>정원:
+                    <select id="GameRoom_capacity">
+                      <option selected value="15">15</option>
+                    </select>
+                  </p>
+                  <p>설정:
+                    <select id="GameRoom_setup">
+                      <optgroup label="기본 제공 설정">
+                        <option value="8331">8331</option>
+                        <option value="test">시험용</option>
+                      </optgroup>
+                      <optgroup label="사용자 설정">
+                      </optgroup>
+                    </select>
+                  </p>
+                </slot>
+              </div>
+              <div class="modal-footer">
+                <slot name="footer">
+                  <button class="modal-default-button">파기</button>
+                </slot>
               </div>
             </div>
           </div>
-        </transition>
-      </script>
-      <lw-modal v-show="showLwModal" @close="showLwModal=false">
-        <script type="text/x-template" id="lw-modal-template">
-          <transition name="lw-modal">
-            <div class="modal-mask">
-              <div class="modal-wrapper">
-                <div id="lw-modal-container">
-                  <div id="lw-modal-header">
-                    <slot name="header">
-                      <h3>유언 편집</h3>
-                    </slot>
-                  </div>
-                  <div id="lw-modal-body">
-                    <slot name="body">
-                      <textarea id="lw" maxlength="200" spellcheck="false" placeholder="최대 200자까지 가능합니다.">
-                      </textarea>
-                      <button type="submit" id="lw_submit" @click="$emit('close')" name="button">확인</button>
-                    </slot>
-                  </div>
-                </div>
+        </div>
+      </div>
+      <div class="lw_modal">
+        <div class="modal-mask">
+          <div class="modal-wrapper">
+            <div id="lw-modal-container">
+              <div id="lw-modal-header">
+                <slot name="header">
+                  <h3>유언 편집</h3>
+                </slot>
+              </div>
+              <div id="lw-modal-body">
+                <slot name="body">
+                  <textarea id="lw" maxlength="200" spellcheck="false" placeholder="최대 200자까지 가능합니다."></textarea>
+                  <button type="submit" id="lw_submit" name="button">확인</button>
+                </slot>
               </div>
             </div>
-          </transition>
-        </script>
-      </lw-modal>
+          </div>
+        </div>
+      </div>
+      <div class="setup_modal">
+        <div class="modal-mask">
+          <div class="modal-wrapper">
+            <div id="setup-modal-container">
+              <div id="setup-modal-header">
+                <slot name="header">
+                  <h3>게임 설정</h3>
+                  <p class="setup-modal-help">오른쪽 목록에서 직업을 클릭하면 구성에 추가됩니다. 구성에서 직업을 클릭하면 제거됩니다.</p>
+                </slot>
+              </div>
+              <div id="setup-modal-body">
+                <slot name="body">
+                  <table class="setup_modal_list" id="setup_list">
+                    <thead>
+                      <th>
+                        직업 구성
+                      </th>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                  </table>
+                  <table class="setup_modal_list" id="town_list">
+                    <thead>
+                      <th>
+                        시민 세력
+                      </th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="#">시민</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">보안관</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">탐정</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">형사</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">감시자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">의사</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">기생</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">간수</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">자경대원</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">비밀조합원</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">비밀조합장</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">정보원</a></td>
+                      </tr>
+                      <!--<tr>
+                        <td><a href="#">버스기사</a></td>
+                      </tr>-->
+                      <tr>
+                        <td><a href="#">검시관</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">경호원</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">퇴역군인</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시장</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">원수</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">포고꾼</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="setup_modal_list" id="mafia_list">
+                    <thead>
+                      <th>
+                        마피아 세력
+                      </th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="#">마피아 일원</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">조언자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">대부</a></td>
+                      </tr>
+                      <!--<tr>
+                        <td><a href="#">변장자</a></td>
+                      </tr>-->
+                      <tr>
+                        <td><a href="#">매춘부</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">조작자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">관리인</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">협박자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">납치범</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">요원</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">잠입자</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="setup_modal_list" id="triad_list">
+                    <thead>
+                      <th>
+                        삼합회 세력
+                      </th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="#">홍곤</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">백지선</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">용두</a></td>
+                      </tr>
+                      <!--<tr>
+                        <td><a href="#">밀고자</a></td>
+                      </tr>-->
+                      <tr>
+                        <td><a href="#">간통범</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">위조꾼</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">향주</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">침묵자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">심문자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">선봉</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">사기꾼</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="setup_modal_list" id="neutral_list">
+                    <thead>
+                      <th>
+                        중립 세력
+                      </th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="#">생존자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">기억상실자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">어릿광대</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">처형자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">마녀</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">회계사</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">판사</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">이교도</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">요술사</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">연쇄살인마</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">대량학살자</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">방화범</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="setup_modal_list" id="random_list">
+                    <thead>
+                      <th>
+                        무작위 직업
+                      </th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="#">모든 무작위직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 무작위직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 행정직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 조사직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 방어직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 살인직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">시민 능력직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">마피아 무작위직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">마피아 살인직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">마피아 지원직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">마피아 속임수직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">삼합회 무작위직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">삼합회 살인직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">삼합회 지원직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">삼합회 속임수직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">중립 무작위직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">중립 살인직</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">중립 악</a></td>
+                      </tr>
+                      <tr>
+                        <td><a href="#">중립 선</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="role_setting">
+                    <h4 class="role_name"></h4>
+                    <div class="시민">
+                      <ul>
+                        <li>
+                          <label for="bulletproof" title="단 1회 착용할 수 있습니다.">방탄조끼 착용가능</label>
+                          <input type="checkbox" name="bulletproof" checked>
+                        </li>
+                        <li>
+                          <label for="win_1v1">마피아/삼합회와 단둘이 남으면 승리</label>
+                          <input type="checkbox" name="win_1v1" checked>
+                        </li>
+                        <li>
+                          <label for="recruitable" title="8331에서는 끄는 것을 권장합니다.">영입 시 마피아/홍곤이 됨</label>
+                          <input type="checkbox" name="recruitable" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="보안관">
+                      <ul>
+                        <li>
+                          <label for="detect_mafia_and_triad">마피아/삼합회 발견 가능</label>
+                          <input type="checkbox" name="detect_mafia_and_triad" checked>
+                        </li>
+                        <li>
+                          <label for="detect_SerialKiller">연쇄살인마 발견 가능</label>
+                          <input type="checkbox" name="detect_SerialKiller" checked>
+                        </li>
+                        <li>
+                          <label for="detect_Arsonist">방화범 발견 가능</label>
+                          <input type="checkbox" name="detect_Arsonist" checked>
+                        </li>
+                        <li>
+                          <label for="detect_Cult">이교도 발견 가능</label>
+                          <input type="checkbox" name="detect_Cult" checked>
+                        </li>
+                        <li>
+                          <label for="detect_MassMurderer">대량학살자 발견 가능</label>
+                          <input type="checkbox" name="detect_MassMurderer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="탐정">
+                      <ul>
+                        <li>
+                          <label for="detect_exact_role">정확한 직업을 알 수 있음</label>
+                          <input type="checkbox" name="detect_exact_role" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="형사">
+                      <ul>
+                        <li>
+                          <label for="ignore_detection_immune">검출 면역을 무시</label>
+                          <input type="checkbox" name="ignore_detection_immune" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="감시자">
+                      <ul>
+                        <li>
+                          <label for="ignore_detection_immune">검출 면역을 무시</label>
+                          <input type="checkbox" name="ignore_detection_immune">
+                        </li>
+                        <li>
+                          <label for="can_target_self">자기 자신을 대상으로 설정 가능</label>
+                          <input type="checkbox" name="can_target_self" checked>
+                      </ul>
+                    </div>
+                    <div class="의사">
+                      <ul>
+                        <li>
+                          <label for="knows_if_attacked">대상이 공격당하면 알 수 있음</label>
+                          <input type="checkbox" name="knows_if_attacked" checked>
+                        </li>
+                        <li>
+                          <label for="prevents_cult_conversion">이교도로의 개종을 막을 수 있음</label>
+                          <input type="checkbox" name="prevents_cult_conversion">
+                        </li>
+                        <li>
+                          <label for="knows_if_culted">그날 대상에게 이교도가 찾아왔는지 알 수 있음</label>
+                          <input type="checkbox" name="knows_if_culted">
+                        </li>
+                        <li>
+                          <label for="WitchDoctor_when_converted">개종 시 요술사가 됨</label>
+                          <input type="checkbox" name="WitchDoctor_when_converted">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="기생">
+                      <ul>
+                        <li>
+                          <label for="cannot_be_blocked">본인은 능력 차단에 면역</label>
+                          <input type="checkbox" name="cannot_be_blocked">
+                        </li>
+                        <li>
+                          <label for="detects_block_immune_target">대상이 능력 차단에 면역일 시 알림</label>
+                          <input type="checkbox" name="detects_block_immune_target">
+                        </li>
+                        <li>
+                          <label for="recruitable" title="8331에서는 끄는 것을 권장합니다.">영입 시 매춘부/간통범이 됨</label>
+                          <input type="checkbox" name="recruitable">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="간수">
+                      <ul>
+                        <li>
+                          <label for="execution_chance">처형 기회</label>
+                          <ul>
+                            <li><input type="radio" name="execution_chance" value="1" checked>1회</li>
+                            <li><input type="radio" name="execution_chance" value="2">2회</li>
+                            <li><input type="radio" name="execution_chance" value="3">3회</li>
+                            <li><input type="radio" name="execution_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="자경대원">
+                      <ul>
+                        <li>
+                          <label for="kill_chance">살인 기회</label>
+                          <ul>
+                            <li><input type="radio" name="kill_chance" value="1">1회</li>
+                            <li><input type="radio" name="kill_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="kill_chance" value="3">3회</li>
+                            <li><input type="radio" name="kill_chance" value="4">4회</li>
+                            <li><input type="radio" name="kill_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="suicides_if_shot_town" title="자똘을 방지할 수 있습니다.">시민을 살해하면 자살</label>
+                          <input type="checkbox" name="suicides_if_shot_town">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="비밀조합원">
+                      <ul>
+                        <li>
+                          <label for="promoted_if_alone" title="">혼자 남으면 비밀조합장이 됨</label>
+                          <input type="checkbox" name="promoted_if_alone">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="비밀조합장">
+                      <ul>
+                        <li>
+                          <label for="recruit_chance">영입 기회</label>
+                          <ul>
+                            <li><input type="radio" name="recruit_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="recruit_chance" value="3">3회</li>
+                            <li><input type="radio" name="recruit_chance" value="4">4회</li>
+                            <li><input type="radio" name="recruit_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="정보원">
+                    </div>
+                    <div class="버스기사">
+                    </div>
+                    <div class="검시관">
+                      <ul>
+                        <li>
+                          <label for="discover_all_targets">모든 대상 검색 가능</label>
+                          <input type="checkbox" name="discover_all_targets">
+                        </li>
+                        <li>
+                          <label for="discover_lw">유언을 발견 가능</label>
+                          <input type="checkbox" name="discover_lw" checked>
+                        </li>
+                        <li>
+                          <label for="discover_death_type">사인을 알 수 있음</label>
+                          <input type="checkbox" name="discover_death_type" checked>
+                        </li>
+                        <li>
+                          <label for="discover_visitor_role">방문자들의 직업을 알아냄</label>
+                          <input type="checkbox" name="discover_visitor_role" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="경호원">
+                      <ul>
+                        <li>
+                          <label for="offense_level_Bodyguard">반격 수준</label>
+                          <ul>
+                            <li><input type="radio" name="offense_level_Bodyguard" value="1">기본</li>
+                            <li><input type="radio" name="offense_level_Bodyguard" value="2" checked>강력</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="unhealable">치료될 수 없음</label>
+                          <input type="checkbox" name="unhealable" checked>
+                        </li>
+                        <li>
+                          <label for="prevents_conversion">영입/이교도로의 개종을 막을 수 있음</label>
+                          <input type="checkbox" name="prevents_conversion">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="퇴역군인">
+                      <ul>
+                        <li>
+                          <label for="alert_chance">퇴치 기회</label>
+                          <ul>
+                            <li><input type="radio" name="alert_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="alert_chance" value="3">3회</li>
+                            <li><input type="radio" name="alert_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="offense_level_Veteran">반격 수준</label>
+                          <ul>
+                            <li><input type="radio" name="offense_level_Veteran" value="1" checked>기본</li>
+                            <li><input type="radio" name="offense_level_Veteran" value="2">강력</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시장">
+                      <ul>
+                        <li>
+                          <label for="lose_extra_votes">회게, 개종될 경우 투표권을 잃음</label>
+                          <input type="checkbox" name="lose_extra_votes">
+                        </li>
+                        <li>
+                          <label for="extra_votes_Mayor">능력 발동 시 투표권</label>
+                            <ul>
+                              <li><input type="radio" name="extra_votes_Mayor" value="2">2표</li>
+                              <li><input type="radio" name="extra_votes_Mayor" value="3" checked>3표</li>
+                              <li><input type="radio" name="extra_votes_Mayor" value="4">4표</li>
+                            </ul>
+                        </li>
+                        <li>
+                          <label for="unhealable">치료될 수 없음</label>
+                          <input type="checkbox" name="unhealable" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="원수">
+                      <ul>
+                        <li>
+                          <label for="lynch_chance">집단 사형 기회</label>
+                          <ul>
+                            <li><input type="radio" name="lynch_chance" value="1" checked>1회</li>
+                            <li><input type="radio" name="lynch_chance" value="2">2회</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="executions_per_group">집단 사형 시 사형 가능한 사람 수</label>
+                            <ul>
+                              <li><input type="radio" name="executions_per_group" value="2">2명</li>
+                              <li><input type="radio" name="executions_per_group" value="3" checked>3명</li>
+                              <li><input type="radio" name="executions_per_group" value="4">4명</li>
+                            </ul>
+                        </li>
+                        <li>
+                          <label for="unhealable">치료될 수 없음</label>
+                          <input type="checkbox" name="unhealable">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="포고꾼">
+                    </div>
+                    <div class="마피아일원">
+                    </div>
+                    <div class="조언자">
+                      <ul>
+                        <li>
+                          <label for="promoted_if_no_Godfather">대부가 죽으면 대부로 대체</label>
+                          <input type="checkbox" name="promoted_if_no_Godfather">
+                        </li>
+                        <li>
+                          <label for="detect_exact_role">정확한 직업을 알 수 있음</label>
+                          <input type="checkbox" name="detect_exact_role">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="대부">
+                      <ul>
+                        <li>
+                          <label for="defense_level_Godfather">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level_Godfather" value="0">없음</li>
+                            <li><input type="radio" name="defense_level_Godfather" value="1" checked>기본</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="cannot_be_blocked">능력차단에 면역</label>
+                          <input type="checkbox" name="cannot_be_blocked">
+                        </li>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune" checked>
+                        </li>
+                        <li>
+                          <label for="killable_without_mafioso">마피아 일원 없이 죽일 수 있음</label>
+                          <input type="checkbox" name="killable_without_mafioso" checked>
+                        </li>
+                        <!-- <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso">
+                        </li> -->
+                      </ul>
+                    </div>
+                    <!-- <div class="변장자">
+                      <ul>
+                        <li>
+                          <label for="hide_target_role">목표의 직업을 감춤</label>
+                          <input type="checkbox" name="hide_target_role">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div> -->
+                    <div class="매춘부">
+                      <ul>
+                        <li>
+                          <label for="cannot_be_blocked">본인은 능력 차단에 면역</label>
+                          <input type="checkbox" name="cannot_be_blocked">
+                        </li>
+                        <li>
+                          <label for="detects_block_immune_target">대상이 능력 차단에 면역일 시 알림</label>
+                          <input type="checkbox" name="detects_block_immune_target">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="조작자">
+                      <ul>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune" checked>
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="관리인">
+                      <ul>
+                        <li>
+                          <label for="sanitize_chance_Janitor">직업 수거 기회</label>
+                          <ul>
+                            <li><input type="radio" name="sanitize_chance_Janitor" value="1">1회</li>
+                            <li><input type="radio" name="sanitize_chance_Janitor" value="2" checked>2회</li>
+                            <li><input type="radio" name="sanitize_chance_Janitor" value="3">3회</li>
+                            <li><input type="radio" name="sanitize_chance_Janitor" value="999">무제한</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="협박자">
+                      <ul>
+                        <li>
+                          <label for="can_talk_during_trial">피해자는 재판 중에 대화 가능</label>
+                          <input type="checkbox" name="can_talk_during_trial">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="납치범">
+                      <ul>
+                        <li>
+                          <label for="can_jail_members">마피아를 납치할 수 있음</label>
+                          <input type="checkbox" name="can_jail_members">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="요원">
+                      <ul>
+                        <li>
+                          <label for="nights_between_shadowings_Agent">재미행에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="nights_between_shadowings_Agent" value="0">없음</li>
+                            <li><input type="radio" name="nights_between_shadowings_Agent" value="1" checked>1일</li>
+                            <li><input type="radio" name="nights_between_shadowings_Agent" value="2">2일</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="잠입자">
+                      <ul>
+                        <li>
+                          <label for="hide_chance_Beguiler">숨을 기회</label>
+                          <ul>
+                            <li><input type="radio" name="hide_chance_Beguiler" value="2" checked>2회</li>
+                            <li><input type="radio" name="hide_chance_Beguiler" value="3">3회</li>
+                            <li><input type="radio" name="hide_chance_Beguiler" value="4">4회</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="target_is_notified">목표가 알 수 있음</label>
+                          <input type="checkbox" name="target_is_notified">
+                        </li>
+                        <li>
+                          <label for="can_hide_behind_member">마피아 뒤에 숨을 수 있음</label>
+                          <input type="checkbox" name="can_hide_behind_member">
+                        </li>
+                        <li>
+                          <label for="becomes_mafioso">팀에 살인 가능한 사람이 없으면 마피아 일원이 됨</label>
+                          <input type="checkbox" name="becomes_mafioso" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="홍곤">
+                    </div>
+                    <div class="백지선">
+                      <ul>
+                        <li>
+                          <label for="promoted_if_no_Dragonhead">대부가 죽으면 대부로 대체</label>
+                          <input type="checkbox" name="promoted_if_no_Dragonhead">
+                        </li>
+                        <li>
+                          <label for="detect_exact_role">정확한 직업을 알 수 있음</label>
+                          <input type="checkbox" name="detect_exact_role">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="용두">
+                      <ul>
+                        <li>
+                          <label for="defense_level_Dragonhead">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level_Dragonhead" value="0">없음</li>
+                            <li><input type="radio" name="defense_level_Dragonhead" value="1" checked>기본</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="cannot_be_blocked">능력차단에 면역</label>
+                          <input type="checkbox" name="cannot_be_blocked">
+                        </li>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune" checked>
+                        </li>
+                        <li>
+                          <label for="killable_without_enforcer">홍곤 없이 죽일 수 있음</label>
+                          <input type="checkbox" name="killable_without_enforcer" checked>
+                        </li>
+                        <!-- <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer">
+                        </li> -->
+                      </ul>
+                    </div>
+                    <!-- <div class="밀고자">
+                      <ul>
+                        <li>
+                          <label for="hide_target_role">목표의 직업을 감춤</label>
+                          <input type="checkbox" name="hide_target_role">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div> -->
+                    <div class="간통범">
+                      <ul>
+                        <li>
+                          <label for="cannot_be_blocked">본인은 능력 차단에 면역</label>
+                          <input type="checkbox" name="cannot_be_blocked">
+                        </li>
+                        <li>
+                          <label for="detects_block_immune_target">대상이 능력 차단에 면역일 시 알림</label>
+                          <input type="checkbox" name="detects_block_immune_target">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="위조꾼">
+                      <ul>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune" checked>
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="향주">
+                      <ul>
+                        <li>
+                          <label for="sanitize_chance">직업 수거 기회</label>
+                          <ul>
+                            <li><input type="radio" name="sanitize_chance" value="1">1회</li>
+                            <li><input type="radio" name="sanitize_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="sanitize_chance" value="3">3회</li>
+                            <li><input type="radio" name="sanitize_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="침묵자">
+                      <ul>
+                        <li>
+                          <label for="can_talk_during_trial">피해자는 재판 중에 대화 가능</label>
+                          <input type="checkbox" name="can_talk_during_trial">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="심문자">
+                      <ul>
+                        <li>
+                          <label for="can_jail_members">삼합회를 납치할 수 있음</label>
+                          <input type="checkbox" name="can_jail_members">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="선봉">
+                      <ul>
+                        <li>
+                          <label for="nights_between_shadowings">재미행에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="nights_between_shadowings" value="0">없음</li>
+                            <li><input type="radio" name="nights_between_shadowings" value="1" checked>1일</li>
+                            <li><input type="radio" name="nights_between_shadowings" value="2">2일</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="사기꾼">
+                      <ul>
+                        <li>
+                          <label for="hide_chance">숨을 기회</label>
+                          <ul>
+                            <li><input type="radio" name="hide_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="hide_chance" value="3">3회</li>
+                            <li><input type="radio" name="hide_chance" value="4">4회</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="target_is_notified">목표가 알 수 있음</label>
+                          <input type="checkbox" name="target_is_notified">
+                        </li>
+                        <li>
+                          <label for="can_hide_behind_member">마피아 뒤에 숨을 수 있음</label>
+                          <input type="checkbox" name="can_hide_behind_member">
+                        </li>
+                        <li>
+                          <label for="becomes_enforcer">팀에 살인 가능한 사람이 없으면 홍곤이 됨</label>
+                          <input type="checkbox" name="becomes_enforcer" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="생존자">
+                      <ul>
+                        <li>
+                          <label for="bulletproof_chance">방탄조끼 수</label>
+                          <ul>
+                            <li><input type="radio" name="bulletproof_chance" value="0">0벌</li>
+                            <li><input type="radio" name="bulletproof_chance" value="1">1벌</li>
+                            <li><input type="radio" name="bulletproof_chance" value="2">2벌</li>
+                            <li><input type="radio" name="bulletproof_chance" value="3" checked>3벌</li>
+                            <li><input type="radio" name="bulletproof_chance" value="4">4벌</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="기억상실자">
+                      <ul>
+                        <li>
+                          <label for="revealed">직업을 얻으면 마을에 직업이 밝혀짐</label>
+                          <input type="checkbox" name="revealed" checked>
+                        </li>
+                        <li>
+                          <label for="cannot_remember_town">시민 세력이 될 수 없음</label>
+                          <input type="checkbox" name="cannot_remember_town">
+                        </li>
+                        <li>
+                          <label for="cannot_remember_mafia_and_triad">마피아/삼합회 세력이 될 수 없음</label>
+                          <input type="checkbox" name="cannot_remember_mafia_and_triad">
+                        </li>
+                        <li>
+                          <label for="cannot_remember_killing_role">살인 직업이 될 수 없음</label>
+                          <input type="checkbox" name="cannot_remember_killing_role">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="어릿광대">
+                      <ul>
+                        <li>
+                          <label for="randomly_suicide">무작위로 유죄 투표자 1명은 자살</label>
+                          <input type="checkbox" name="randomly_suicide" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="처형자">
+                      <ul>
+                        <li>
+                          <label for="becomes_Jester">목표가 밤에 죽으면 어릿광대로 변함</label>
+                          <input type="checkbox" name="becomes_Jester" checked>
+                        </li>
+                        <li>
+                          <label for="target_is_town">목표 대상은 무조건 시민</label>
+                          <input type="checkbox" name="target_is_town" checked>
+                        </li>
+                        <li>
+                          <label for="win_if_survived">끝까지 살아남아야 승리</label>
+                          <input type="checkbox" name="win_if_survived">
+                        </li>
+                        <li>
+                          <label for="defense_level_Executioner">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level_Executioner" value="0" checked>없음</li>
+                            <li><input type="radio" name="defense_level_Executioner" value="1">기본</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="마녀">
+                      <ul>
+                        <li>
+                          <label for="can_control_self">자신을 대상으로 가능</label>
+                          <input type="checkbox" name="can_control_self" checked>
+                        </li>
+                        <li>
+                          <label for="target_is_notified">조종 당하는 것을 목표가 알 수 있음</label>
+                          <input type="checkbox" name="target_is_notified" checked>
+                        </li>
+                        <li>
+                          <label for="WitchDoctor_when_converted">개종 시 요술사가 됨</label>
+                          <input type="checkbox" name="WitchDoctor_when_converted" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="회계사">
+                      <ul>
+                        <li>
+                          <label for="can_audit_mafia">마피아를 회계할 수 있음</label>
+                          <input type="checkbox" name="can_audit_mafia" checked>
+                        </li>
+                        <li>
+                          <label for="can_audit_triad">삼합회를 회계할 수 있음</label>
+                          <input type="checkbox" name="can_audit_triad" checked>
+                        </li>
+                        <li>
+                          <label for="can_audit_night_immune">방어 수준이 기본 이상인 사람을 회계할 수 있음</label>
+                          <input type="checkbox" name="can_audit_night_immune">
+                        </li>
+                        <li>
+                          <label for="audit_chance">회계 기회</label>
+                          <ul>
+                            <li><input type="radio" name="audit_chance" value="2">2회</li>
+                            <li><input type="radio" name="audit_chance" value="3" checked>3회</li>
+                            <li><input type="radio" name="audit_chance" value="4">4회</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="판사">
+                      <ul>
+                        <li>
+                          <label for="court_chance">재판 개정 기회</label>
+                          <ul>
+                            <li><input type="radio" name="court_chance" value="1" checked>1회</li>
+                            <li><input type="radio" name="court_chance" value="2">2회</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="nights_between_court">재개정에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="nights_between_court" value="0" checked>없음</li>
+                            <li><input type="radio" name="nights_between_court" value="1">1일</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="extra_votes">재판 시 투표권</label>
+                          <ul>
+                            <li><input type="radio" name="extra_votes" value="2">2표</li>
+                            <li><input type="radio" name="extra_votes" value="3" checked>3표</li>
+                            <li><input type="radio" name="extra_votes" value="4">4표</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="이교도">
+                      <ul>
+                        <li>
+                          <label for="can_convert_night_immune">방어 수준이 기본 이상인 사람을 개종할 수 있음</label>
+                          <input type="checkbox" name="can_convert_night_immune">
+                        </li>
+                        <li>
+                          <label for="nights_between_conversion">재개종에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="nights_between_conversion" value="0">없음</li>
+                            <li><input type="radio" name="nights_between_conversion" value="1" checked>1일</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="요술사">
+                      <ul>
+                        <li>
+                          <label for="save_chance">구원 기회</label>
+                          <ul>
+                            <li><input type="radio" name="save_chance" value="1">1회</li>
+                            <li><input type="radio" name="save_chance" value="2" checked>2회</li>
+                            <li><input type="radio" name="save_chance" value="3">3회</li>
+                            <li><input type="radio" name="save_chance" value="999">무제한</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="night_between_save">재구원에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="night_between_save" value="0">없음</li>
+                            <li><input type="radio" name="night_between_save" value="1" checked>1일</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="연쇄살인마">
+                      <ul>
+                        <li>
+                          <label for="defense_level_SerialKiller">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level_SerialKiller" value="0">없음</li>
+                            <li><input type="radio" name="defense_level_SerialKiller" value="1" checked>기본</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="kill_blocker">능력차단한 사람을 죽임</label>
+                          <input type="checkbox" name="kill_blocker">
+                        </li>
+                        <li>
+                          <label for="win_if_1v1_with_Arsonist">방화범과 단둘이 남았을 때 승리</label>
+                          <input type="checkbox" name="win_if_1v1_with_Arsonist">
+                        </li>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="대량학살자">
+                      <ul>
+                        <li>
+                          <label for="defense_level_MassMurderer">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level_MassMurderer" value="0">없음</li>
+                            <li><input type="radio" name="defense_level_MassMurderer" value="1" checked>기본</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="can_visit_self">자신을 대상으로 설정 가능</label>
+                          <input type="checkbox" name="can_visit_self" checked>
+                        </li>
+                        <li>
+                          <label for="nights_between_murder">재학살에 걸리는 밤</label>
+                          <ul>
+                            <li><input type="radio" name="nights_between_murder" value="0">없음</li>
+                            <li><input type="radio" name="nights_between_murder" value="1" checked>1일</li>
+                            <li><input type="radio" name="nights_between_murder" value="2">2일</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="detection_immune">검출 면역</label>
+                          <input type="checkbox" name="detection_immune">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="방화범">
+                      <ul>
+                        <li>
+                          <label for="offense_level">공격 수준</label>
+                          <ul>
+                            <li><input type="radio" name="offense_level" value="1">기본</li>
+                            <li><input type="radio" name="offense_level" value="3" checked>절대</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="defense_level">방어 수준</label>
+                          <ul>
+                            <li><input type="radio" name="defense_level" value="0">없음</li>
+                            <li><input type="radio" name="defense_level" value="1" checked>기본</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <label for="fire_spreads">불타는 대상의 목표에게 불이 번짐</label>
+                          <input type="checkbox" name="fire_spreads" checked>
+                        </li>
+                        <li>
+                          <label for="target_is_notified">휘발유에 젖었는지 목표가 알 수 있음</label>
+                          <input type="checkbox" name="target_is_notified" checked>
+                        </li>
+                        <li>
+                          <label for="douse_blocker">능력차단한 사람에게 기름을 묻힘</label>
+                          <input type="checkbox" name="douse_blocker" checked>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="모든무작위직">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                        <li>
+                          <label for="excludes_mafia">마피아 제외</label>
+                          <input type="checkbox" name="excludes_mafia">
+                        </li>
+                        <li>
+                          <label for="excludes_triad">삼합회 제외</label>
+                          <input type="checkbox" name="excludes_triad">
+                        </li>
+                        <li>
+                          <label for="excludes_neutral">중립 제외</label>
+                          <input type="checkbox" name="excludes_neutral">
+                        </li>
+                        <li>
+                          <label for="excludes_town">시민 직업 제외</label>
+                          <input type="checkbox" name="excludes_town">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민무작위직">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                        <li>
+                          <label for="excludes_government">행정직 제외</label>
+                          <input type="checkbox" name="excludes_government">
+                        </li>
+                        <li>
+                          <label for="excludes_investigative">조사직 제외</label>
+                          <input type="checkbox" name="excludes_investigative">
+                        </li>
+                        <li>
+                          <label for="excludes_protective">방어직 제외</label>
+                          <input type="checkbox" name="excludes_protective">
+                        </li>
+                        <li>
+                          <label for="excludes_power">능력직 제외</label>
+                          <input type="checkbox" name="excludes_power">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민행정직">
+                      <ul>
+                        <li>
+                          <label for="excludes_citizen">시민 제외</label>
+                          <input type="checkbox" name="excludes_citizen" checked>
+                        </li>
+                        <li>
+                          <label for="excludes_mason">비밀조합원 제외</label>
+                          <input type="checkbox" name="excludes_mason">
+                        </li>
+                        <li>
+                          <label for="excludes_mayor_and_marshall">시장/원수 제외</label>
+                          <input type="checkbox" name="excludes_mayor_and_marshall">
+                        </li>
+                        <li>
+                          <label for="excludes_masonleader">비밀조합장 제외</label>
+                          <input type="checkbox" name="excludes_masonleader">
+                        </li>
+                        <li>
+                          <label for="excludes_crier">포고꾼 제외</label>
+                          <input type="checkbox" name="excludes_crier">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민조사직">
+                      <ul>
+                        <li>
+                          <label for="excludes_coroner">검시관 제외</label>
+                          <input type="checkbox" name="excludes_coroner">
+                        </li>
+                        <li>
+                          <label for="excludes_sheriff">보안관 제외</label>
+                          <input type="checkbox" name="excludes_sheriff">
+                        </li>
+                        <li>
+                          <label for="excludes_investigator">탐정 제외</label>
+                          <input type="checkbox" name="excludes_investigator">
+                        </li>
+                        <li>
+                          <label for="excludes_detective">형사 제외</label>
+                          <input type="checkbox" name="excludes_detective">
+                        </li>
+                        <li>
+                          <label for="excludes_lookout">감시자 제외</label>
+                          <input type="checkbox" name="excludes_lookout">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민방어직">
+                      <ul>
+                        <!--<li>
+                          <label for="excludes_busdriver">버스기사 제외</label>
+                          <input type="checkbox" name="excludes_busdriver">
+                        </li>-->
+                        <li>
+                          <label for="excludes_bodyguard">경호원 제외</label>
+                          <input type="checkbox" name="excludes_bodyguard">
+                        </li>
+                        <li>
+                          <label for="excludes_doctor">의사 제외</label>
+                          <input type="checkbox" name="excludes_doctor">
+                        </li>
+                        <li>
+                          <label for="excludes_escort">기생 제외</label>
+                          <input type="checkbox" name="excludes_escort">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민살인직">
+                      <ul>
+                        <li>
+                          <label for="excludes_veteran">퇴역군인 제외</label>
+                          <input type="checkbox" name="excludes_veteran">
+                        </li>
+                        <li>
+                          <label for="excludes_jailor">간수 제외</label>
+                          <input type="checkbox" name="excludes_jailor">
+                        </li>
+                        <li>
+                          <label for="excludes_bodyguard">조사직 제외</label>
+                          <input type="checkbox" name="excludes_bodyguard">
+                        </li>
+                        <li>
+                          <label for="excludes_vigilante">자경대원 제외</label>
+                          <input type="checkbox" name="excludes_vigilante">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="시민능력직">
+                      <ul>
+                        <li>
+                          <label for="excludes_veteran">퇴역군인 제외</label>
+                          <input type="checkbox" name="excludes_veteran">
+                        </li>
+                        <li>
+                          <label for="excludes_spy">정보원 제외</label>
+                          <input type="checkbox" name="excludes_spy">
+                        </li>
+                        <!--<li>
+                          <label for="excludes_busdriver">버스기사 제외</label>
+                          <input type="checkbox" name="excludes_busdriver">
+                        </li>-->
+                        <li>
+                          <label for="excludes_jailor">간수 제외</label>
+                          <input type="checkbox" name="excludes_jailor">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="마피아무작위직">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="마피아살인직">
+                      <ul>
+                        <!--<li>
+                          <label for="excludes_disguiser">변장자 제외</label>
+                          <input type="checkbox" name="excludes_disguiser">
+                        </li>-->
+                        <li>
+                          <label for="excludes_kidnapper">납치범 제외</label>
+                          <input type="checkbox" name="excludes_kidnapper">
+                        </li>
+                        <li>
+                          <label for="excludes_mafioso">마피아 일원 제외</label>
+                          <input type="checkbox" name="excludes_mafioso">
+                        </li>
+                        <li>
+                          <label for="excludes_godfather">중립 제외</label>
+                          <input type="checkbox" name="excludes_godfather">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="마피아지원직">
+                      <ul>
+                        <li>
+                          <label for="excludes_blackmailer">협박자 제외</label>
+                          <input type="checkbox" name="excludes_blackmailer">
+                        </li>
+                        <li>
+                          <label for="excludes_kidnapper">납치범 제외</label>
+                          <input type="checkbox" name="excludes_kidnapper">
+                        </li>
+                        <li>
+                          <label for="excludes_consort">매춘부 제외</label>
+                          <input type="checkbox" name="excludes_consort">
+                        </li>
+                        <li>
+                          <label for="excludes_consigliere">조언자 제외</label>
+                          <input type="checkbox" name="excludes_consigliere">
+                        </li>
+                        <li>
+                          <label for="excludes_agent">요원 제외</label>
+                          <input type="checkbox" name="excludes_agent">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="마피아속임수직">
+                      <ul>
+                        <!--<li>
+                          <label for="excludes_disguiser">변장자 제외</label>
+                          <input type="checkbox" name="excludes_disguiser">
+                        </li>-->
+                        <li>
+                          <label for="excludes_framer">조작자 제외</label>
+                          <input type="checkbox" name="excludes_framer">
+                        </li>
+                        <li>
+                          <label for="excludes_janitor">관리인 제외</label>
+                          <input type="checkbox" name="excludes_janitor">
+                        </li>
+                        <li>
+                          <label for="excludes_beguiler">잠입자 제외</label>
+                          <input type="checkbox" name="excludes_beguiler">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="삼합회무작위직">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="삼합회살인직">
+                      <ul>
+                        <!--<li>
+                          <label for="excludes_informant">밀고자 제외</label>
+                          <input type="checkbox" name="excludes_informant">
+                        </li>-->
+                        <li>
+                          <label for="excludes_interrogator">심문자 제외</label>
+                          <input type="checkbox" name="excludes_interrogator">
+                        </li>
+                        <li>
+                          <label for="excludes_enforcer">홍곤 제외</label>
+                          <input type="checkbox" name="excludes_enforcer">
+                        </li>
+                        <li>
+                          <label for="excludes_dragonhead">용두 제외</label>
+                          <input type="checkbox" name="excludes_dragonhead">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="삼합회지원직">
+                      <ul>
+                        <li>
+                          <label for="excludes_silencer">침묵자 제외</label>
+                          <input type="checkbox" name="excludes_silencer">
+                        </li>
+                        <li>
+                          <label for="excludes_interrogator">심문자 제외</label>
+                          <input type="checkbox" name="excludes_interrogator">
+                        </li>
+                        <li>
+                          <label for="excludes_liaison">간통범 제외</label>
+                          <input type="checkbox" name="excludes_liaison">
+                        </li>
+                        <li>
+                          <label for="excludes_administrator">백지선 제외</label>
+                          <input type="checkbox" name="excludes_administrator">
+                        </li>
+                        <li>
+                          <label for="excludes_vanguard">선봉 제외</label>
+                          <input type="checkbox" name="excludes_vanguard">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="삼합회속임수직">
+                      <ul>
+                        <!--<li>
+                          <label for="excludes_informant">밀고자 제외</label>
+                          <input type="checkbox" name="excludes_informant">
+                        </li>-->
+                        <li>
+                          <label for="excludes_forger">위조꾼 제외</label>
+                          <input type="checkbox" name="excludes_forger">
+                        </li>
+                        <li>
+                          <label for="excludes_incensemaster">향주 제외</label>
+                          <input type="checkbox" name="excludes_incensemaster">
+                        </li>
+                        <li>
+                          <label for="excludes_deceiver">사기꾼 제외</label>
+                          <input type="checkbox" name="excludes_deceiver">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="중립무작위직">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                        <li>
+                          <label for="excludes_evil">중립 악 제외</label>
+                          <input type="checkbox" name="excludes_evil">
+                        </li>
+                        <li>
+                          <label for="excludes_benign">중립 선 제외</label>
+                          <input type="checkbox" name="excludes_benign">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="중립살인직">
+                      <ul>
+                        <li>
+                          <label for="excludes_serialkiller">연쇄살인마 제외</label>
+                          <input type="checkbox" name="excludes_serialkiller">
+                        </li>
+                        <li>
+                          <label for="excludes_arsonist">방화범 제외</label>
+                          <input type="checkbox" name="excludes_arsonist">
+                        </li>
+                        <li>
+                          <label for="excludes_massmurderer">대량학살자 제외</label>
+                          <input type="checkbox" name="excludes_massmurderer">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="중립악">
+                      <ul>
+                        <li>
+                          <label for="excludes_killing_role">살인 직업 제외</label>
+                          <input type="checkbox" name="excludes_killing_role">
+                        </li>
+                        <li>
+                          <label for="excludes_cults">이교 집단 직업 제외</label>
+                          <input type="checkbox" name="excludes_cults">
+                        </li>
+                        <li>
+                          <label for="excludes_witch">마녀 제외</label>
+                          <input type="checkbox" name="excludes_witch">
+                        </li>
+                        <li>
+                          <label for="excludes_judge">판사 제외</label>
+                          <input type="checkbox" name="excludes_judge">
+                        </li>
+                        <li>
+                          <label for="excludes_auditor">회계사 제외</label>
+                          <input type="checkbox" name="excludes_auditor">
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="중립선">
+                      <ul>
+                        <li>
+                          <label for="excludes_survivor">생존자 제외</label>
+                          <input type="checkbox" name="excludes_survivor">
+                        </li>
+                        <li>
+                          <label for="excludes_jester">어릿광대 제외</label>
+                          <input type="checkbox" name="excludes_jester">
+                        </li>
+                        <li>
+                          <label for="excludes_executioner">처형자 제외</label>
+                          <input type="checkbox" name="excludes_executioner">
+                        </li>
+                        <li>
+                          <label for="excludes_amnesiac">기억상실자 제외</label>
+                          <input type="checkbox" name="excludes_amnesiac">
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="other_setup">
+                    <div class="time_setup">
+                      <label for="day_time_slider">낮 길이:<input type="range" min="1.0" max="6.0" value="2.0" step="0.1" class="day_time_slider"><span class="day_time">2.0</span>분</label>
+                      <br>
+                      <label for="night_time_slider">밤 길이:<input type="range" min="0.5" max="2.0" value="0.6" step="0.1" class="night_time_slider"><span class="night_time">0.6</span>분</label>
+                      <br>
+                      <label for="discussion_time_slider">토론 시간:<input type="range" min="0.5" max="3.0" value="0.6" step="0.1" class="discussion_time_slider"><span class="discussion_time">0.6</span>분</label>
+                      <br>
+                      <label for="court_time_slider">재판 시간:<input type="range" min="0.5" max="2.0" value="0.6" step="0.1" class="court_time_slider"><span class="court_time">0.6</span>분</label>
+                    </div>
+                    <div class="select_setup">
+                      <label for="initial_state">게임 시작 시:</label>
+                      <select name="initial_state">
+                        <option value="MORNING" title="첫날을 일반적인 낮으로 시작합니다.">낮</option>
+                        <option value="MORNING_WITHOUT_COURT" title="첫날은 투표 없이 토론만 하고 즉시 밤으로 넘어갑니다." selected>재판 없는 낮</option>
+                        <option value="NIGHT" title="처읍부터 밤으로 시작합니다.">밤</option>
+                      </select>
+                      <br>
+                      <label for="night_type">밤 종류:</label>
+                      <select name="night_type">
+                        <option value="normal" title="사망한 이유가 밝혀지고 밤에 소리도 납니다.">기본 밤</option>
+                        <option value="reason" title="사망한 이유만 밝혀지고 밤에 소리는 나지 않습니다.">소리없는 밤</option>
+                        <option value="classic" title="사망한 이유도 소리도 나오지 않습니다.">고전 밤</option>
+                      </select>
+                    </div>
+                    <div class="checkbox_setup">
+                      <label for="whisper_allowed">귓속말을 할 수 있습니다.</label>
+                      <input type="checkbox" name="whisper_allowed" checked>
+                      <br>
+                      <label for="use_discussion_time">토론 시간을 둡니다.</label>
+                      <input type="checkbox" name="use_discussion_time" checked>
+                      <br>
+                      <label for="pause_daytime" title="재판 시간을 낮 시간에서 제외합니다.">재판 시 낮을 멈춥니다.</label>
+                      <input type="checkbox" name="pause_daytime" checked>
+                      <br>
+                      <label for="use_defense_time" title="재판 시간의 절반을 사용합니다.">재판 시 개인 반론을 허용합니다.</label>
+                      <input type="checkbox" name="use_defense_time" checked>
+                    </div>
+                  </div>
+                  <button type="submit" id="setup-submit" name="button">확인</button>
+                </slot>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- modal 끝 -->
-      <section v-show="inLobby" class="lobby-menu">
-        <button type="button" id="show-modal" @click="showModal=true" name="button">방 파기</button>
+      <section class="lobby-menu">
+        <button type="button" id="show-modal" name="button">방 파기</button>
       </section>
-      <section v-show="inLobby" class="room_list_section">
+      <section class="room_list_section">
         <table class="room_list">
           <thead>
             <th>번호</th>
@@ -107,7 +1650,7 @@
           </tbody>
         </table>
       </section>
-      <section v-show="!inLobby">
+      <section class="room_section">
         <div class="upper">
           <button type="button" name="button" id="leave_GameRoom_button">나가기</button>
           <button type="button" name="button" id="ready_button">준비</button>
@@ -134,10 +1677,343 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.1/socket.io.js" integrity="sha512-AcZyhRP/tbAEsXCCGlziPun5iFvcSUpEz2jKkx0blkYKbxU81F+iq8FURwPn1sYFeksJ+sDDrI5XujsqSobWdQ==" crossorigin="anonymous"></script>
   <script type="text/javascript">
     "use strict";
-    const Socket = io('http://sc2mafia.kr');
+    const Socket = io("http://sc2mafia.kr");
     Socket.emit('request_room_list', {});
   </script>
-  <script crossorigin src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   <script src="/static/js/main.js" type="module" charset="utf-8"></script>
   <script src="/static/js/socket_room.js" type="module" charset="utf-8"></script>
+  <script type="text/javascript">
+    "use strict";
+    function colored(role_name) {
+      let color = "";
+      switch (role_name) {
+        case "중립":
+          color = "gray";
+          break;
+        case "경호원":
+          color = "00CC66";
+          break;
+        case "버스기사":
+          color = "55CC11";
+          break;
+        case "시민":
+          color = "33CC33";
+          break;
+        case "검시관":
+          color = "00DD55";
+          break;
+        case "포고꾼":
+          color = "66CC33";
+          break;
+        case "형사":
+          color = "00FF44";
+          break;
+        case "의사":
+          color = "00FF00";
+          break;
+        case "기생":
+          color = "00FF00";
+          break;
+        case "탐정":
+          color = "00FF66";
+          break;
+        case "간수":
+          color = "66CC00";
+          break;
+        case "감시자":
+          color = "44FF00";
+          break;
+        case "원수":
+          color = "23EF32";
+          break;
+        case "비밀조합":
+        case "비밀조합원":
+          color = "00FF44";
+          break;
+        case "비밀조합장":
+          color = "22FF77";
+          break;
+        case "시장":
+          color = "44FF44";
+          break;
+        case "보안관":
+          color = "00FF00";
+          break;
+        case "정보원":
+          color = "66AA00";
+          break;
+        case "나무 그루터기":
+          color = "00FF00";
+          break;
+        case "퇴역군인":
+          color = "AAFF55";
+          break;
+        case "자경대원":
+          color = "88CC00";
+          break;
+        case "판사":
+          color = "BB6655";
+          break;
+        case "회계사":
+          color = "bbcc88";
+          break;
+        case "요술사":
+          color = "aa55ff";
+          break;
+        case "대량학살자":
+          color = "bb4455";
+          break;
+        case "이교도":
+          color = "bb44aa";
+          break;
+        case "기억상실자":
+          color = "66ffcc";
+          break;
+        case "처형자":
+          color = "aaccff";
+          break;
+        case "방화범":
+          color = "ffaa00";
+          break;
+        case "마녀":
+          color = "6622cc";
+          break;
+        case "어릿광대":
+          color = "ffaaff";
+          break;
+        case "생존자":
+          color = "ffff00";
+          break;
+        case "연쇄살인마":
+          color = "ff00cc";
+          break;
+        case "잠입자":
+          color = "bb3355";
+          break;
+        case "요원":
+          color = "ff2244";
+          break;
+        case "납치범":
+          color = "aa3333";
+          break;
+        case "변장자":
+          color = "dd6644";
+          break;
+        case "협박자":
+          color = "dd0000";
+          break;
+        case "관리인":
+          color = "ff3333";
+          break;
+        case "조작자":
+          color = "dd6600"
+          break;
+        case "조언자":
+          color = "ff5533";
+          break;
+        case "매춘부":
+          color = "ff0000";
+          break;
+        case "대부":
+          color = "ff4488";
+          break;
+        case "마피아":
+        case "마피아 일원":
+          color = "cc0000";
+          break;
+        case "사기꾼":
+          color = "6969BB";
+          break;
+        case "선봉":
+          color = "697aff";
+          break;
+        case "심문자":
+          color = "4a62aa";
+          break;
+        case "밀고자":
+          color = "6295dd";
+          break;
+        case "침묵자":
+          color = "2c58dd";
+          break;
+        case "향주":
+          color = "5b84ff";
+          break;
+        case "위조꾼":
+          color = "2c95dd";
+          break;
+        case "백지선":
+          color = "5b99ff";
+          break;
+        case "간통범":
+          color = "3366ff";
+          break;
+        case "용두":
+          color = "9f8eff";
+          break;
+        case "삼합회":
+        case "홍곤":
+          color = "2851cc";
+          break;
+      }
+      return `<span style='color:#${color}'>${role_name}</span>`;
+    }
+    document.getElementsByName("use_discussion_time")[0].addEventListener("change", function () {
+      if (this.checked) {
+        document.querySelector(".discussion_time_slider").disabled=false;
+      } else {
+        document.querySelector(".discussion_time_slider").disabled=true;
+      }
+    });
+    let current_visible_setting = null
+    function show_role_setting(role_name) {
+      document.querySelector(".role_name").innerText = role_name+" 설정";
+      if (current_visible_setting) {
+        current_visible_setting.style.display = "none";
+      }
+      if (role_name.includes(" ")) {
+        let splitted = role_name.split(" ");
+        let class_name = splitted[0]+splitted[1];
+        current_visible_setting = document.querySelector(`.${class_name}`);
+      } else {
+        current_visible_setting = document.querySelector(`.${role_name}`);
+      }
+      current_visible_setting.style.display = "block";
+    }
+    document.querySelector(".day_time_slider").addEventListener("input", function () {
+      document.querySelector(".day_time").innerText = this.value;
+    });
+    document.querySelector(".night_time_slider").addEventListener("input", function () {
+      document.querySelector(".night_time").innerText = this.value;
+    });
+    document.querySelector(".discussion_time_slider").addEventListener("input", function () {
+      document.querySelector(".discussion_time").innerText = this.value;
+    });
+    document.querySelector(".court_time_slider").addEventListener("input", function () {
+      document.querySelector(".court_time").innerText = this.value;
+    });
+    let setup_list = document.querySelector("#setup_list tbody");
+    let town_list = document.querySelector("#town_list");
+    let mafia_list = document.querySelector("#mafia_list");
+    let triad_list = document.querySelector("#triad_list");
+    let neutral_list = document.querySelector("#neutral_list");
+    for (let i=1, row; row=town_list.rows[i]; i++) {
+      row.addEventListener("click", function () {
+        show_role_setting(this.children[0].innerText);
+      });
+      for (let j=0, col; col=row.cells[j]; j++) {
+        let a = col.children[0];
+        a.innerHTML = colored(a.innerHTML);
+        a.addEventListener("click", (event)=>{
+          let tr = document.createElement("tr");
+          let td = document.createElement("td");
+          let a2 = document.createElement("a");
+          a2.setAttribute("href", "#");
+          a2.innerHTML = a.innerHTML;
+          td.appendChild(a2);
+          tr.appendChild(td);
+          setup_list.appendChild(tr);
+          a2.addEventListener("click", (event)=>{
+            setup_list.removeChild(tr);
+          });
+        });
+      }
+    }
+    for (let i=1, row; row=mafia_list.rows[i]; i++) {
+      row.addEventListener("click", function () {
+        show_role_setting(this.children[0].innerText);
+      });
+      for (let j=0, col; col=row.cells[j]; j++) {
+        let a = col.children[0];
+        a.innerHTML = colored(a.innerHTML);
+        a.addEventListener("click", (event)=>{
+          let tr = document.createElement("tr");
+          let td = document.createElement("td");
+          let a2 = document.createElement("a");
+          a2.setAttribute("href", "#");
+          a2.innerHTML = a.innerHTML;
+          td.appendChild(a2);
+          tr.appendChild(td);
+          setup_list.appendChild(tr);
+          a2.addEventListener("click", (event)=>{
+            setup_list.removeChild(tr);
+          });
+        });
+      }
+    }
+    for (let i=1, row; row=triad_list.rows[i]; i++) {
+      row.addEventListener("click", function () {
+        show_role_setting(this.children[0].innerText);
+      });
+      for (let j=0, col; col=row.cells[j]; j++) {
+        let a = col.children[0];
+        a.innerHTML = colored(a.innerHTML);
+        a.addEventListener("click", (event)=>{
+          let tr = document.createElement("tr");
+          let td = document.createElement("td");
+          let a2 = document.createElement("a");
+          a2.setAttribute("href", "#");
+          a2.innerHTML = a.innerHTML;
+          td.appendChild(a2);
+          tr.appendChild(td);
+          setup_list.appendChild(tr);
+          a2.addEventListener("click", (event)=>{
+            setup_list.removeChild(tr);
+          });
+        });
+      }
+    }
+    for (let i=1, row; row=neutral_list.rows[i]; i++) {
+      row.addEventListener("click", function () {
+        show_role_setting(this.children[0].innerText);
+      });
+      for (let j=0, col; col=row.cells[j]; j++) {
+        let a = col.children[0];
+        a.innerHTML = colored(a.innerHTML);
+        a.addEventListener("click", (event)=>{
+          let tr = document.createElement("tr");
+          let td = document.createElement("td");
+          let a2 = document.createElement("a");
+          a2.setAttribute("href", "#");
+          a2.innerHTML = a.innerHTML;
+          td.appendChild(a2);
+          tr.appendChild(td);
+          setup_list.appendChild(tr);
+          a2.addEventListener("click", (event)=>{
+            setup_list.removeChild(tr);
+          });
+        });
+      }
+    }
+    for (let i=1, row; row=random_list.rows[i]; i++) {
+      row.addEventListener("click", function () {
+        show_role_setting(this.children[0].innerText);
+      });
+      for (let j=0, col; col=row.cells[j]; j++) {
+        let a = col.children[0];
+        if (a.innerText.includes("시민")) {
+          a.innerHTML = a.innerHTML.replace("시민", colored("시민"));
+        } else if (a.innerText.includes("마피아")) {
+          a.innerHTML = a.innerHTML.replace("마피아", colored("마피아"));
+        } else if (a.innerHTML.includes("삼합회")) {
+          a.innerHTML = a.innerHTML.replace("삼합회", colored("삼합회"));
+        } else if (a.innerHTML.includes("중립")) {
+          a.innerHTML = a.innerHTML.replace("중립", colored("중립"));
+        }
+        a.addEventListener("click", (event)=>{
+          let tr = document.createElement("tr");
+          let td = document.createElement("td");
+          let a2 = document.createElement("a");
+          a2.setAttribute("href", "#");
+          a2.innerHTML = a.innerHTML;
+          td.appendChild(a2);
+          tr.appendChild(td);
+          setup_list.appendChild(tr);
+          a2.addEventListener("click", (event)=>{
+            setup_list.removeChild(tr);
+          });
+        });
+      }
+    }
+  </script>
 </html>
