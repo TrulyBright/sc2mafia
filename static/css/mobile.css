@@ -1,0 +1,31 @@
+@media all and (max-width:767px) {
+  #left_banner {
+    display: none;
+  }
+  #right_banner {
+    display: none;
+  }
+  .main {
+    width: 100%;
+    margin: auto;
+  }
+  header nav ul li a {
+    font-size: 12px;
+  }
+  #setup-modal-container {
+    width: 90%;
+    height: 70vh;
+    overflow: auto;
+  }
+  .setup_modal_list {
+    width: 15%;
+  }
+  .role_setting {
+    display: block;
+    width: 100%;
+    right: auto;
+  }
+  #lw-modal-container {
+    width: 90%;
+  }
+}

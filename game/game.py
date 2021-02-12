@@ -612,35 +612,38 @@ class GameRoom:
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
-                    if len(self.members)<len(self.setup["formation"]):
-                        data = {
-                            "type": "unable_to_start",
-                            "reason": "not_enough_members",
-                            "required_members": len(self.setup["formation"]),
-                        }
-                        await self.emit_event(sio, data, room=sid)
-                        return
-                    elif len(self.readied)!=len(self.members):
-                        not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied], return_exceptions=True)
-                        not_readied = [session["nickname"] for session in not_readied if not isinstance(session, Exception)]
-                        data = {
-                            "type": "unable_to_start",
-                            "reason": "not_readied",
-                            "not_readied": not_readied,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        return
                     try:
-                        await self.init_game(sio)
-                        await self.run_game(sio)
-                        await self.finish_game(sio)
-                    except:
-                        data = {
-                            "type": "Error",
-                            "error_code": traceback.format_exc()
-                        }
-                        self.inGame = False
-                        await sio.emit("event", data, room=self.roomID)
+                        if len(self.members)<len(self.setup["formation"]):
+                            data = {
+                                "type": "unable_to_start",
+                                "reason": "not_enough_members",
+                                "required_members": len(self.setup["formation"]),
+                            }
+                            await self.emit_event(sio, data, room=sid)
+                            return
+                        elif len(self.readied)!=len(self.members):
+                            not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied], return_exceptions=True)
+                            not_readied = [session["nickname"] for session in not_readied if not isinstance(session, Exception)]
+                            data = {
+                                "type": "unable_to_start",
+                                "reason": "not_readied",
+                                "not_readied": not_readied,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            return
+                        try:
+                            await self.init_game(sio)
+                            await self.run_game(sio)
+                            await self.finish_game(sio)
+                        except:
+                            data = {
+                                "type": "Error",
+                                "error_code": traceback.format_exc()
+                            }
+                            self.inGame = False
+                            await sio.emit("event", data, room=self.roomID)
+                    except TypeError: # 설정이 없는 상태에서 시작할 경우
+                        return
                 else:
                     data = {
                         "type": "message",
