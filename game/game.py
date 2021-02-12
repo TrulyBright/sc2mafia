@@ -2911,6 +2911,10 @@ class GameRoom:
         self.day += 1
         if self.STATE == "MORNING_WITHOUT_COURT":
             self.STATE = "MORNING"
+            data = {
+                "type": "state",
+                "state": self.STATE,
+            }
             await self.emit_event(sio, data, room=self.roomID)
             self.STATE = "DISCUSSION"
             data = {
