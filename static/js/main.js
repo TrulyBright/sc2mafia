@@ -1,5 +1,10 @@
 "use strict";
-
+window.onbeforeunload = function () {
+  return true;
+};
+window.onunload = function () {
+  return true;
+};
 document.querySelector("#show-modal").addEventListener("click", (event)=>{
   document.querySelector(".room_create_modal").style.display = "block";
 });
