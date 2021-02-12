@@ -643,7 +643,11 @@ class GameRoom:
                             self.inGame = False
                             await sio.emit("event", data, room=self.roomID)
                     except TypeError: # 설정이 없는 상태에서 시작할 경우
-                        return
+                        data = {
+                            "type": "unable_to_start",
+                            "reason": "no setup"
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
                 else:
                     data = {
                         "type": "message",
