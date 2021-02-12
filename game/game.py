@@ -564,6 +564,8 @@ class GameRoom:
     async def handle_message(self, sio, sid, msg):
         async with sio.session(sid) as user:
             if msg == "": return
+            if '\\' in msg: return
+            if '"' in msg: return
             msg = msg[:206] # 최대 글자수
             logger.info(f"[room #{self.roomID}] {user['nickname']}: {msg}")
             if msg == "/시행":
