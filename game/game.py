@@ -1120,6 +1120,15 @@ class GameRoom:
                         "type": "will_burn_today",
                     }
                     await self.emit_event(sio, data, room=commander.sid)
+                elif cmd == "/자살"\
+                and commander.alive\
+                and self.STATE!="NIGHT":
+                    commander.suicide_today = not commander.suicide_today
+                    data = {
+                        "type": "suicide_today",
+                        "suicide_today": commander.suicide_today,
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
             else:
                 if commander not in self.alive_list:
                     data = {

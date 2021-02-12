@@ -1492,6 +1492,13 @@ Socket.on('event', (data)=> {
     case 'almost_suicide':
       addchat('당신은 당신의 목을 조르려 했습니다. 당신은 거의 죽을 뻔 했습니다!');
       break;
+    case "suicide_today":
+      if (data["suicide_today"]) {
+        addchat("자살하기로 했습니다.", "red");
+      } else {
+        addchat("자살하지 않기로 했습니다.", "green");
+      }
+      break;
     case "remaining_ability_opportunity":
       addchat("능력을 사용할 기회가 "+data["remaining_ability_opportunity"]+"번 남았습니다.");
       break;
