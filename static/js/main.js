@@ -11,11 +11,15 @@ document.querySelector("#show-modal").addEventListener("click", (event)=>{
 });
 
 document.querySelector(".modal-default-button").addEventListener("click", (event)=>{
-  document.querySelector(".room_create_modal").style.display = "none";
   let title = document.querySelector("#GameRoom_title").value;
   let capacity = Number(document.querySelector("#GameRoom_capacity").value);
-  let password = document.querySelector("#GameRoom_password").value;
-  create_GameRoom(title, capacity, password);
+  // let password = document.querySelector("#GameRoom_password").value;
+  if (!title) {
+    alert("방제가 있어야 합니다.");
+  } else {
+    create_GameRoom(title, capacity);
+    document.querySelector(".room_create_modal").style.display = "none";
+  }
 });
 
 document.querySelector(".close_room_setup_modal_button").addEventListener("click", (event)=>{
@@ -47,10 +51,10 @@ function leave_GameRoom (){
   Socket.emit('leave_GameRoom', {});
 }
 
-function create_GameRoom (title, capacity, password) {
+function create_GameRoom (title, capacity) {
   Socket.emit('create_GameRoom', {
     'title': title,
-    'password': password,
+    // 'password': password,
     'capacity': capacity,
   });
 };
@@ -86,13 +90,23 @@ Socket.on('failed_to_enter_GameRoom', (data)=>{
 Socket.on('room_list', (room_list)=> {
   console.log(room_list)
   let tbody = document.querySelector('.room_list tbody');
-  let html = '';
+  tbody.innerHTML = "";
   for (const [roomID, title] of Object.entries(room_list)) {
-    html+='<tr><td>'+roomID+'</td><td>'+'<a href="#" id="room'+roomID+'">'+title+'</a></td></tr>';
+    let tr = document.createElement("tr");
+    let roomID_column = document.createElement("td");
+    let title_column = document.createElement("td");
+    let a = document.createElement("a");
+    a.setAttribute("href", "#");
+    a.setAttribute("id", `room${roomID}`);
+    a.innerText = title;
+    title_column.appendChild(a);
+    roomID_column.innerText = roomID;
+    tr.appendChild(roomID_column);
+    tr.appendChild(title_column);
+    tbody.appendChild(tr);
   }
-  tbody.innerHTML = html;
   for (const [roomID, title] of Object.entries(room_list)) {
-    document.querySelector("#room"+roomID).addEventListener("click", ()=>{enter_GameRoom(Number(roomID))});
+    document.querySelector(`#room${roomID}`).addEventListener("click", ()=>{enter_GameRoom(Number(roomID))});
   }
 });
 
