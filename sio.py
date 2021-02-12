@@ -137,9 +137,8 @@ async def leave_GameRoom(sid, data):
 async def create_GameRoom(sid, data):
     # TODO: password
     global next_roomID
-    assert type(data) is dict
-    assert "title" in data
-    assert "capacity" in data
+    if not data["title"] or not data["capacity"]:
+        return
     async with sio.session(sid) as user:
         room_list[next_roomID] = GameRoom(roomID=next_roomID,
                                           title=data['title'],
