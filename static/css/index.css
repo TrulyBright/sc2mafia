@@ -120,9 +120,9 @@ input {
 }
 .underlay-photo {
   animation: hue-rotate 6s infinite;
-  /* background-color: black; */
+  background-color: black;
   background-image: url("/static/images/index.jpg");
-  background-size: cover;
+  background-repeat: no-repeat;
   -webkit-filter: grayscale(30%);
   z-index: -1;
 }

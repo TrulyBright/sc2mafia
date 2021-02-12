@@ -68,6 +68,8 @@
 
 #setup-modal-container {
   width: 70%;
+  height: 70vh;
+  overflow: auto;
   margin: 0px auto;
   padding: 20px 30px;
   background-color: black;
@@ -84,12 +86,19 @@
   display: inline-block;
 }
 
+#setup-submit {
+  float: right;
+}
+#setup-cancel {
+  float: right;
+}
+
 .setup-modal-help {
   display: inline-block;
 }
 
 .setup_modal_list {
-  width: 13%;
+  width: 15%;
   height: 50vh;
   overflow: auto;
   border: white 1px solid;
@@ -101,10 +110,9 @@
 }
 
 .role_setting {
-  width: 18%;
-  right: 0;
+  width: auto;
   overflow: auto;
-  display: inline-block;
+  display: block;
   vertical-align: top;
 }
 
@@ -161,6 +169,9 @@
 }
 
 .modal-default-button {
+  float: left;
+}
+.close_room_setup_modal_button {
   float: right;
 }
 

@@ -920,6 +920,8 @@ Socket.on('event', (data)=> {
     case "applying_setup_success":
       addchat("설정이 적용되었습니다. '/시행'을 입력하여 설정을 시험해볼 수 있습니다.");
       addchat("설정이 바뀌어 준비가 해제되었습니다.");
+      addchat("'/저장'을 입력하여 현재 설정을 계정에 저장할 수 있습니다.");
+      addchat("'/불러오기'를 입력하여 설정을 계정에 불러올 수 있습니다.");
       break;
     case "applying_setup_failed":
       addchat("설정에 문제가 있어 적용에 실패했습니다.", "red");
@@ -1683,3 +1685,5 @@ Socket.on('event', (data)=> {
       addchat(data);
   }
 });
+
+export {addchat};
