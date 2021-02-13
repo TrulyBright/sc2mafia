@@ -1448,47 +1448,41 @@ class GameRoom:
     async def trigger_evening_events(self, sio):
         for function in self.to_convert:
             await function
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Mason) and not isinstance(p.role, roles.MasonLeader):
-                for p2 in self.alive_list:
-                    if p is not p2 and isinstance(p.role, roles.Mason):
-                        break
-                else: # 혼자 남았다. 비조장으로 승격
-                    if p.role.promoted_if_alone:
-                        await self.convert_role(sio, convertor=p, converted=p, role=roles.MasonLeader)
-                        break
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Consigliere) and p.role.promoted_if_no_Godfather:
-                for p2 in self.alive_list:
-                    if isinstance(p2.role, roles.Godfather):
-                        break
-                else:
-                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Godfather)
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Mafia) and hasattr(p.role, "becomes_mafioso") and p.role.becomes_mafioso:
-                for p2 in self.alive_list:
-                    if isinstance(p2.role, roles.MafiaKilling) and p2.role.ability_opportunity>0:
-                        break
-                else:
-                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Mafioso)
+        self.to_convert = []
+        remaining_roles = [player.role.__class__ for player in self.alive_list]
+        dead_roles = [player.role.__class__ for player in self.players.values() if not player.alive]
+        if roles.MasonLeader not in remaining_roles and remaining_roles.count(roles.Mason)==1:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Mason) and p.role.promoted_if_alone:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.MasonLeader)
                     break
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Administrator) and p.role.promoted_if_no_Dragonhead:
-                for p2 in self.alive_list:
-                    if isinstance(p2.role, roles.DragonHead):
-                        break
-                else:
+        if roles.Godfather in dead_roles and roles.Godfather not in remaining_roles:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Consigliere) and p.role.promoted_if_no_Godfather:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Godfather)
+                    break
+        if roles.DragonHead in dead_roles and roles.DragonHead not in remaining_roles:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Administrator) and p.role.promoted_if_no_Dragonhead:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.DragonHead)
                     break
-        for p in self.alive_list:
-            if isinstance(p.role, roles.Triad) and hasattr(p.role, "becomes_enforcer") and p.role.becomes_enforcer:
-                for p2 in self.alive_list:
-                    if isinstance(p2.role, roles.TriadKilling) and p2.role.ability_opportunity>0:
-                        break
-                else:
-                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Enforcer)
-                    break
 
+        remaining_player_with_roles = {player.role.__class__: player for player in self.alive_list}
+        for role, player in remaining_player_with_roles.items():
+            if issubclass(role, roles.MafiaKilling) and player.role.ability_opportunity>0:
+                break
+        else:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Mafia) and p.role.becomes_mafioso:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Mafioso)
+
+        for role, player in remaining_player_with_roles.items():
+            if issubclass(role, roles.TriadKilling) and player.role.ability_opportunity>0:
+                break
+        else:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Triad) and p.role.becomes_enforcer:
+                    await self.convert_role(sio, convertor=p, converted=p, role=roles.Enforcer)
         if not self.die_today: # 사형이 있은 날에는 감금 불가
             for p in self.alive_list:
                 if (
@@ -3372,6 +3366,7 @@ class GameRoom:
             coros = []
             for p in self.players.values():
                 to_send = []
+                if p.sid not in self.members: continue # 나간 사람에게는 보내지 않도록
                 if isinstance(p.role, roles.Mafia):
                     for p2 in self.players.values():
                         to_send.append((p2.nickname, p2.alive, p2.role.name if isinstance(p2.role, roles.Mafia) or (not p2.alive and not p2.sanitized) else ("???" if p2.sanitized else None)))
@@ -3412,12 +3407,19 @@ class GameRoom:
                         "inGame": self.inGame,
                     }
                     coros.append(sio.emit("player_list", data, room=p.sid))
+            for sid in {sid for sid in self.members if sid not in {p.sid for p in self.players.values()}}: # 중간에 들어온 사람들
+                player_list = [(p.nickname, p.alive, p.role.name if not p.alive and not p.sanitized else ("???" if p.sanitized else None)) for p in self.players.values()]
+                data = {
+                    "player_list": player_list,
+                    "inGame": self.inGame,
+                }
+                coros.append(sio.emit("player_list", data, room=sid))
             await asyncio.gather(*coros, return_exceptions=True)
         else:
             player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members], return_exceptions=True))
             readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied], return_exceptions=True)
             readied = {s["nickname"] for s in readied if not isinstance(s, Exception)}
-            player_list = [(nickname, nickname in readied) for nickname in player_list]
+            player_list = [(nickname, nickname in readied, (await sio.get_session(self.host))["nickname"]==nickname) for nickname in player_list]
             data = {
                 "player_list": player_list,
                 "inGame": self.inGame,
@@ -3586,3 +3588,6 @@ class Player:
         }
         await room.emit_event(self.sio, data, room=self.sid)
         await asyncio.sleep(5)
+        for p in room.alive_list:
+            if isinstance(p.role, roles.Executioner) and p.role.target is self and p.role.becomes_Jester:
+                room.to_convert.append(room.convert_role(self.sio, self, self, roles.Jester))
