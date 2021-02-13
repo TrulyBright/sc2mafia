@@ -2239,7 +2239,8 @@ class GameRoom:
                 }  # 경호원이 대학 경호 시 사망하는 것 구현
                 if p.target1.target1 is None:
                     victims.add(p.target1)
-                await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
+                if victims:
+                    await self.emit_sound(sio, p.role.name, number_of_murdered=len(victims))
                 if len(victims) > 1:
                     p.crimes["재물손괴"] = True
                     p.role.cannot_murder_until = self.day + p.role.nights_between_murder
@@ -2288,8 +2289,6 @@ class GameRoom:
         # TODO: 심장마비 자살
         # TODO: 변장자
         # TODO: 밀고자
-
-        # 고의 자살 적용
 
         # 마녀 저주 적용
         for p in self.alive_list:
