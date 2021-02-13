@@ -30,7 +30,10 @@ async def create_user(naverId, nickname):
     async with aiosqlite.connect('sql/users.db') as DB:
         if not proper_nickname(nickname):
             raise ImproperNicknameError
-        if len(nickname)>8:
+        if re.findall("[가-힇]", nickname):
+            if len(nickname)>8:
+                raise NicknameTooLongError
+        elif len(nickname)>12:
             raise NicknameTooLongError
         query = f"SELECT * FROM users WHERE nickname='{nickname}'"
         cursor = await DB.execute(query)

@@ -15,7 +15,7 @@
       <input type="text" name="nickname" placeholder="닉네임(한글, 영문, 숫자)" class="login-username" autofocus style="border-bottom: 1px solid white">
       {% if register_failed %}
         {% if reason=='NicknameTooLongError' %}
-        <p>닉네임이 너무 깁니다. 8자 이하로 해주세요.</p>
+        <p>닉네임이 너무 깁니다. 한글이 들어가면 8자 이내, 한글이 없으면 12자 이내여야 합니다.</p>
         {% elif reason=='NicknameDuplicateError' %}
         <p>이미 사용 중인 닉네임입니다.</p>
         {% elif reason=='ImproperNicknameError' %}
