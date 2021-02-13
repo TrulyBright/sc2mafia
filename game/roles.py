@@ -587,12 +587,13 @@ class MassMurderer(NeutralKilling):
         self.visitable_self = setup["options"]["role_setting"][self.name]["can_visit_self"]
         self.nights_between_murder = setup["options"]["role_setting"][self.name]["nights_between_murder"]
         self.detection_immune = setup["options"]["role_setting"][self.name]["detection_immune"]
+        self.cannot_murder_until = 0
 
 
 class Scumbag(NeutralEvil):
     team = "인간쓰레기"
     name = "인간쓰레기"
-    
+
     def __init__(self, setup):
         super().__init__()
 
