@@ -1296,9 +1296,8 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.roomID)
 
     def vote(self, voter, voted):
-        assert self.STATE == "VOTE"
-        alive = len([p for p in self.players.values() if p.alive])
-        majority = alive // 2 + 1
+        if not voter.votes: return
+        majority = len({p for p in self.alive_list if not isinstance(p.role, roles.Stump)}) // 2 + 1
         voter.has_voted = True
         voted.votes_gotten += voter.votes
         voter.voted_to_whom = voted
@@ -1307,7 +1306,7 @@ class GameRoom:
             self.election.set()
 
     def vote_execution(self, voter, guilty):
-        assert self.STATE == "VOTE_EXECUTION"
+        if not voter.votes: return
         voter.has_voted = True
         if guilty:
             self.elected.voted_guilty += voter.votes
@@ -1457,6 +1456,8 @@ class GameRoom:
         converted.role = role(self.setup)
         converted.role_record.append(converted.role)
         await self.emit_event(sio, data, room=converted.sid)
+        if isinstance(converted.role, roles.Stump):
+            converted.votes = 0
         for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Mason, roles.Spy):
             if isinstance(converted.role, night_chatting_role):
                 sio.enter_room(converted.sid, self.night_chat[night_chatting_role])
@@ -1551,6 +1552,10 @@ class GameRoom:
                         await self.emit_event(sio, data, p.has_jailed_whom.sid)
 
     async def trigger_night_events(self, sio):
+        for p in self.alive_list:
+            if p.jailed and p.role.defense_level<1:
+                p.role.defense_level = 1
+                p.night_immune_by_jail = True
         # 감옥 채팅 나가기
         for p1 in self.alive_list:
             for p2 in self.alive_list:
@@ -2819,6 +2824,8 @@ class GameRoom:
                 p.votes = 1
             if (isinstance(p.role, roles.Survivor) or isinstance(p.role, roles.Citizen)) and p.wear_vest_today:
                 p.role.defense_level = 0
+            if p.night_immune_by_jail:
+                p.role.defense_level = p.role.__class__(self.setup).defense_level
             p.has_voted = False
             p.voted_to_whom = None
             p.voted_to_execution_of_jester = False
@@ -2840,6 +2847,7 @@ class GameRoom:
             p.jailed = False
             p.jailed_by = []
             p.has_jailed_whom = None
+            p.night_immune_by_jail = False
             p.bodyguarded_by = []
             p.healed_by = []
             p.target1 = None
@@ -3157,7 +3165,7 @@ class GameRoom:
                 except asyncio.TimeoutError:  # nobody has been elected today
                     break
                 else:  # someone has been elected or vote is skipped
-                    if self.skip_votes>len(self.alive_list)/2: # vote is skipped
+                    if self.skip_votes>len({p for p in self.alive_list if not isinstance(p.role, roles.Stump)})/2: # vote is skipped
                         await asyncio.sleep(1)
                         data = {
                             "type": "skip",
@@ -3497,6 +3505,7 @@ class Player:
         self.jailID = str(roomID) + "_Jail_" + self.nickname
         self.has_jailed_whom = None
         self.kill_the_jailed_today = False
+        self.night_immune_by_jail = False
         self.has_disguised = False
         self.has_cursed = False
         self.bodyguarded_by = []  # list of Player objects

@@ -253,7 +253,7 @@ class Spy(TownPower):
         super().__init__()
 
 
-class Stump(Town):
+class Stump(TownPower):
     name = "나무 그루터기"
     def __init__(self, setup):
         super().__init__()

@@ -1440,6 +1440,9 @@ Socket.on('event', (data)=> {
         case '마녀':
           addchat('소름끼치는 웃음소리가 들립니다...', 'red');
           break;
+        case "Suicide_by_control":
+          addchat("당신은 둔탁한 소리에 의한 짧은 몸부림과 힘든 기침을 들었습니다...");
+          break;
       }
       break;
     case 'wear_vest':
