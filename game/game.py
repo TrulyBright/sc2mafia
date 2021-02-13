@@ -1251,7 +1251,7 @@ class GameRoom:
                         "message": msg,
                     }
                     if self.in_court:
-                        data["who"]="재판관" if isinstance(commander.role, roles.Judge) else "배심원"
+                        data["who"]="재판관" if isinstance(commander.role, roles.Judge) or isinstance(commander.role, roles.Crier) else "배심원"
                         data["in_court"]=True
                     await self.emit_event(sio, data, room=self.roomID)
 
