@@ -691,7 +691,12 @@ class GameRoom:
                         }
                         await self.emit_event(sio, data, room=sid)
                 msg = msg.split()
-                if len(msg) == 3:
+                if msg[0] == "/귓":
+                    cmd = msg[0]
+                    target1 = msg[1]
+                    whisper_message = ' '.join(msg[2:])
+                    target2 = None
+                elif len(msg) == 3:
                     cmd, target1, target2 = msg
                     if target1 not in self.players:
                         return
@@ -702,11 +707,6 @@ class GameRoom:
                     target2 = None
                     if target1 not in self.players:
                         return
-                elif msg[0]=="/귓":
-                    cmd = msg[0]
-                    target1 = msg[1]
-                    whisper_message = ' '.join(msg[2:])
-                    target2 = None
                 else:
                     cmd = msg[0]
                     target1 = target2 = None
