@@ -9,7 +9,7 @@ from game.game import GameRoom
 
 
 sio = socketio.AsyncServer(
-    async_mode="sanic", cors_allowed_origins=["http://sc2mafia.kr", "http://localhost:8000"]
+    async_mode="sanic", cors_allowed_origins=["http://sc2mafia.kr", "http://localhost:8000", "http://192.168.219.103"]
 )
 
 room_list = {}
@@ -24,13 +24,16 @@ def setup_socketio(app):
 
 @sio.event
 async def connect(sid, environ):
-    request = environ["sanic.request"]
-    logger.info(f"connection request from {request.ip}")
-    HTTP_SID = request.cookies["session"]
+    try:
+        HTTP_SID = environ["sanic.request"].cookies["session"]
+    except KeyError:
+        raise ConnectionRefusedError("세션이 없음")
     redis = await create_redis_pool("redis://localhost")
     HTTPsession = await redis.get("session:" + HTTP_SID)
     redis.close()
     await redis.wait_closed()
+    if HTTPsession is None:
+        raise ConnectionRefusedError("세션은 있으나 redis에 등록되지 않았음")
     # except KeyError:  # occurs when request has no cookie named 'session'
     #     raise ConnectionRefusedError("세션이 없음")
     HTTPsession = HTTPsession.decode("ascii")

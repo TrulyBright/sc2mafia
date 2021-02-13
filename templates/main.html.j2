@@ -1647,7 +1647,7 @@
       <section class="room_section">
         <div class="upper">
           <button type="button" name="button" id="leave_GameRoom_button">나가기</button>
-	  <button type="button" name="manual_button" id="manual_button">도움말</button>
+          <button type="button" name="button" id="manual_button">도움말</button>
           <button type="button" name="button" id="ready_button">준비</button>
           <button type="button" name="button" id="lw_button">유언</button>
           <button type="button" name="button" id="setup_button">설정</button>
@@ -1672,7 +1672,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.1/socket.io.js" integrity="sha512-AcZyhRP/tbAEsXCCGlziPun5iFvcSUpEz2jKkx0blkYKbxU81F+iq8FURwPn1sYFeksJ+sDDrI5XujsqSobWdQ==" crossorigin="anonymous"></script>
   <script type="text/javascript">
     "use strict";
-    const Socket = io("http://sc2mafia.kr");
+    const Socket = io("http://192.168.219.103");
     Socket.emit('request_room_list', {});
   </script>
   <script src="/static/js/main.js" type="module" charset="utf-8"></script>

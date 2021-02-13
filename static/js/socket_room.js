@@ -1447,6 +1447,9 @@ Socket.on('event', (data)=> {
     case "will_execute_the_jailed":
       addchat("간수가 처형할 대상: "+data["executed"])
       break;
+    case "will_not_execute":
+      addchat("간수가 생각을 바꿨습니다.");
+      break;
     case "has_jailed_someone":
       addchat("당신은 그 사람을 감옥에 가두었습니다. '/처형' 명령어를 입력하면 수감자를 죽일 수 있습니다. 명령어를 다시 입력하면 취소됩니다.")
       break;
@@ -1607,6 +1610,9 @@ Socket.on('event', (data)=> {
       break;
     case "spy_result":
       addchat("오늘 밤 "+colored(data["team"])+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
+      break;
+    case "cult_tries_to_recruit_target":
+      addchat("오늘밤 대상을 "+colored("이교도")+"가 개종하려 시도했습니다!");
       break;
     case "sanitized_lw":
       if (data["lw"]) {
