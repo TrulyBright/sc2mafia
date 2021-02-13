@@ -215,14 +215,14 @@ class Mason(TownGovernment):
     name = "비밀조합원"
     def __init__(self, setup):
         super().__init__()
-        self.promoted_if_alone = setup["options"]["role_setting"][self.name]["promoted_if_alone"]
+        self.promoted_if_alone = setup["options"]["role_setting"]["비밀조합원"]["promoted_if_alone"]
 
 
 class MasonLeader(Mason):
     name = "비밀조합장"
 
     def __init__(self, setup):
-        super().__init__()
+        super().__init__(setup)
         self.offense_level = 1
         self.ability_opportunity = setup["options"]["role_setting"][self.name]["recruit_chance"]
 
