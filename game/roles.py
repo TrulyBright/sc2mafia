@@ -7,6 +7,7 @@ class Role:
         self.defense_level = 0
         self.visitable_self = False
         self.unhealable = False
+        self.cannot_be_blocked = False
 
 
 """
