@@ -702,6 +702,11 @@ class GameRoom:
                     target2 = None
                     if target1 not in self.players:
                         return
+                elif msg[0]=="/귓":
+                    cmd = msg[0]
+                    target1 = msg[1]
+                    whisper_message = ' '.join(msg[2:])
+                    target2 = None
                 else:
                     cmd = msg[0]
                     target1 = target2 = None
@@ -797,17 +802,16 @@ class GameRoom:
                     and target1
                     and self.WHISPER_ALLOWED
                 ):
-                    whisper = target2
                     data = {
                         "type": "whispering",
                         "to": self.players[target1].nickname,
-                        "message": whisper,
+                        "message": whisper_message,
                     }
                     await self.emit_event(sio, data, room=commander.sid)
                     data = {
                         "type": "whispered",
                         "from": commander.nickname,
-                        "message": whisper,
+                        "message": whisper_message,
                     }
                     await self.emit_event(sio, data, room=self.players[target1].sid)
                 elif (
@@ -1251,7 +1255,7 @@ class GameRoom:
                         "message": msg,
                     }
                     if self.in_court:
-                        data["who"]="재판관" if isinstance(commander.role, roles.Judge) else "배심원"
+                        data["who"]="재판관" if isinstance(commander.role, roles.Judge) or isinstance(commander.role, roles.Crier) else "배심원"
                         data["in_court"]=True
                     await self.emit_event(sio, data, room=self.roomID)
 
@@ -2934,13 +2938,21 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(1)
             self.STATE = "DISCUSSION"
             data = {
                 "type": "state",
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(self.DISCUSSION_TIME)
+            await asyncio.sleep(self.DISCUSSION_TIME-10)
+            data = {
+                "type": "remaining_time",
+                "state": self.STATE,
+                "remaining_time": 10,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(10)
             self.STATE = "EVENING"
             data = {
                 "type": "state",
@@ -2949,7 +2961,14 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME)
+            await asyncio.sleep(self.EVENING_TIME-10)
+            data = {
+                "type": "remaining_time",
+                "state": self.STATE,
+                "remaining_time": 10,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(10)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT
@@ -2973,7 +2992,14 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME)
+            await asyncio.sleep(self.EVENING_TIME-10)
+            data = {
+                "type": "remaining_time",
+                "state": self.STATE,
+                "remaining_time": 10,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(10)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT
@@ -3031,6 +3057,7 @@ class GameRoom:
             self.die_tonight = set() # 사망자 목록 초기화
             # DISCUSSION
             if self.USE_DISCUSSION_TIME:
+                await asyncio.sleep(1)
                 self.STATE = "DISCUSSION"
                 data = {
                     "type": "state",
@@ -3112,7 +3139,14 @@ class GameRoom:
                             "who": self.elected.nickname,
                         }
                         await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(self.VOTE_EXECUTION_TIME/2 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME)
+                        await asyncio.sleep(self.VOTE_EXECUTION_TIME/2-10 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME-10)
+                        data = {
+                            "type": "remaining_time",
+                            "state": self.STATE,
+                            "remaining_time": 10,
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(10)
                         if self.elected.voted_guilty > self.elected.voted_innocent:
                             await self.execute_the_elected(sio)
                             await asyncio.sleep(3)
@@ -3143,7 +3177,14 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME)
+            await asyncio.sleep(self.EVENING_TIME-10)
+            data = {
+                "type": "remaining_time",
+                "state": self.STATE,
+                "remaining_time": 10,
+            }
+            await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(10)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT
@@ -3153,6 +3194,7 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(3)
             await self.trigger_night_events(sio)
             await self.clear_up()
             await asyncio.sleep(5)
