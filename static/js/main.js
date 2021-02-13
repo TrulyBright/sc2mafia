@@ -63,7 +63,6 @@ Socket.on('enter_GameRoom_success', (roomID)=> {
   document.querySelector(".lobby-menu").style.display = "none";
   document.querySelector(".room_list_section").style.display = "none";
   document.querySelector(".room_section").style.display = "block";
-  addchat("사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, ...");
 });
 
 Socket.on('leave_GameRoom_success', (data)=>{
