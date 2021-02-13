@@ -999,7 +999,13 @@ class GameRoom:
                     elif isinstance(visitor.role, roles.Sheriff):
                         visitor.target1 = visited
                     elif isinstance(visitor.role, roles.Vigilante):
-                        visitor.target1 = visited
+                        if self.day==1:
+                            data = {
+                                "type": "unable_to_shot"
+                            }
+                            await self.emit_event(sio, data, room=visitor.sid)
+                        else:
+                            visitor.target1 = visited
                     elif isinstance(visitor.role, roles.Arsonist):
                         visitor.target1 = visited
                     elif isinstance(visitor.role, roles.Auditor):

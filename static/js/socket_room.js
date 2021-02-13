@@ -1,7 +1,9 @@
 // TODO: will_execute_the_jailed 이벤트 받기
 'use strict';
 document.querySelector("#manual_button").addEventListener("click", (event)=>{
-  addchat("모든 직업은 '/방문 닉네임'으로 능력을 사용합니다.\n귓속말 하는 법: /귓 닉네임 할말\n사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, '/유언 닉네임', ");
+  addchat("거의 모든 직업은 '/방문 닉네임'으로 능력을 사용합니다. 방문을 취소하려면 '/취소'를 입력하세요.");
+  addchat("귓속말 하는 법: /귓 닉네임 할말");
+  addchat("사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, '/유언 닉네임', /자살");
 });
 document.querySelector("#lw_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/유언편집");
@@ -405,7 +407,7 @@ function addchat(message, color='orange', background_color=null) {
     chat.style.backgroundColor = background_color;
   }
   span.setAttribute("style", `color:${color}`);
-  if (color=="orange") {
+  if (color=="orange" || color=="skyblue") {
     span.innerHTML = message;
   } else {
     span.innerText = message;
@@ -655,7 +657,7 @@ Socket.on("player_list", (data)=>{
       let del = document.createElement("del");
       let a = document.createElement("a");
       a.setAttribute("href", "#");
-      a.innerHTML = nickname + (role ? " | " + colored(role) : "");
+      a.innerHTML = `${nickname} ${role ? " | " + colored(role) : ""}`;
       if (!alive) {
         del.appendChild(a);
         div.appendChild(del);
@@ -668,10 +670,11 @@ Socket.on("player_list", (data)=>{
     for (let player of data["player_list"]) {
       let nickname = player[0];
       let readied = player[1];
+      let is_host = player[2];
       let div = document.createElement("div");
       let a = document.createElement("a");
       a.setAttribute("href", "#");
-      a.innerHTML = nickname;
+      a.innerHTML = `${nickname}${is_host ? " (방장)" : ""}`;
       if (readied) {
         a.style.backgroundColor = "#6B6B84";
       }
@@ -924,7 +927,7 @@ Socket.on('event', (data)=> {
       addchat("설정이 적용되었습니다. '/시행'을 입력하여 설정을 시험해볼 수 있습니다.");
       addchat("설정이 바뀌어 준비가 해제되었습니다.");
       addchat("'/저장'을 입력하여 현재 설정을 계정에 저장할 수 있습니다.");
-      addchat("'/불러오기'를 입력하여 설정을 계정에 불러올 수 있습니다.");
+      addchat("'/불러오기'를 입력하여 계정에 저장된 설정을 게임에 불러올 수 있습니다.");
       break;
     case "applying_setup_failed":
       addchat("설정에 문제가 있어 적용에 실패했습니다.", "red");
@@ -1054,6 +1057,9 @@ Socket.on('event', (data)=> {
         case "비밀조합원":
           addchat("당신은 비밀조합의 일원입니다.");
           addchat("매일 밤 비밀조합 소속끼리 대화할 수 있습니다. 당신은 "+colored("이교도")+"에게 개종당하지 않습니다.")
+          if (data["options"]["promoted_if_alone"]) {
+            addchat(`혼자 남으면 ${colored("비밀조합장")}이 됩니다.`);
+          }
           break;
         case "포고꾼":
           addchat("당신은 목청이 큰 소식전파자로 마을을 돕기 위해 노력합니다.");
@@ -1333,10 +1339,10 @@ Socket.on('event', (data)=> {
       setTimeout(addchat, 500, "결과는 유죄 "+data["guilty"]+"표에 무죄 "+data["innocent"]+"표.");
       break;
     case "mayor_ability_activation":
-      addchat(data["who"]+"님은 <span style='color:#00bf00'>시장</span>입니다!!!", "skyblue");
+      addchat(data["who"]+"님은"+colored("시장")+"입니다!!!", "skyblue");
       break;
     case "marshall_ability_activation":
-      addchat(data["who"]+"님은 <span style='color:#00bf00'>원수</span>입니다!!!", "skyblue");
+      addchat(data["who"]+"님은"+colored("원수")+"입니다!!!", "skyblue");
       break;
     case "court":
       addchat("판사가 부패한 재판을 개정했습니다!", "#BB6655");
@@ -1344,13 +1350,21 @@ Socket.on('event', (data)=> {
     case 'visit':
       switch (data["role"]) {
         case "대부":
-          addchat(data["visitor"] +"님이 죽일 대상: "+data["target1"]);
+          if (data["is_order"]) {
+            addchat(`${data["visitor"]}님이 지시한 살인 대상: ${data["target1"]}`);
+          } else {
+            addchat(data["visitor"] +"님이 죽일 대상: "+data["target1"]);
+          }
           break;
         case "마피아 일원":
           addchat(data["visitor"]+"님이 죽일 대상(대부의 지시가 우선합니다): "+data["target1"]);
           break;
         case "용두":
-          addchat(data["visitor"]+"님이 죽일 대상: " + data["target1"]);
+          if (data["is_order"]) {
+            addchat(`${data["visitor"]}님이 지시한 살인 대상: ${data["target1"]}`);
+          } else {
+            addchat(data["visitor"] +"님이 죽일 대상: "+data["target1"]);
+          }
           break;
         case "홍곤":
           addchat(data["visitor"]+"님이 죽일 대상(용두의 지시가 우선합니다): " + data["target1"]);
@@ -1364,7 +1378,7 @@ Socket.on('event', (data)=> {
       break;
     case 'alert':
       if (data['alert']) {
-        addchat('오늘 밤 경계를 섭니다.');
+        addchat("오늘 밤 경계를 섭니다. ('/경계'를 다시 입력하여 취소할 수 있습니다.)");
       } else {
         addchat('오늘 밤은 쉬기로 합니다.');
       }
@@ -1432,8 +1446,8 @@ Socket.on('event', (data)=> {
     case "audit_success":
       addchat("대상의 탈세를 밝혀냈습니다. "+data["who"]+"님은 이제 "+colored(data["role"])+"입니다.");
       break;
-    case "unable_to":
-
+    case "unable_to_shot":
+      addchat("첫날에는 사람을 쏠 수 없습니다.");
       break;
     case "will_burn_today":
       addchat("오늘밤 불을 피우기로 합니다.");
@@ -1519,7 +1533,7 @@ Socket.on('event', (data)=> {
       break;
     case "suicide_today":
       if (data["suicide_today"]) {
-        addchat("자살하기로 했습니다.", "red");
+        addchat("자살하기로 했습니다. (다시 '/자살'을 입력하면 취소됩니다.)", "red");
       } else {
         addchat("자살하지 않기로 했습니다.", "green");
       }
