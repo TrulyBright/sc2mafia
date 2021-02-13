@@ -2356,16 +2356,16 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Lookout) and p.target1:
                 p.crimes["무단침입"] = True
-                result = [visitor.nickname for visitor in p.target1.visited_by[self.day]]
+                result = [visitor for visitor in p.target1.visited_by[self.day]]
                 if p.target1.murdered_by:
                     for can_be_framed in self.alive_list:
                         if can_be_framed.framed:
-                            result.append(can_be_framed.nickname)
+                            result.append(can_be_framed)
                             break
                 random.shuffle(result)
                 result = list(set(result))
                 if not p.role.ignore_detection_immune:
-                    result = [visitor for visitor in result if not visitor.role.detection_immune]
+                    result = [visitor.nickname for visitor in result if not visitor.role.detection_immune]
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
@@ -2824,6 +2824,9 @@ class GameRoom:
             for p in self.alive_list:
                 if isinstance(p.role, winning_role):
                     p.win = True
+    async def wait_for_time_and_emit_timer_event(self, time, sio):
+        for i in range(int(time)):
+            await asyncio.sleep(1)
 
     async def init_game(self, sio):
         # init game
