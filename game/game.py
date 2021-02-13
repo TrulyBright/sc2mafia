@@ -2366,6 +2366,8 @@ class GameRoom:
                 result = list(set(result))
                 if not p.role.ignore_detection_immune:
                     result = [visitor.nickname for visitor in result if not visitor.role.detection_immune]
+                else:
+                    result = [visitor.nickname for visitor in result]
                 data = {
                     "type": "check_result",
                     "role": p.role.name,
