@@ -1606,7 +1606,7 @@ Socket.on('event', (data)=> {
       }
       break;
     case "spy_result":
-      addchat("오늘 밤 "+colored(ata["team"])+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
+      addchat("오늘 밤 "+colored(data["team"])+" 중 한 명이 "+data["result"]+"님을 방문했습니다.");
       break;
     case "sanitized_lw":
       if (data["lw"]) {
