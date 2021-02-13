@@ -1,5 +1,8 @@
 // TODO: will_execute_the_jailed 이벤트 받기
 'use strict';
+document.querySelector("#manual_button").addEventListener("click", (event)=>{
+  addchat("모든 직업은 '/방문 닉네임'으로 능력을 사용합니다.\n귓속말 하는 법: /귓 닉네임 할말\n사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, '/유언 닉네임', ");
+});
 document.querySelector("#lw_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/유언편집");
   document.querySelector(".lw_modal").style.display = "block";
@@ -1005,6 +1008,22 @@ Socket.on('event', (data)=> {
     case "Error":
       addchat(`게임에 오류가 발생했습니다. 오류 메시지: ${data["error_code"]}`, "red")
       break;
+    case "remaining_time":
+      switch (data["state"]) {
+        case "DISCUSSION_TIME":
+          addchat(`토론 시간이 ${data["remaining_time"]}초 남았습니다.`);
+          break;
+        case "EVENING":
+          addchat(`저녁이 ${data["remaining_time"]}초 남았습니다.`);
+          break;
+        case "VOTE":
+          addchat(`투표 시간이 ${data["remaining_time"]}초 남았습니다.`);
+          break;
+        case "VOTE_EXECUTION":
+          addchat(`재판 시간이 ${data["remaining_time"]}초 남았습니다.`);
+          break;
+      }
+      break;
     case 'role':
       document.querySelector("#messages").innerHTML = "";
       addchat('당신의 직업은 '+colored(data["role"])+'입니다.');
@@ -1311,7 +1330,7 @@ Socket.on('event', (data)=> {
       break;
     case "vote_done":
       addchat("사형투표가 종료되었습니다.");
-      addchat("결과는 유죄 "+data["guilty"]+"표에 무죄 "+data["innocent"]+"표.");
+      setTimeout(addchat, 500, "결과는 유죄 "+data["guilty"]+"표에 무죄 "+data["innocent"]+"표.");
       break;
     case "mayor_ability_activation":
       addchat(data["who"]+"님은 <span style='color:#00bf00'>시장</span>입니다!!!", "skyblue");
@@ -1336,8 +1355,11 @@ Socket.on('event', (data)=> {
         case "홍곤":
           addchat(data["visitor"]+"님이 죽일 대상(용두의 지시가 우선합니다): " + data["target1"]);
           break;
+        case "마녀":
+          addchat(data["visitor"]+"님이 오늘밤 조종할 대상: "+data["target1"]+", 목표: "+data["target2"]);
+          break;
         default:
-        addchat(data["visitor"]+"님이 오늘 밤 방문할 대상: "+data["target1"]);
+          addchat(data["visitor"]+"님이 오늘 밤 방문할 대상: "+data["target1"]);
       }
       break;
     case 'alert':
@@ -1622,11 +1644,11 @@ Socket.on('event', (data)=> {
       break;
     case 'healed':
       addchat('당신은 '+data['attacker']+'에게 공격당했습니다.', 'red');
-      setTimeout(addchat('그러나 '+data['healer']+'가 당신을 살려주었습니다.', '#00bf00'), 500);
+      setTimeout(addchat, 500, '그러나 '+data['healer']+'가 당신을 살려주었습니다.', '#00bf00');
       break;
     case 'bodyguarded':
       addchat('당신은 '+data['attacker']+'에게 공격당했습니다.', 'red');
-      setTimeout(addchat('그러나 경호원이 당신을 보호해주었습니다.', '#00bf00'), 500);
+      setTimeout(addchat, 500, '그러나 경호원이 당신을 보호해주었습니다.', '#00bf00');
       break;
     case 'suicide':
       switch (data['reason']) {
@@ -1675,7 +1697,7 @@ Socket.on('event', (data)=> {
         addchat(data["dead"]+"님은 유언을 남기지 않았습니다.");
       } else {
         addchat(data["dead"]+"님은 유언을 남겼습니다:");
-        addchat(data["lw"], "yellow");
+        setTimeout(addchat, 500, data["lw"], "yellow");
       }
       break;
     case "lw_edit":
