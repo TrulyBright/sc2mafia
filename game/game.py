@@ -1830,7 +1830,7 @@ class GameRoom:
                             await p.healed(room=self, attacker=p, healer=H)
                         else:
                             await self.emit_sound(sio, p.role.name)
-                            await visitor.die(attacker=p, die_tonight=self.die_tonight, room=self)
+                            await visitor.die(attacker=p, room=self)
                             p.crimes["살인"] = True
                     else:
                         await self.emit_sound(sio, p.role.name, dead=False)

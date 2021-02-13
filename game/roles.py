@@ -356,6 +356,7 @@ class Godfather(MafiaKilling):
         self.cannot_be_blocked = setup["options"]["role_setting"][self.name]["cannot_be_blocked"]
         self.detection_immune = setup["options"]["role_setting"][self.name]["detection_immune"]
         self.killable_without_mafioso = setup["options"]["role_setting"][self.name]["killable_without_mafioso"]
+        self.ability_opportunity = 999
 
 
 class Janitor(MafiaDeception):
@@ -418,6 +419,7 @@ class DragonHead(TriadKilling):
         self.cannot_be_blocked = setup["options"]["role_setting"][self.name]["cannot_be_blocked"]
         self.detection_immune = setup["options"]["role_setting"][self.name]["detection_immune"]
         self.killable_without_enforcer = setup["optionss"]["role_setting"][self.name]["killable_without_enforcer"]
+        self.ability_opportunity = 999
 
 
 class Enforcer(TriadKilling):
