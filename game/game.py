@@ -286,6 +286,8 @@ def distribute_roles(formation)->list:
     return distributed
 
 class GameRoom:
+    def __del__(self):
+        logger.info(f"Room #{self.roomID} DELETED")
     def __init__(
         self, roomID, title, capacity, host, password=""
     ):
@@ -556,7 +558,11 @@ class GameRoom:
         receivers = [p.nickname for p in self.players.values() if room in sio.rooms(p.sid) and p.sid not in (skip_sid or [])]
         self.message_record.append((datetime.now().strftime("%y/%m/%d %H:%M:%S"), str(data), str(receivers)))
 
-    async def emit_event(self, sio, data, room, skip_sid=None):
+    async def emit_event(self, sio, data, room, skip_sid=[]):
+        if self.inGame:
+            for p in self.players.values():
+                if p.sid not in self.members:
+                    skip_sid.append(p.sid) # 나간 사람에게 보내지 않기
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
         if self.inGame:
             self.write_to_record(sio, data, room, skip_sid)
@@ -644,6 +650,7 @@ class GameRoom:
                             }
                             self.inGame = False
                             await sio.emit("event", data, room=self.roomID)
+                            raise
                     except TypeError: # 설정이 없는 상태에서 시작할 경우
                         data = {
                             "type": "unable_to_start",
@@ -929,91 +936,103 @@ class GameRoom:
                 ):
                     visitor = commander
                     visited = self.players[target1]
-                    if (isinstance(commander.role, roles.Mafioso)\
-                    or isinstance(commander.role, roles.Blackmailer)\
-                    or isinstance(commander.role, roles.Consigliere)\
-                    or isinstance(commander.role, roles.Consort)\
-                    or isinstance(commander.role, roles.Framer)\
-                    or isinstance(commander.role, roles.Godfather)\
-                    or isinstance(commander.role, roles.Janitor))\
-                    and isinstance(visited.role, roles.Mafia):
-                        return
-                    elif (isinstance(commander.role, roles.Enforcer)\
-                    or isinstance(commander.role, roles.Silencer)\
-                    or isinstance(commander.role, roles.Administrator)\
-                    or isinstance(commander.role, roles.Liaison)\
-                    or isinstance(commander.role, roles.Forger)\
-                    or isinstance(commander.role, roles.DragonHead)\
-                    or isinstance(commander.role, roles.IncenseMaster))\
-                    and isinstance(visited.role, roles.Triad):
-                        return
-                    if isinstance(commander.role, roles.Godfather):
-                        if commander.role.killable_without_mafioso:
-                            self.Godfather_target = visited
-                        else:
-                            for p in self.alive_list:
-                                if isinstance(p.role, roles.Mafioso):
-                                    self.mafia_target = visited
-                                    break
-                            else:
-                                return
-                    elif isinstance(commander.role, roles.Mafioso) and not self.Godfather_target:
-                        self.mafia_target = visited
-                    elif isinstance(commander.role, roles.DragonHead):
-                        if commander.role.killable_without_enforcer:
-                            self.DragonHead_target = visited
-                        else:
-                            for p in self.alive_list:
-                                if isinstance(p.role, roles.Enforcer):
-                                    self.triad_target = visited
-                                    break
-                            else:
-                                return
-                    elif isinstance(commander.role, roles.Enforcer) and not self.DragonHead_target:
-                        self.triad_target = visited
-                    elif (
-                        isinstance(visitor.role, roles.MassMurderer)
-                        and visitor.role.cannot_murder_until >= self.day
-                    ):
-                        return
-                    elif isinstance(visitor.role, roles.MasonLeader) and visitor.role.ability_opportunity==0:
-                        return
-                    elif isinstance(visitor.role, roles.Kidnapper) and (visitor.role.ability_opportunity==0 or (not visitor.role.can_jail_members and isinstance(visited.role, roles.Mafia))):
-                        return
-                    elif isinstance(visitor.role, roles.Agent) and visitor.role.cannot_shadow_until>=self.day:
-                        return
-                    elif isinstance(visitor.role, roles.Beguiler) and (visitor.role.ability_opportunity==0 or (isinstance(visited.role, roles.Mafia) and not visitor.role.can_hide_behind_member)):
-                        return
-                    elif isinstance(visitor.role, roles.Interrogator) and (visitor.role.ability_opportunity==0 or (not visitor.role.can_jail_members and isinstance(visited.role, roles.Triad))):
-                        return
-                    elif isinstance(visitor.role, roles.Deceiver) and (visitor.role.ability_opportunity==0 or (isinstance(visited.role, roles.Triad) and not visitor.role.can_hide_behind_member)):
-                        return
-                    elif isinstance(visitor.role, roles.Cultist) and self.cult_cannot_convert_until>=self.day:
-                        return
-                    elif isinstance(visitor.role, roles.WitchDoctor) and (p.role.ability_opportunity==0 or p.role.cannot_save_until>=self.day):
-                        return
-                    else:
+                    if isinstance(visitor.role, roles.Agent) and not isinstance(visited.role, roles.Mafia) and visitor.role.cannot_shadow_until < self.day:
                         visitor.target1 = visited
-                    if target2 and (
-                        isinstance(visitor.role, roles.Witch)
-                        # or isinstance(visitor.role, roles.BusDriver)
-                    ):
+                    elif isinstance(visitor.role, roles.Beguiler):
+                        if isinstance(visited.role, roles.Mafia):
+                            if visitor.role.can_hide_behind_member:
+                                visitor.target1 = visited
+                        else:
+                            visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Blackmailer) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Consigliere) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Consort) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Framer) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Godfather) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Janitor) and not isinstance(visited.role, roles.Mafia) and visitor.role.remaining_ability_opportunity>0:
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Mafioso) and not isinstance(visited.role, roles.Mafia):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Vanguard) and not isinstance(visited.role, roles.Triad) and visitor.role.cannot_shadow_until<self.day:
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Deceiver):
+                        if isinstance(visited.role, roles.Triad):
+                            if visitor.role.can_hide_behind_member:
+                                visitor.target1 = visited
+                        else:
+                            visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Silencer) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Administrator) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Liaison) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Forger) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.DragonHead) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.IncenseMaster) and not isinstance(visited.role, roles.Triad) and visitor.role.remaining_ability_opportunity>0:
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Enforcer) and not isinstance(visited.role, roles.Triad):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Bodyguard):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Coroner):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Detective):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Doctor):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Escort):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Investigator):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Lookout):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.MasonLeader) and not isinstance(visited.role, roles.Mason):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Sheriff):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Vigilante):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Arsonist):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Auditor):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Cultist) and self.cult_cannot_convert_until < self.day:
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Jester):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.MassMurderer) and visitor.role.cannot_murder_until < self.day:
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.SerialKiller):
+                        visitor.target1 = visited
+                    elif isinstance(visitor.role, roles.Witch) and target2:
+                        visitor.target1 = visited
                         visitor.target2 = self.players[target2]
-                    data = {
-                        "type": "visit",
-                        "visitor": visitor.nickname,
-                        "role": visitor.role.name,
-                        "target1": visited.nickname,
-                        "target2": visitor.target2.nickname
-                        if visitor.target2
-                        else None,
-                    }
-                    for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Mason):
-                        if isinstance(visitor.role, night_chatting_role):
-                            await self.emit_event(sio, data, room=self.night_chat[night_chatting_role])
-                            break
-                    else:
-                        await self.emit_event(sio, data, room=visitor.sid)
+                    elif isinstance(visitor.role, roles.WitchDoctor):
+                        visitor.target1 = visited
+                    if visitor.target1:
+                        data = {
+                            "type": "visit",
+                            "visitor": visitor.nickname,
+                            "role": visitor.role.name,
+                            "target1": visited.nickname,
+                            "target2": visitor.target2.nickname if visitor.target2 else None,
+                            "is_order": (isinstance(visitor.role, roles.Godfather) and roles.Mafioso in {player.role.__class__ for player in self.alive_list})
+                            or (isinstance(visitor.role, roles.DragonHead) and roles.Enforcer in {player.role.__class__ for player in self.alive_list})
+                        }
+                        for night_chatting_role in (roles.Mafia, roles.Triad, roles.Cult, roles.Mason):
+                            if isinstance(visitor.role, night_chatting_role):
+                                await self.emit_event(sio, data, room=self.night_chat[night_chatting_role])
+                                break
+                        else:
+                            await self.emit_event(sio, data, room=visitor.sid)
                 elif (
                     cmd == "/경계"
                     and self.STATE == "EVENING"
@@ -1527,6 +1546,71 @@ class GameRoom:
                 if p1 is not p2:
                     sio.leave_room(p1, p2.jailID)
 
+        # 마피아 목표 확정
+        mafia_target = mafia_killer = None
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Godfather) and p.target1:
+                mafia_target = p.target1
+                break
+        else:
+            for p2 in self.alive_list:
+                if isinstance(p2.role, roles.Mafioso) and p2.target1:
+                    mafia_target = p2.target1
+                    break
+            else:
+                mafia_target = None
+        # 마피아 킬러 확정
+        if mafia_target:
+            for p in self.alive_list:
+                if isinstance(p.role, roles.Mafioso):
+                    mafia_killer = p
+                    break
+            else:
+                for p2 in self.alive_list:
+                    if isinstance(p2.role, roles.Godfather):
+                        mafia_killer = p2
+                        break
+                else:
+                    mafia_killer = None
+        if mafia_killer:
+            mafia_killer.target1 = mafia_target
+        # 나머지는 무활 처리
+        for p in self.alive_list:
+            if (isinstance(p.role, roles.Mafioso) or isinstance(p.role, roles.Godfather)) and p is not mafia_killer:
+                p.target1 = None
+
+        # 삼합회 목표 확정
+        triad_target = triad_killer = None
+        for p in self.alive_list:
+            if isinstance(p.role, roles.DragonHead) and p.target1:
+                triad_target = p.target1
+                break
+        else:
+            for p2 in self.alive_list:
+                if isinstance(p2.role, roles.Enforcer) and p2.target1:
+                    triad_target = p2.target1
+                    break
+            else:
+                triad_target = None
+        # 삼합회 킬러 확정
+        for p in self.alive_list:
+            if isinstance(p.role, roles.Enforcer):
+                triad_killer = p
+                break
+        else:
+            for p2 in self.alive_list:
+                if isinstance(p2.role, roles.DragonHead):
+                    triad_killer = p2
+                    break
+            else:
+                triad_killer = None
+        if triad_killer:
+            triad_killer.target1 = triad_target
+        # 나머지는 무활 처리
+        for p in self.alive_list:
+            if (isinstance(p.role, roles.Enforcer) or isinstance(p.role, roles.DragonHead)) and p is not triad_killer:
+                p.target1 = None
+
         # 생존자 방탄 착용
         for p in self.alive_list:
             if isinstance(p.role, roles.Survivor) and p.wear_vest_today and p.role.ability_opportunity>0:
@@ -1792,7 +1876,8 @@ class GameRoom:
                 }
                 await self.emit_event(sio, data, room=p.sid)
                 p.crimes["재물 손괴"] = True
-                for visitor in [visitor for visitor in self.alive_list if visitor.target1 is p]:
+                visitors = [visitor for visitor in self.alive_list if visitor.target1 is p]
+                for visitor in visitors:
                     p.visited_by[self.day].add(visitor)
                     if isinstance(visitor.role, roles.Lookout):
                         continue
@@ -1941,17 +2026,9 @@ class GameRoom:
                     await victim.attacked(room=self, attacker=p)
 
         # 마피아의 대상이 죽는다.
-        if self.mafia_target or self.Godfather_target:
-            for p in self.alive_list:
-                if isinstance(p.role, roles.Godfather):
-                    M = p # M stands for Mafia
-                    break
-            else:
-                for p in self.alive_list:
-                    if isinstance(p.role, roles.Mafioso):
-                        M = p
-                        break
-            victim = self.Godfather_target or self.mafia_target
+        if mafia_killer and mafia_target:
+            M = mafia_killer
+            victim = mafia_target
             victim.visited_by[self.day].add(M)
             if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                 pass
@@ -1995,17 +2072,9 @@ class GameRoom:
                         await victim.attacked(room=self, attacker=M)
 
         # 삼합회의 대상이 죽는다.
-        if self.triad_target or self.DragonHead_target:
-            for p in self.alive_list:
-                if isinstance(p.role, roles.DragonHead):
-                    T = p # T stands for triad
-                    break
-            else:
-                for p in self.alive_list:
-                    if isinstance(p.role, roles.Enforcer):
-                        T = p
-                        break
-            victim = self.DragonHead_target or self.triad_target
+        if triad_killer and triad_target:
+            T = triad_killer
+            victim = triad_target
             victim.visited_by[self.day].add(T)
             if isinstance(victim.role, roles.Veteran) and victim.alert_today:
                 pass
@@ -2577,6 +2646,7 @@ class GameRoom:
                 elif not isinstance(p.target1.role, roles.Cult):
                     data = {"type": "recruit_failed"}
                     await self.emit_event(sio, data, room=p.sid)
+                p.target1.prevented_cult_conversion = True
 
         # 이교도 개종
         for p in self.alive_list:
@@ -2733,10 +2803,6 @@ class GameRoom:
         self.clear_vote()
         self.in_lynch = False
         self.in_court = False
-        self.Godfather_target = None
-        self.mafia_target = None
-        self.DragonHead_target = None
-        self.triad_target = None
         for p in self.players.values():
             if not isinstance(p.role, roles.Mayor) and not isinstance(p.role, roles.Stump):
                 p.votes = 1
@@ -2852,10 +2918,6 @@ class GameRoom:
         self.message_record = [] # 초기화
         self.in_lynch = False
         self.in_court = False
-        self.Godfather_target = None
-        self.DragonHead_target = None
-        self.mafia_target = None
-        self.triad_target = None
         self.cult_target = None
         self.cult_cannot_convert_until = 0
         try:
