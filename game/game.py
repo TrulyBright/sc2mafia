@@ -870,6 +870,17 @@ class GameRoom:
                     await self.emit_event(sio, data, room=self.roomID)
                     marshall.crimes["부패"] = True
 
+                elif cmd =="/넘기기" and commander.alive and self.STATE == "VOTE":
+                    skipper = commander
+                    self.skip_votes += skipper.votes
+                    data = {
+                        "type": "skip_vote",
+                        "voter": commander.nickname,
+                    }
+                    await self.emit_event(sio, data, room=self.roomID)
+                    if self.skip_votes>len(self.alive_list)/2:
+                        self.election.set()
+
                 elif cmd == "/투표" and self.STATE == "VOTE" and target1:
                     voter = commander
                     voted = self.players[target1]
@@ -2802,6 +2813,7 @@ class GameRoom:
         self.clear_vote()
         self.in_lynch = False
         self.in_court = False
+        self.skip_votes = 0
         for p in self.players.values():
             if not isinstance(p.role, roles.Mayor) and not isinstance(p.role, roles.Stump):
                 p.votes = 1
@@ -2891,9 +2903,19 @@ class GameRoom:
             for p in self.alive_list:
                 if isinstance(p.role, winning_role):
                     p.win = True
-    async def wait_for_time_and_emit_timer_event(self, time, sio):
-        for i in range(int(time)):
+
+    async def timer(self, state_at_called, time, sio):
+        for i in range(int(time), 0, -1):
+            if self.STATE!=state_at_called:
+                return
             await asyncio.sleep(1)
+            if i==60 or i==30 or i==10 or i==5:
+                data = {
+                    "type": "remaining_time",
+                    "state": self.STATE,
+                    "remaining_time": i,
+                }
+                await self.emit_event(sio, data, room=self.roomID)
 
     async def init_game(self, sio):
         # init game
@@ -2919,6 +2941,7 @@ class GameRoom:
         self.in_court = False
         self.cult_target = None
         self.cult_cannot_convert_until = 0
+        self.skip_votes = 0
         try:
             validate_setup(self.setup)
         except Exception as e:
@@ -3011,14 +3034,8 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(self.DISCUSSION_TIME-10)
-            data = {
-                "type": "remaining_time",
-                "state": self.STATE,
-                "remaining_time": 10,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(10)
+            asyncio.create_task(self.timer(self.STATE, self.DISCUSSION_TIME, sio))
+            await asyncio.sleep(self.DISCUSSION_TIME)
             self.STATE = "EVENING"
             data = {
                 "type": "state",
@@ -3027,14 +3044,8 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME-10)
-            data = {
-                "type": "remaining_time",
-                "state": self.STATE,
-                "remaining_time": 10,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(10)
+            asyncio.create_task(self.timer(self.STATE, self.EVENING_TIME, sio))
+            await asyncio.sleep(self.EVENING_TIME)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT
@@ -3058,14 +3069,8 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME-10)
-            data = {
-                "type": "remaining_time",
-                "state": self.STATE,
-                "remaining_time": 10,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(10)
+            asyncio.create_task(self.timer(self.STATE, self.EVENING_TIME, sio))
+            await asyncio.sleep(self.EVENING_TIME)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT
@@ -3110,6 +3115,7 @@ class GameRoom:
                     }
                     await self.emit_event(sio, data, room=self.roomID)
                 await self.emit_player_list(sio)
+            await asyncio.sleep(1)
             await self.emit_player_list(sio)
             for role_name in self.to_reveal:
                 data = {
@@ -3130,6 +3136,7 @@ class GameRoom:
                     "state": self.STATE,
                 }
                 await self.emit_event(sio, data, room=self.roomID)
+                asyncio.create_task(self.timer(self.STATE, self.DISCUSSION_TIME, sio))
                 await asyncio.sleep(self.DISCUSSION_TIME)
             # VOTE
             self.STATE = "VOTE"
@@ -3143,12 +3150,21 @@ class GameRoom:
             self.die_today = [] # 선거사망자 목록 초기화
             while self.VOTE_TIME_REMAINING >= 0:
                 try:
+                    asyncio.create_task(self.timer(self.STATE, self.VOTE_TIME_REMAINING, sio))
                     await asyncio.wait_for(
                         self.election.wait(), timeout=self.VOTE_TIME_REMAINING
                     )
                 except asyncio.TimeoutError:  # nobody has been elected today
                     break
-                else:  # someone has been elected
+                else:  # someone has been elected or vote is skipped
+                    if self.skip_votes>len(self.alive_list)/2: # vote is skipped
+                        await asyncio.sleep(1)
+                        data = {
+                            "type": "skip",
+                        }
+                        await self.emit_event(sio, data, room=self.roomID)
+                        await asyncio.sleep(1)
+                        break
                     self.VOTE_TIME_REMAINING -= (datetime.now()-self.VOTE_STARTED_AT).total_seconds()
                     if self.in_court and self.in_lynch:
                         await self.execute_the_elected(sio)
@@ -3197,6 +3213,7 @@ class GameRoom:
                                 "who": self.elected.nickname,
                             }
                             await self.emit_event(sio, data, room=self.roomID)
+                            asyncio.create_task(self.timer(self.STATE, self.VOTE_EXECUTION_TIME/2, sio))
                             await asyncio.sleep(self.VOTE_EXECUTION_TIME/2)
                         self.STATE = "VOTE_EXECUTION"
                         data = {
@@ -3205,14 +3222,8 @@ class GameRoom:
                             "who": self.elected.nickname,
                         }
                         await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(self.VOTE_EXECUTION_TIME/2-10 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME-10)
-                        data = {
-                            "type": "remaining_time",
-                            "state": self.STATE,
-                            "remaining_time": 10,
-                        }
-                        await self.emit_event(sio, data, room=self.roomID)
-                        await asyncio.sleep(10)
+                        asyncio.create_task(self.timer(self.STATE, self.VOTE_EXECUTION_TIME/2 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME, sio))
+                        await asyncio.sleep(self.VOTE_EXECUTION_TIME/2 if self.USE_DEFENSE_TIME else self.VOTE_EXECUTION_TIME)
                         if self.elected.voted_guilty > self.elected.voted_innocent:
                             await self.execute_the_elected(sio)
                             await asyncio.sleep(3)
@@ -3243,14 +3254,8 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             await self.trigger_evening_events(sio)
             await self.emit_player_list(sio)
-            await asyncio.sleep(self.EVENING_TIME-10)
-            data = {
-                "type": "remaining_time",
-                "state": self.STATE,
-                "remaining_time": 10,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(10)
+            asyncio.create_task(self.timer(self.STATE, self.EVENING_TIME, sio))
+            await asyncio.sleep(self.EVENING_TIME)
             for p in self.alive_list:
                 p.blackmailed = False
             # NIGHT

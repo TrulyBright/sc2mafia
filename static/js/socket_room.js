@@ -3,7 +3,7 @@
 document.querySelector("#manual_button").addEventListener("click", (event)=>{
   addchat("거의 모든 직업은 '/방문 닉네임'으로 능력을 사용합니다. 방문을 취소하려면 '/취소'를 입력하세요.");
   addchat("귓속말 하는 법: /귓 닉네임 할말");
-  addchat("사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, '/유언 닉네임', /자살");
+  addchat("사용할 수 있는 명령어: /시작, /준비, /저장, /불러오기, /강퇴, /시행, /귓, '/유언 닉네임', /자살, /넘기기");
 });
 document.querySelector("#lw_button").addEventListener("click", (event)=>{
   Socket.emit("message", "/유언편집");
@@ -1013,7 +1013,7 @@ Socket.on('event', (data)=> {
       break;
     case "remaining_time":
       switch (data["state"]) {
-        case "DISCUSSION_TIME":
+        case "DISCUSSION":
           addchat(`토론 시간이 ${data["remaining_time"]}초 남았습니다.`);
           break;
         case "EVENING":
@@ -1025,7 +1025,16 @@ Socket.on('event', (data)=> {
         case "VOTE_EXECUTION":
           addchat(`재판 시간이 ${data["remaining_time"]}초 남았습니다.`);
           break;
+        case "DEFENSE":
+          addchat(`변론 시간이 ${data["remaining_time"]}초 남았습니다.`);
+          break;
       }
+      break;
+    case "skip_vote":
+      addchat(`${data["voter"]}님이 투표를 건너뛰는 데 투표했습니다.`);
+      break;
+    case "skip":
+      addchat("과반수가 낮을 건너뛰는 데 찬성하여 저녁으로 바로 넘어갑니다.");
       break;
     case 'role':
       document.querySelector("#messages").innerHTML = "";
@@ -1303,7 +1312,7 @@ Socket.on('event', (data)=> {
           addchat('변론 시간입니다. '+data['who']+'님, 당신의 무죄를 주장하세요.')
           break;
         case 'VOTE':
-          addchat('투표 시간입니다. "/투표 닉네임"을 입력하여 투표하세요. 명령어를 다시 입력하면 투표가 취소됩니다.');
+          addchat("투표 시간입니다. "/투표 닉네임"을 입력하여 투표하세요. 명령어를 다시 입력하면 투표가 취소됩니다. 낮을 넘기려면 '/넘기기'를 입력하세요.");
           break;
         case 'VOTE_EXECUTION':
           addchat(data['who']+'님에게 사형을 선고하고 싶다면 "/유죄", 아니라면 "/무죄"를 입력하세요.');
