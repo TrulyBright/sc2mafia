@@ -3380,6 +3380,8 @@ class GameRoom:
                 if p.sid==sid:
                     p.suicide_today = True
                     break
+        if sid in self.readied:
+            self.readied.remove(sid)
 
 
 class Player:

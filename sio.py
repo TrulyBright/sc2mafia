@@ -24,18 +24,15 @@ def setup_socketio(app):
 
 @sio.event
 async def connect(sid, environ):
-    try:
-        # KeyError occurs here
-        HTTP_SID = environ["sanic.request"].cookies["session"]
-        redis = await create_redis_pool("redis://localhost")
-        HTTPsession = await redis.get("session:" + HTTP_SID)
-        redis.close()
-        await redis.wait_closed()
-    except KeyError:  # occurs when request has no cookie named 'session'
-        HTTPsession = None
-
-    if HTTPsession is None:
-        raise ConnectionRefusedError("세션이 없음")
+    request = environ["sanic.request"]
+    logger.info(f"connection request from {request.ip}")
+    HTTP_SID = request.cookies["session"]
+    redis = await create_redis_pool("redis://localhost")
+    HTTPsession = await redis.get("session:" + HTTP_SID)
+    redis.close()
+    await redis.wait_closed()
+    # except KeyError:  # occurs when request has no cookie named 'session'
+    #     raise ConnectionRefusedError("세션이 없음")
     HTTPsession = HTTPsession.decode("ascii")
     HTTPsession = HTTPsession.replace("true", "True")
     HTTPsession = literal_eval(HTTPsession)
