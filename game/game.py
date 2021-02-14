@@ -2606,6 +2606,7 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Auditor) and p.target1 and p.role.ability_opportunity>0:
                 if not p.target1.alive\
+                or p.bodyguarded_by\
                 or (p.target1.role.defense_level > 0 and p.role.can_audit_night_immune)\
                 or isinstance(p.target1.role, roles.Cult)\
                 or (isinstance(p.target1.role, roles.Mafia) and not p.role.can_audit_mafia)\
