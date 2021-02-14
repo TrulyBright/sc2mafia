@@ -120,8 +120,8 @@ async def leave_GameRoom(sid, data):
             }
             await room.emit_event(sio, data, roomID)
         if not room.members:
-            await sio.close_room(roomID)
             del room_list[roomID]
+            await sio.close_room(roomID)
         await broadcast_room_list()
         await sio.emit(
             "event",
