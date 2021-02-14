@@ -2409,7 +2409,7 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.Detective) and p.target1:
                 p.crimes["무단침입"] = True
-                for visited in self.alive_list:
+                for visited in self.players.values():
                     if p.target1 in visited.visited_by[self.day]:
                         # 그냥 p.target1.target1을 주지 않고 이렇게 복잡하게 하는 것은
                         # p.target1이 자신의 target1만 설정해놓고 실제로 능력을 쓰지는 못하고 이날 밤에 죽었을 경우에(퇴군에게 죽었을 경우를 제외)
