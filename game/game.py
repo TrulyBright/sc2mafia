@@ -559,8 +559,8 @@ class GameRoom:
         self.message_record.append((datetime.now().strftime("%y/%m/%d %H:%M:%S"), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=[]):
-        if isinstance(room, str) and self.roomID not in sio.rooms(room):
-            return # 나간 사람에게 보내지 않기
+        # if isinstance(room, str) and self.roomID not in sio.rooms(room):
+        #     return # 나간 사람에게 보내지 않기
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
         if self.inGame:
             self.write_to_record(sio, data, room, skip_sid)
@@ -1048,6 +1048,12 @@ class GameRoom:
                                 break
                         else:
                             await self.emit_event(sio, data, room=visitor.sid)
+                elif cmd =="/취소" and self.STATE == "EVENING" and commander.alive:
+                    commander.target1 = commander.target2 = None
+                    data = {
+                        "type": "cancel",
+                    }
+                    await self.emit_event(sio, data, room=commander.sid)
                 elif (
                     cmd == "/경계"
                     and self.STATE == "EVENING"
