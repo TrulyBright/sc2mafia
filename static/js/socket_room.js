@@ -1356,6 +1356,9 @@ Socket.on('event', (data)=> {
     case "court":
       addchat("판사가 부패한 재판을 개정했습니다!", "#BB6655");
       break;
+    case "cancel":
+      addchat("목표 설정을 취소했습니다.");
+      break;
     case 'visit':
       switch (data["role"]) {
         case "대부":
