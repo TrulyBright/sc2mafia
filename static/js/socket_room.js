@@ -1347,6 +1347,9 @@ Socket.on('event', (data)=> {
       addchat("사형투표가 종료되었습니다.");
       setTimeout(addchat, 500, "결과는 유죄 "+data["guilty"]+"표에 무죄 "+data["innocent"]+"표.");
       break;
+    case "innocent":
+      addchat(`마을은 ${data["who"]}님을 용서하기로 결정했습니다.`);
+      break;
     case "mayor_ability_activation":
       addchat(data["who"]+"님은"+colored("시장")+"입니다!!!", "skyblue");
       break;

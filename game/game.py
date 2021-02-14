@@ -3264,6 +3264,19 @@ class GameRoom:
                             await asyncio.sleep(3)
                             break
                         else:
+                            data = {
+                                "type": "vote_done",
+                                "guilty": self.elected.voted_guilty,
+                                "innocent": self.elected.voted_innocent,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(1)
+                            data = {
+                                "type": "innocent_bigger",
+                                "who": self.elected.nickname,
+                            }
+                            await self.emit_event(sio, data, room=self.roomID)
+                            await asyncio.sleep(1)
                             self.clear_vote()
                             self.VOTE_STARTED_AT = datetime.now()
                             self.STATE = "VOTE"
