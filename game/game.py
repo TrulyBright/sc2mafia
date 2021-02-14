@@ -559,10 +559,10 @@ class GameRoom:
         self.message_record.append((datetime.now().strftime("%y/%m/%d %H:%M:%S"), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=[]):
-        if self.inGame:
-            for p in self.players.values():
-                if p.sid not in self.members:
-                    skip_sid.append(p.sid) # 나간 사람에게 보내지 않기
+        # if self.inGame:
+        #     for p in self.players.values():
+        #         if self.roomID not in sio.rooms(p.sid):
+        #             skip_sid.append(p.sid) # 나간 사람에게 보내지 않기
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
         if self.inGame:
             self.write_to_record(sio, data, room, skip_sid)
@@ -1293,6 +1293,7 @@ class GameRoom:
                     if self.in_court:
                         data["who"]="재판관" if isinstance(commander.role, roles.Judge) or isinstance(commander.role, roles.Crier) else "배심원"
                         data["in_court"]=True
+                    logger.info(data)
                     await self.emit_event(sio, data, room=self.roomID)
 
     def vote(self, voter, voted):
@@ -3031,13 +3032,18 @@ class GameRoom:
             "formation": self.setup["formation"],
         }
         await self.emit_event(sio, data, room=self.roomID)
-        for i in range(10, 0, -1):
-            data = {
-                "type": "will_start",
-                "in": i,
-            }
-            await self.emit_event(sio, data, room=self.roomID)
-            await asyncio.sleep(1)
+        data = {
+            "type": "will_start",
+            "in": 10,
+        }
+        await self.emit_event(sio, data, room=self.roomID)
+        await asyncio.sleep(5)
+        data = {
+            "type": "will_start",
+            "in": 5,
+        }
+        await self.emit_event(sio, data, room=self.roomID)
+        await asyncio.sleep(5)
 
     async def run_game(self, sio):
         logger.info(f"Game starts in room #{self.roomID}")
