@@ -1439,6 +1439,7 @@ class GameRoom:
                 "number_of_murdered": number_of_murdered,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(5)
 
     async def convert_role(self, sio, convertor, converted, role):
         if not converted.alive:
@@ -2605,7 +2606,8 @@ class GameRoom:
         # 회계
         for p in self.alive_list:
             if isinstance(p.role, roles.Auditor) and p.target1 and p.role.ability_opportunity>0:
-                if (p.target1.role.defense_level > 0 and p.role.can_audit_night_immune)\
+                if not p.target1.alive\
+                or (p.target1.role.defense_level > 0 and p.role.can_audit_night_immune)\
                 or isinstance(p.target1.role, roles.Cult)\
                 or (isinstance(p.target1.role, roles.Mafia) and not p.role.can_audit_mafia)\
                 or (isinstance(p.target1.role, roles.Triad) and not p.role.can_audit_triad):
@@ -2647,7 +2649,10 @@ class GameRoom:
         for p in self.alive_list:
             if isinstance(p.role, roles.MasonLeader) and p.target1 and p.role.ability_opportunity>0:
                 p.crimes["호객행위"] = True
-                if isinstance(p.target1.role, roles.Citizen):
+                if not p.target1.alive:
+                    data = {"type": "recruit_failed"}
+                    await self.emit_event(sio, data, room=p.sid)
+                elif isinstance(p.target1.role, roles.Citizen):
                     await self.convert_role(
                         sio, convertor=p, converted=p.target1, role=roles.Mason
                     )
@@ -2675,7 +2680,10 @@ class GameRoom:
                     for healer in p.target1.healed_by:
                         if isinstance(healer.role, roles.Doctor):
                             await self.emit_event(sio, data, room=healer.sid)
-                if isinstance(p.target1.role, roles.Mason):
+                if not p.target1.alive:
+                    data = {"type": "recruit_failed"}
+                    await self.emit_event(sio, data, room=self.night_chat[roles.Cult])
+                elif isinstance(p.target1.role, roles.Mason):
                     data = {
                         "type": "recruited_by_cult",
                         "who": p.nickname,
@@ -2723,7 +2731,10 @@ class GameRoom:
         # 마피아 영입
         for p in self.alive_list:
             if isinstance(p.role, roles.Godfather) and p.recruit_target:
-                if isinstance(p.recruit_target.role, roles.Citizen) and p.recruit_target.role.recruitable and not p.recruit_target.prevented_conversion:
+                if not p.recruit_target.alive:
+                    data = {"type": "recruit_failed"}
+                    await self.emit_event(sio, data, room=self.night_chat[roles.Mafia])
+                elif isinstance(p.recruit_target.role, roles.Citizen) and p.recruit_target.role.recruitable and not p.recruit_target.prevented_conversion:
                     await self.convert_role(
                         sio,
                         convertor=p,
@@ -2756,7 +2767,10 @@ class GameRoom:
         # 삼합회 영입
         for p in self.alive_list:
             if isinstance(p.role, roles.DragonHead) and p.recruit_target:
-                if isinstance(p.recruit_target.role, roles.Citizen) and p.recruit_target.role.recruitable and not p.recruit_target.prevented_conversion:
+                if not p.target1.alive:
+                    data = {"type": "recruit_failed"}
+                    await self.emit_event(sio, data, room=self.night_chat[roles.Triad])
+                elif isinstance(p.recruit_target.role, roles.Citizen) and p.recruit_target.role.recruitable and not p.recruit_target.prevented_conversion:
                     await self.convert_role(
                         sio,
                         convertor=p,
@@ -2798,7 +2812,7 @@ class GameRoom:
 
         # 협박자 협박
         for p in self.alive_list:
-            if isinstance(p.role, roles.Blackmailer) and p.target1:
+            if isinstance(p.role, roles.Blackmailer) and p.target1 and p.target1.alive:
                 p.target1.blackmailed = True
                 data = {
                     "type": "blackmailed",
@@ -2807,7 +2821,7 @@ class GameRoom:
 
         # 침묵자 협박
         for p in self.alive_list:
-            if isinstance(p.role, roles.Silencer) and p.target1:
+            if isinstance(p.role, roles.Silencer) and p.target1 and p.target1.alive:
                 p.target1.blackmailed = True
                 data = {
                     "type": "blackmailed",
@@ -3063,6 +3077,7 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(3)
             await self.trigger_night_events(sio)
             await self.clear_up()
             await asyncio.sleep(5)
@@ -3088,6 +3103,7 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(3)
             await self.trigger_night_events(sio)
             await self.clear_up()
             await asyncio.sleep(5)
