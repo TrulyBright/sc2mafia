@@ -3308,7 +3308,7 @@ class GameRoom:
     async def finish_game(self, sio):
         logger.info(f"Game finished in room #{self.roomID}")
         remaining = self.alive_list
-        remaining_roles = {role.__class__ for role in remaining if not issubclass(role.__class__, roles.NeutralBenign)}
+        remaining_roles = {player.role.__class__ for player in remaining if not isinstance(player.role, roles.NeutralBenign)}
         if len(remaining) == 0:
             pass
         elif self.setup["options"]["role_setting"][roles.Citizen.name]["win_1v1"]\
@@ -3319,11 +3319,13 @@ class GameRoom:
             self.win(roles.Town, True)
         else:
             # 같이 이길 수 없는 세력들
-            if roles.Arsonist in remaining_roles or roles.SerialKiller in remaining_roles:
-                if setup["options"]["role_setting"][roles.SerialKiller.name]["win_if_1v1_with_Arsonist"]:
+            if roles.Arsonist in remaining_roles:
+                if roles.SerialKiller in remaining_roles and self.setup["options"]["role_setting"][roles.SerialKiller.name]["win_if_1v1_with_Arsonist"]:
                     self.win(roles.SerialKiller, False)
                 else:
                     self.win(roles.Arsonist, False)
+            elif roles.SerialKiller in remaining_roles:
+                self.win(roles.SerialKiller, False)
             elif roles.MassMurderer in remaining_roles:
                 self.win(roles.MassMurderer, False)
             else:
@@ -3344,28 +3346,27 @@ class GameRoom:
                         else:
                             for p in remaining:
                                 if isinstance(p.role, roles.NeutralEvil):
-                                    self.win(roles.NeutralEvil, False)
                                     break
                             else:
                                 for p in remaining:
                                     if isinstance(p.role, roles.Town):
                                         self.win(roles.Town, True)
                                         break
-            for p in remaining:
-                if isinstance(p.role, roles.Scumbag):
-                    self.win(roles.Scumbag, False)
-                elif isinstance(p.role, roles.Witch):
-                    self.win(roles.Witch, False)
-                elif isinstance(p.role, roles.Judge):
-                    self.win(roles.Judge, False)
-                elif isinstance(p.role, roles.Auditor):
-                    self.win(roles.Auditor, False)
-                elif isinstance(p.role, roles.Survivor):
-                    self.win(roles.Survivor, False)
-                elif isinstance(p.role, roles.Amnesiac):
-                    self.win(roles.Amnesiac, False)
-                if p.win_if_survived:
-                    p.win = True
+        for p in remaining:
+            if isinstance(p.role, roles.Scumbag):
+                self.win(roles.Scumbag, False)
+            elif isinstance(p.role, roles.Witch):
+                self.win(roles.Witch, False)
+            elif isinstance(p.role, roles.Judge):
+                self.win(roles.Judge, False)
+            elif isinstance(p.role, roles.Auditor):
+                self.win(roles.Auditor, False)
+            elif isinstance(p.role, roles.Survivor):
+                self.win(roles.Survivor, False)
+            elif isinstance(p.role, roles.Amnesiac):
+                self.win(roles.Amnesiac, False)
+            if hasattr(p.role, "win_if_survived") and p.role.win_if_survived:
+                p.win = True
         data = {
             "type": "game_over",
             "winner": [(p.nickname, p.role.name) for p in self.players.values() if p.win]
