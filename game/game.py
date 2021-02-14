@@ -559,10 +559,8 @@ class GameRoom:
         self.message_record.append((datetime.now().strftime("%y/%m/%d %H:%M:%S"), str(data), str(receivers)))
 
     async def emit_event(self, sio, data, room, skip_sid=[]):
-        # if self.inGame:
-        #     for p in self.players.values():
-        #         if self.roomID not in sio.rooms(p.sid):
-        #             skip_sid.append(p.sid) # 나간 사람에게 보내지 않기
+        if isinstance(room, str) and self.roomID not in sio.rooms(room):
+            return # 나간 사람에게 보내지 않기
         await sio.emit("event", data, room=room, skip_sid=skip_sid)
         if self.inGame:
             self.write_to_record(sio, data, room, skip_sid)
