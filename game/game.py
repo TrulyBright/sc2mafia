@@ -3403,8 +3403,11 @@ class GameRoom:
                 return result_str
             async def insert(DB, record):
                 query = f'INSERT INTO {gamelog_id} values ("{record[0]}", "{record[1]}", "{record[2]}");'
-                await DB.execute(query)
-                await DB.commit()
+                try:
+                    await DB.execute(query)
+                    await DB.commit()
+                except sqlite3.OperationalError:
+                    logger.warning(f"ERROR WHILE INSERTING: {query}")
             while True:
                 try:
                     gamelog_id = get_random_alphanumeric_string(32)
@@ -3413,7 +3416,7 @@ class GameRoom:
                     break
                 except sqlite3.OperationalError: # gamelog_id가 중복되는 경우
                     continue
-            await asyncio.gather(*[insert(DB, record) for record in self.message_record])
+            await asyncio.gather(*[insert(DB, record) for record in self.message_record], return_exceptions=True)
             data = {
                 "type": "save_done",
                 "link": gamelog_id,
