@@ -1499,6 +1499,7 @@ class GameRoom:
             for p in self.alive_list:
                 if isinstance(p.role, roles.Mafia) and p.role.becomes_mafioso:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.Mafioso)
+                    break
 
         for role, player in remaining_player_with_roles.items():
             if issubclass(role, roles.TriadKilling) and player.role.ability_opportunity>0:
@@ -1507,6 +1508,7 @@ class GameRoom:
             for p in self.alive_list:
                 if isinstance(p.role, roles.Triad) and p.role.becomes_enforcer:
                     await self.convert_role(sio, convertor=p, converted=p, role=roles.Enforcer)
+                    break
         if not self.die_today: # 사형이 있은 날에는 감금 불가
             for p in self.alive_list:
                 if (
