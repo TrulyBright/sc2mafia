@@ -3408,6 +3408,8 @@ class GameRoom:
                     await DB.commit()
                 except sqlite3.OperationalError:
                     logger.warning(f"ERROR WHILE INSERTING: {query}")
+                    logger.warning(traceback.format_exc())
+                    raise
             while True:
                 try:
                     gamelog_id = get_random_alphanumeric_string(32)
