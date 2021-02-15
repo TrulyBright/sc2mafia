@@ -1297,7 +1297,6 @@ class GameRoom:
                     if self.in_court:
                         data["who"]="재판관" if isinstance(commander.role, roles.Judge) or isinstance(commander.role, roles.Crier) else "배심원"
                         data["in_court"]=True
-                    logger.info(data)
                     await self.emit_event(sio, data, room=self.roomID)
 
     def vote(self, voter, voted):
@@ -1342,6 +1341,7 @@ class GameRoom:
             p.voted_to_which = None
 
     async def execute_the_elected(self, sio):
+        await asyncio.sleep(1)
         executed_democratically = True # whether executed by guilty/innocent vote or not
         if self.STATE == "VOTE_EXECUTION": # executed by vote
             data = {
@@ -3127,6 +3127,7 @@ class GameRoom:
                 "state": self.STATE,
             }
             await self.emit_event(sio, data, room=self.roomID)
+            await asyncio.sleep(1)
             for dead in self.die_tonight:
                 data = {
                     "type": "dead_announced",
@@ -3160,6 +3161,7 @@ class GameRoom:
                 await self.emit_event(sio, data, room=self.roomID)
                 await asyncio.sleep(5)
             if self.game_over():
+                await asyncio.sleep(1)
                 return
             self.die_tonight = set() # 사망자 목록 초기화
             # DISCUSSION
@@ -3292,6 +3294,7 @@ class GameRoom:
             await self.announce_role_and_lw_of(self.die_today, sio)
 
             if self.game_over():
+                await asyncio.sleep(1)
                 return
             # EVENING
             self.STATE = "EVENING"
