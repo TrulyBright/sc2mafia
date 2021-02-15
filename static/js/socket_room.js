@@ -664,6 +664,46 @@ Socket.on("player_list", (data)=>{
       } else {
         div.appendChild(a);
       }
+      let player_modal = document.createElement("div");
+      player_modal.id = `player_${nickname}`;
+      player_modal.style.display = "none";
+      let vote = document.createElement("div");
+      let vote_a = document.createElement("a");
+      vote_a.setAttribute("href", "#");
+      vote_a.innerText = "투표";
+      vote_a.addEventListener("click", (event)=>{
+        Socket.emit("message", `/투표 ${player_modal.id.split("_")[1]}`);
+      });
+      vote.appendChild(vote_a);
+      let visit = document.createElement("div");
+      let visit_a = document.createElement("a");
+      visit_a.setAttribute("href", "#");
+      visit_a.innerText = "방문";
+      visit_a.addEventListener("click", (event)=>{
+        Socket.emit("message", `/방문 ${player_modal.id.split("_")[1]}`);
+      });
+      visit.appendChild(visit_a);
+      player_modal.appendChild(vote);
+      player_modal.appendChild(visit);
+      div.appendChild(player_modal)
+      a.addEventListener("click", (event)=>{
+        player_modal.style.position = "absolute";
+        player_modal.style.left = event.clientX+"px";
+        player_modal.style.top = event.clientY+"px";
+        player_modal.style.width = "10%";
+        player_modal.style.display = "block";
+        player_modal.style.border = "1px solid orange";
+        player_modal.style.backgroundColor = "black";
+        player_modal.style.zIndex = 100000000;
+      });
+      player_modal.addEventListener("click", (event)=>{
+        player_modal.style.display = "none";
+      });
+      window.addEventListener("click", (event)=>{
+        if (!player_modal.contains(event.target) && !div.contains(event.target)) {
+          player_modal.style.display = "none";
+        }
+      });
       player_list.appendChild(div);
     }
   } else {
