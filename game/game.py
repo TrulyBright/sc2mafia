@@ -263,9 +263,13 @@ def distribute_roles(formation)->list:
     pools = [pool for pool in formation if isinstance(pool, list)]
     pools = sorted(pools, key=lambda pool: bool([role for role in pool if issubclass(role, roles.Mafia) or issubclass(role, roles.Triad)]), reverse=True)
     pools = sorted(pools, key=lambda pool: roles.Cult in pool or roles.WitchDoctor in pool or roles.Auditor in pool, reverse=True)
-    distributed = fixed
+    distributed = fixed[:]
     for pool in pools:
+        count = 0
         while True:
+            count+=1
+            if count>1000:
+                raise Exception("직업을 배분하는 데 시간이 너무 오래 걸립니다. 설정에 문제가 있는 것 같습니다.");
             picked = random.choice(pool)
             if picked in (roles.Mayor, roles.Marshall,
                           roles.Crier, roles.MasonLeader,
