@@ -409,17 +409,15 @@ let blop = new Audio("/static/music/blop.mp3");
 function addchat(message, color='orange', background_color=null) {
   let chatLog = document.getElementById('messages');
   let chat = document.createElement('li');
-  let span = document.createElement("span");
   if (background_color) {
     chat.style.backgroundColor = background_color;
   }
-  span.setAttribute("style", `color:${color}`);
+  chat.setAttribute("style", `color:${color}`);
   if (color=="orange" || color=="skyblue") {
-    span.innerHTML = message;
+    chat.innerHTML = message;
   } else {
-    span.innerText = message;
+    chat.innerText = message;
   }
-  chat.appendChild(span);
   chatLog.appendChild(chat);
   blop.play();
   updateScroll();
@@ -652,10 +650,32 @@ function swap_audio(audio_name) {
   }
 }
 
+let han_mal = document.querySelector(".han_mal");
+han_mal.addEventListener("change", (event)=>{
+  if (han_mal.value=="select all") {
+    for (let li of chatBox.children) {
+      li.style.display = "block";
+    }
+  } else {
+      for (let li of chatBox.children) {
+        if (li.style.color == "orange" || li.style.color == "skyblue" || li.innerText.startsWith(han_mal.value)) {
+          li.style.display = "block";
+        } else {
+          li.style.display = "none";
+        }
+      }
+  }
+});
+
 Socket.on("player_list", (data)=>{
   console.log(data);
   let player_list = document.querySelector(".player_list");
   player_list.innerHTML = "";
+  han_mal.innerHTML = "";
+  let select_all = document.createElement("option");
+  select_all.setAttribute("value", "select all");
+  select_all.innerText = "모두 보기";
+  han_mal.appendChild(select_all);
   if (data["inGame"]) {
     for (let player of data["player_list"]) {
       let nickname = player[0];
@@ -713,6 +733,10 @@ Socket.on("player_list", (data)=>{
         }
       });
       player_list.appendChild(div);
+      let option = document.createElement("option");
+      option.setAttribute("value", nickname);
+      option.innerText = nickname;
+      han_mal.appendChild(option);
     }
   } else {
     for (let player of data["player_list"]) {
