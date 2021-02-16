@@ -418,7 +418,7 @@ class DragonHead(TriadKilling):
         self.defense_level = setup["options"]["role_setting"][self.name]["defense_level"]
         self.cannot_be_blocked = setup["options"]["role_setting"][self.name]["cannot_be_blocked"]
         self.detection_immune = setup["options"]["role_setting"][self.name]["detection_immune"]
-        self.killable_without_enforcer = setup["optionss"]["role_setting"][self.name]["killable_without_enforcer"]
+        self.killable_without_enforcer = setup["options"]["role_setting"][self.name]["killable_without_enforcer"]
         self.ability_opportunity = 999
 
 
@@ -475,7 +475,7 @@ class Liaison(TriadSupport):
         super().__init__()
         self.cannot_be_blocked = setup["options"]["role_setting"][self.name]["cannot_be_blocked"]
         self.detects_block_immune_target = setup["options"]["role_setting"][self.name]["detects_block_immune_target"]
-        self.becomes_enforcer = setup["options"]["role_setting"]["becomes_enforcer"]
+        self.becomes_enforcer = setup["options"]["role_setting"][self.name]["becomes_enforcer"]
 
 
 class Silencer(TriadSupport):
@@ -492,8 +492,8 @@ class Vanguard(TriadSupport):
 
     def __init__(self, setup):
         super().__init__()
-        self.nights_between_shadowings = setup["options"]["role_setting"]["nights_between_shadowings"]
-        self.becomes_enforcer = setup["options"]["role_setting"]["becomes_enforcer"]
+        self.nights_between_shadowings = setup["options"]["role_setting"][self.name]["nights_between_shadowings"]
+        self.becomes_enforcer = setup["options"]["role_setting"][self.name]["becomes_enforcer"]
 
 
 # Neutral
