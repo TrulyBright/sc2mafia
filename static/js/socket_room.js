@@ -388,16 +388,23 @@ document.querySelector("#setup-submit").addEventListener("click", (event)=>{
 document.querySelector(".message_input_form").addEventListener("submit", send_message)
 let now_playing = null;
 
+let chatBox = document.querySelector('#messages');
+chatBox.isScrolledToBottom = true;
+
+document.querySelector("#messages").addEventListener("scroll", (event) => {
+  if (event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight) {
+    chatBox.isScrolledToBottom = true;
+  } else {
+    chatBox.isScrolledToBottom = false;
+  }
+});
+
 function updateScroll () {
-  let chatBox = document.querySelector('#messages');
-  let scrolledToBottom = chatBox.scrollHeight-chatBox.clientHeight<=chatBox.scrollTop+35;
-  if (scrolledToBottom) {
+  if (chatBox.isScrolledToBottom) {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 }
 let blop = new Audio("/static/music/blop.mp3");
-
-setInterval(updateScroll);
 
 function addchat(message, color='orange', background_color=null) {
   let chatLog = document.getElementById('messages');
@@ -415,6 +422,7 @@ function addchat(message, color='orange', background_color=null) {
   chat.appendChild(span);
   chatLog.appendChild(chat);
   blop.play();
+  updateScroll();
 }
 
 function send_message(event) {
