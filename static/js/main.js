@@ -116,3 +116,13 @@ Socket.on("multiple_login", (data)=>{
 Socket.on("disconnect", (data)=>{
   alert("서버와의 연결이 종료되었습니다.");
 });
+
+Socket.on("online_users", (data)=>{
+  let list = document.querySelector(".online_users_list");
+  list.innerHTML = "";
+  for (let nickname of data) {
+    let li = document.createElement("li");
+    li.innerText = nickname;
+    list.appendChild(li);
+  }
+});

@@ -48,6 +48,7 @@ async def connect(sid, environ):
             await sio.disconnect(online_users[user["nickname"]])
             online_users[user["nickname"]]=sid
         online_users[user["nickname"]]=sid
+        await sio.emit("online_users", list(online_users.keys()))
         logger.info(f"user connected: {user['nickname']}")
 
 

@@ -7,10 +7,31 @@
   height: 400px;
   border: white solid 1px;
   overflow: auto;
+  vertical-align: top;
+  display: flex;
+  flex-direction: row;
 }
 
 .room_section {
   display: none;
+}
+
+.online_users {
+  width: 15%;
+  border-right: white solid 1px;
+  overflow: auto;
+  height: 100%;
+  text-align: left;
+}
+
+.online_users_header {
+  border-bottom: white solid 1px;
+  padding-left: 5px;
+}
+
+.online_users_list {
+  list-style-type: none;
+  padding-left: 5px;
 }
 
 #left_banner {
