@@ -49,6 +49,7 @@ async def connect(sid, environ):
             online_users[user["nickname"]]=sid
         online_users[user["nickname"]]=sid
         await sio.emit("online_users", list(online_users.keys()))
+        user["readied"] = False
         logger.info(f"user connected: {user['nickname']}")
 
 

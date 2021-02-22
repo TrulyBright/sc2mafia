@@ -88,7 +88,7 @@ async def main(request):
 @template("archive_index.html.j2")
 async def archive_index(request):
     async with aiosqlite.connect("sql/records.db") as DB:
-        cursor = await DB.execute("SELECT name FROM sqlite_master WHERE type='table';");
+        cursor = await DB.execute("SELECT name FROM sqlite_master WHERE type='table';")
         logs = await cursor.fetchall()
         return {"logs": logs, "enumerate": enumerate,}
 

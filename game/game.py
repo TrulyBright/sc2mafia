@@ -269,7 +269,7 @@ def distribute_roles(formation)->list:
         while True:
             count+=1
             if count>1000:
-                raise Exception("직업을 배분하는 데 시간이 너무 오래 걸립니다. 설정에 문제가 있는 것 같습니다.");
+                raise Exception("직업을 배분하는 데 시간이 너무 오래 걸립니다. 설정에 문제가 있는 것 같습니다.")
             picked = random.choice(pool)
             if picked in (roles.Mayor, roles.Marshall,
                           roles.Crier, roles.MasonLeader,
@@ -302,7 +302,6 @@ class GameRoom:
         self.title = title
         self.capacity = capacity
         self.members = []
-        self.readied = set()
         self.host = host
         self.setup = None
         self.password = password
@@ -552,7 +551,9 @@ class GameRoom:
                 "type": "applying_setup_success",
             }
             await self.emit_event(sio, data, room=self.roomID)
-            self.readied = set() # 설정이 바뀌면 준비 자동으로 풀림
+            for sid in self.members:
+                async with sio.session(sid) as user:
+                    user["readied"] = False # 설정이 바뀌면 준비 자동으로 풀림
             await self.emit_player_list(sio)
 
     def is_full(self):
@@ -615,10 +616,8 @@ class GameRoom:
                 if msg.startswith("/유언편집"):
                     return
                 if msg == "/준비":
-                    if sid in self.readied:
-                        self.readied.remove(sid)
-                    else:
-                        self.readied.add(sid)
+                    async with sio.session(sid) as user:
+                        user["readied"] = not user["readied"]
                     await self.emit_player_list(sio)
                     return
                 if msg == "/시작" and sid == self.host:
@@ -637,13 +636,11 @@ class GameRoom:
                         }
                         await self.emit_event(sio, data, room=sid)
                         return
-                    elif len(self.readied)!=len(self.members):
-                        not_readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.members if sid not in self.readied], return_exceptions=True)
-                        not_readied = [session["nickname"] for session in not_readied if not isinstance(session, Exception)]
+                    elif [sid for sid in self.members if not (await sio.get_session(sid))["readied"]]:
                         data = {
                             "type": "unable_to_start",
                             "reason": "not_readied",
-                            "not_readied": not_readied,
+                            "not_readied": list(map(lambda s:s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members]))),
                         }
                         await self.emit_event(sio, data, room=self.roomID)
                         return
@@ -2962,7 +2959,9 @@ class GameRoom:
             await self.emit_event(sio, data, room=self.roomID)
             return
         self.inGame = True
-        self.readied = set()
+        for sid in self.members:
+            async with sio.session(sid) as user:
+                user["readied"] = False
         self.election = asyncio.Event()
         self.elected = None
         self.day = 0
@@ -3489,10 +3488,7 @@ class GameRoom:
                 coros.append(sio.emit("player_list", data, room=sid))
             await asyncio.gather(*coros, return_exceptions=True)
         else:
-            player_list = map(lambda s: s["nickname"], await asyncio.gather(*[sio.get_session(sid) for sid in self.members], return_exceptions=True))
-            readied = await asyncio.gather(*[sio.get_session(sid) for sid in self.readied], return_exceptions=True)
-            readied = {s["nickname"] for s in readied if not isinstance(s, Exception)}
-            player_list = [(nickname, nickname in readied, (await sio.get_session(self.host))["nickname"]==nickname) for nickname in player_list]
+            player_list = [(user["nickname"], user["readied"]) for user in await asyncio.gather(*[sio.get_session(sid) for sid in self.members])]
             data = {
                 "player_list": player_list,
                 "inGame": self.inGame,
@@ -3509,16 +3505,14 @@ class GameRoom:
                 sio.enter_room(sid, self.hell)
 
     async def someone_left(self, sid, sio):
-        if sid in self.readied:
-            self.readied.remove(sid)
+        async with sio.session(sid) as user:
+            user["readied"] = False
         await self.emit_player_list(sio)
         if self.inGame:
             for p in self.players.values():
                 if p.sid==sid:
                     p.suicide_today = True
                     break
-        if sid in self.readied:
-            self.readied.remove(sid)
 
 
 class Player:

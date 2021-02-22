@@ -484,7 +484,7 @@ class Silencer(TriadSupport):
     def __init__(self, setup):
         super().__init__()
         self.can_talk_during_trial = setup["options"]["role_setting"][self.name]["can_talk_during_trial"]
-        self.becomes_enforcer = steup["options"]["role_setting"][self.name]["becomes_enforcer"]
+        self.becomes_enforcer = setup["options"]["role_setting"][self.name]["becomes_enforcer"]
 
 
 class Vanguard(TriadSupport):
